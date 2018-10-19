@@ -21,18 +21,18 @@ import static org.folio.util.EmailUtils.*;
 
 public class EmailAPI implements Email {
 
-  private final static String REQUEST_URL_TEMPLATE = "%s/%s?query=module==%s";
-  private final static String REQUEST_URI_PATH = "configurations/entries";
-  private final static String HTTP_HEADER_ACCEPT = HttpHeaders.ACCEPT.toString();
-  private final static String HTTP_HEADER_CONTENT_TYPE = HttpHeaders.CONTENT_TYPE.toString();
+  private static final String REQUEST_URL_TEMPLATE = "%s/%s?query=module==%s";
+  private static final String REQUEST_URI_PATH = "configurations/entries";
+  private static final String HTTP_HEADER_ACCEPT = HttpHeaders.ACCEPT.toString();
+  private static final String HTTP_HEADER_CONTENT_TYPE = HttpHeaders.CONTENT_TYPE.toString();
   private static final String OKAPI_URL_HEADER = "x-okapi-url";
   private static final String MODULE_EMAIL_SMPT_SERVER = "SMPT_SERVER";
   private static final String LOOKUP_TIMEOUT = "lookup.timeout";
   private static final String LOOKUP_TIMEOUT_VAL = "1000";
 
-  private final static String SUCCESS_SEND_EMAIL = "The message has been delivered";
-  private final static String ERROR_LOOKING_UP_MOD_CONFIG = "Error looking up config at url=%s | Expected status code 200, got %s | error message: %s";
-  private final static String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SNTP server, the min config is: %s";
+  private static final String SUCCESS_SEND_EMAIL = "The message has been delivered";
+  private static final String ERROR_LOOKING_UP_MOD_CONFIG = "Error looking up config at url=%s | Expected status code 200, got %s | error message: %s";
+  private static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SNTP server, the min config is: %s";
 
   private final Logger logger = LoggerFactory.getLogger(EmailAPI.class);
 
