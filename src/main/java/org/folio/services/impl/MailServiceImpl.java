@@ -8,11 +8,11 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.mail.*;
 import org.apache.commons.lang3.StringUtils;
+import org.folio.enums.SmtpEmail;
 import org.folio.rest.jaxrs.model.Attachment;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.services.MailService;
-import org.folio.enums.SmtpEmail;
 
 import java.util.Base64;
 import java.util.List;
@@ -26,9 +26,9 @@ import static org.folio.util.EmailUtils.getMessageConfig;
 
 public class MailServiceImpl implements MailService {
 
-  private final static String ERROR_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message: %s";
-  private final static String ERROR_ATTACHMENT_DATA = "Error attaching the `%s` file to email!";
-  private final static String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
+  private static final String ERROR_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message: %s";
+  private static final String ERROR_ATTACHMENT_DATA = "Error attaching the `%s` file to email!";
+  private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
 
   private final Logger logger = LoggerFactory.getLogger(MailServiceImpl.class);
   private Vertx vertx;

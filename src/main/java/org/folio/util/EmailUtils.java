@@ -9,19 +9,27 @@ import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.resource.Email.PostEmailResponse;
 
 import javax.ws.rs.core.Response.Status;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toSet;
 import static org.folio.enums.SmtpEmail.*;
 
 public class EmailUtils {
+
+  private EmailUtils() {
+    //not called
+  }
+
   /**
    * Minimum SMTP server configuration requirements
    */
-  public final static Set<String> REQUIREMENTS_CONFIG_SET = Stream.of(EMAIL_SMTP_HOST, EMAIL_SMTP_PORT, EMAIL_USERNAME, EMAIL_PASSWORD)
+  public static final Set<String> REQUIREMENTS_CONFIG_SET = Stream.of(EMAIL_SMTP_HOST, EMAIL_SMTP_PORT, EMAIL_USERNAME, EMAIL_PASSWORD)
     .map(Enum::name)
-    .collect(Collectors.toSet());
+    .collect(collectingAndThen(toSet(), Collections::unmodifiableSet));
 
   /**
    * Check the minimum SMTP server configuration
