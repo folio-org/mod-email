@@ -1,24 +1,31 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "The mail message that can be sent via email",
   "title": "Email Entity Schema",
   "type": "object",
   "properties": {
     "notificationId": {
+      "description":"id",
       "type": "integer"
     },
     "from": {
+      "description":"sender's address",
       "type": "string"
     },
     "to": {
+      "description":"address of the recipient",
       "type": "string"
     },
     "header": {
+      "description":"subject of email",
       "type": "string"
     },
     "body": {
+      "description":"text of email",
       "type": "string"
     },
     "attachments": {
+      "description":"attachment list",
       "id": "attachmentData",
       "type": "array",
       "items": {

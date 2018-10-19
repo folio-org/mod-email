@@ -56,7 +56,7 @@ public class EmailUtils {
 
   /**
    * Get the configuration value by class.
-   * if the value is not present, the default value is returned (EMPTY, -1, false, LoginOption.NONE or StartTLSOptions.OPTIONAL)
+   * if the value is not present, the default value is returned (EMPTY(""), -1, false, LoginOption.NONE or StartTLSOptions.OPTIONAL)
    */
   public static <T> T getEmailConfig(Configurations configurations, SmtpEmail smtpEmail, Class<T> t) {
     String conf = getConfigurationsBySmtpEmailVal(configurations, smtpEmail);

@@ -1,8 +1,10 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Configuration List",
   "type": "object",
   "properties": {
     "configs": {
+      "description":"configurations",
       "id": "configurationData",
       "type": "array",
       "items": {
@@ -11,9 +13,11 @@
       }
     },
     "totalRecords": {
+      "description":"total records",
       "type": "integer"
     },
     "resultInfo": {
+      "description":"info",
       "readonly": true
     }
   },
