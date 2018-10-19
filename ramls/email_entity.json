@@ -5,7 +5,7 @@
   "type": "object",
   "properties": {
     "notificationId": {
-      "description":"id",
+      "description":"notification identifier",
       "type": "integer"
     },
     "from": {
