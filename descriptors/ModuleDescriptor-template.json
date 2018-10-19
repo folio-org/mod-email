@@ -1,0 +1,53 @@
+{
+  "id": "${artifactId}-${version}",
+  "name": "email",
+  "provides": [
+    {
+      "id": "email",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": [
+            "POST"
+          ],
+          "pathPattern": "/email"
+        }
+      ]
+    },
+    {
+      "id": "_tenant",
+      "version": "1.0",
+      "interfaceType": "system",
+      "handlers": [
+        {
+          "methods": [
+            "POST"
+          ],
+          "pathPattern": "/_/tenant"
+        },
+        {
+          "methods": [
+            "DELETE"
+          ],
+          "pathPattern": "/_/tenant"
+        }
+      ]
+    }
+  ],
+  "requires": [],
+  "launchDescriptor": {
+    "dockerImage": "${artifactId}",
+    "dockerArgs": {
+      "HostConfig": {
+        "PortBindings": {
+          "8081/tcp": [
+            {
+              "HostPort": "%p"
+            }
+          ]
+        }
+      }
+    },
+    "dockerPull": false
+  }
+}

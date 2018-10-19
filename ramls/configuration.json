@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "module": {
+      "type": "string"
+    },
+    "configName": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "default": {
+      "type": "boolean"
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "value": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "metadata": {
+      "readonly": true
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "module",
+    "configName"
+  ]
+}

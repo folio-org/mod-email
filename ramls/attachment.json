@@ -1,0 +1,29 @@
+{
+  "title": "Email attachment",
+  "type": "object",
+  "properties": {
+    "contentType": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "data": {
+      "type": "string"
+    },
+    "disposition": {
+      "type": "string"
+    },
+    "contentId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "contentType",
+    "name",
+    "data"
+  ]
+}

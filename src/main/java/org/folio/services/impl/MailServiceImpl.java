@@ -1,0 +1,109 @@
+package org.folio.services.impl;
+
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.mail.*;
+import org.apache.commons.lang3.StringUtils;
+import org.folio.rest.jaxrs.model.Attachment;
+import org.folio.rest.jaxrs.model.Configurations;
+import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.services.MailService;
+import org.folio.enums.SmtpEmail;
+
+import java.util.Base64;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static org.folio.enums.SmtpEmail.EMAIL_SMTP_HOST;
+import static org.folio.enums.SmtpEmail.EMAIL_SMTP_PORT;
+import static org.folio.util.EmailUtils.getEmailConfig;
+import static org.folio.util.EmailUtils.getMessageConfig;
+
+public class MailServiceImpl implements MailService {
+
+  private final static String ERROR_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message: %s";
+  private final static String ERROR_ATTACHMENT_DATA = "Error attaching the `%s` file to email!";
+  private final static String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
+
+  private final Logger logger = LoggerFactory.getLogger(MailServiceImpl.class);
+  private Vertx vertx;
+
+  public MailServiceImpl(Vertx vertx) {
+    this.vertx = vertx;
+  }
+
+  public Future<JsonObject> sendEmail(Configurations configurations, EmailEntity emailEntity) {
+    Future<JsonObject> future = Future.future();
+    MailConfig mailConfig = getMailConfig(configurations);
+    MailMessage mailMessage = getMailMessage(emailEntity);
+    MailClient
+      .createShared(vertx, mailConfig)
+      .sendMail(mailMessage, mailHandler -> {
+        if (mailHandler.succeeded()) {
+          // the logic of sending the result of sending email to `mod-notify`
+          future.complete();
+        } else {
+          logger.error(String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage()));
+          future.fail(mailHandler.cause());
+        }
+      });
+    return future;
+  }
+
+  private MailConfig getMailConfig(Configurations configurations) {
+    return new MailConfig()
+      .setHostname(getEmailConfig(configurations, EMAIL_SMTP_HOST, String.class))
+      .setPort(getEmailConfig(configurations, EMAIL_SMTP_PORT, Integer.class))
+      .setSsl(getEmailConfig(configurations, SmtpEmail.EMAIL_SMTP_SSL, Boolean.class))
+      .setStarttls(getEmailConfig(configurations, SmtpEmail.EMAIL_START_TLS_OPTIONS, StartTLSOptions.class))
+      .setTrustAll(getEmailConfig(configurations, SmtpEmail.EMAIL_TRUST_ALL, Boolean.class))
+      .setLogin(getEmailConfig(configurations, SmtpEmail.EMAIL_SMTP_LOGIN_OPTION, LoginOption.class))
+      .setUsername(getEmailConfig(configurations, SmtpEmail.EMAIL_USERNAME, String.class))
+      .setPassword(getEmailConfig(configurations, SmtpEmail.EMAIL_PASSWORD, String.class));
+  }
+
+  private MailMessage getMailMessage(EmailEntity emailEntity) {
+    return new MailMessage()
+      .setFrom(getMessageConfig(emailEntity.getFrom()))
+      .setTo(getMessageConfig(emailEntity.getTo()))
+      .setSubject(getMessageConfig(emailEntity.getHeader()))
+      .setText(getMessageConfig(emailEntity.getBody()))
+      .setAttachment(getMailAttachments(emailEntity.getAttachments()));
+  }
+
+  private List<MailAttachment> getMailAttachments(List<Attachment> attachments) {
+    return attachments.stream()
+      .map(this::getMailAttachment)
+      .collect(Collectors.toList());
+  }
+
+  private MailAttachment getMailAttachment(Attachment data) {
+    if (Objects.isNull(data) || StringUtils.isEmpty(data.getData())) {
+      logger.error(INCORRECT_ATTACHMENT_DATA);
+      return new MailAttachment();
+    }
+    return new MailAttachment()
+      .setContentType(data.getContentType())
+      .setName(data.getName())
+      .setDescription(data.getDescription())
+      .setDisposition(data.getDisposition())
+      .setContentId(data.getContentId())
+      .setData(getAttachmentData(data));
+  }
+
+  private Buffer getAttachmentData(Attachment data) {
+    String file = data.getData();
+    if (StringUtils.isEmpty(file)) {
+      logger.error(String.format(ERROR_ATTACHMENT_DATA, data.getName()));
+      return Buffer.buffer();
+    }
+    // Decode incoming data from JSON
+    byte[] decode = Base64.getDecoder().decode(file);
+    return Buffer.buffer(decode);
+  }
+}

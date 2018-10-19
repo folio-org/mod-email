@@ -1,0 +1,127 @@
+package org.folio.rest.impl;
+
+import io.vertx.core.*;
+import io.vertx.core.http.*;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import org.folio.rest.jaxrs.model.Configurations;
+import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.rest.jaxrs.resource.Email;
+import org.folio.services.MailService;
+import org.folio.services.impl.MailServiceImpl;
+
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import java.util.Map;
+
+import static org.folio.rest.RestVerticle.*;
+import static org.folio.util.EmailUtils.*;
+
+public class EmailAPI implements Email {
+
+  private final static String REQUEST_URL_TEMPLATE = "%s/%s?query=module==%s";
+  private final static String REQUEST_URI_PATH = "configurations/entries";
+  private final static String HTTP_HEADER_ACCEPT = HttpHeaders.ACCEPT.toString();
+  private final static String HTTP_HEADER_CONTENT_TYPE = HttpHeaders.CONTENT_TYPE.toString();
+  private static final String OKAPI_URL_HEADER = "x-okapi-url";
+  private static final String MODULE_EMAIL_SMPT_SERVER = "SMPT_SERVER";
+  private static final String LOOKUP_TIMEOUT = "lookup.timeout";
+  private static final String LOOKUP_TIMEOUT_VAL = "1000";
+
+  private final static String SUCCESS_SEND_EMAIL = "The message has been delivered";
+  private final static String ERROR_LOOKING_UP_MOD_CONFIG = "Error looking up config at url=%s | Expected status code 200, got %s | error message: %s";
+  private final static String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SNTP server, the min config is: %s";
+
+  private final Logger logger = LoggerFactory.getLogger(EmailAPI.class);
+
+  private String tenantId;
+  private HttpClient httpClient;
+  private MailService mailService;
+
+  /**
+   * Timeout to wait for response
+   */
+  private int lookupTimeout = Integer.parseInt(MODULE_SPECIFIC_ARGS.getOrDefault(LOOKUP_TIMEOUT, LOOKUP_TIMEOUT_VAL));
+
+  public EmailAPI(final Vertx vertx, final String tenantId) {
+    this.tenantId = tenantId;
+    initMailService(vertx);
+    initHttpClient(vertx);
+  }
+
+  /**
+   * init the http client to 'mod-config'
+   */
+  private void initHttpClient(final Vertx vertx) {
+    HttpClientOptions options = new HttpClientOptions();
+    options.setConnectTimeout(lookupTimeout);
+    options.setIdleTimeout(lookupTimeout);
+    this.httpClient = vertx.createHttpClient(options);
+  }
+
+  private void initMailService(final Vertx vertx) {
+    this.mailService = new MailServiceImpl(vertx);
+  }
+
+  @Override
+  public void postEmail(EmailEntity entity, Map<String, String> requestHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context context) {
+    MultiMap caseInsensitiveHeaders = new CaseInsensitiveHeaders().addAll(requestHeaders);
+    try {
+      lookupConfig(caseInsensitiveHeaders).setHandler(lookupConfigHandler -> {
+        if (lookupConfigHandler.failed()) {
+          PostEmailResponse response = createResponse(Status.BAD_REQUEST, lookupConfigHandler.cause().getMessage());
+          asyncResultHandler.handle(Future.succeededFuture(response));
+          return;
+        }
+        Configurations configurations = lookupConfigHandler.result().mapTo(Configurations.class);
+        if (checkMinConfigSntpServer(configurations)) {
+          String errorMessage = String.format(ERROR_MIN_REQUIREMENT_MOD_CONFIG, REQUIREMENTS_CONFIG_SET);
+          logger.error(errorMessage);
+          asyncResultHandler.handle(Future.succeededFuture(createResponse(Status.INTERNAL_SERVER_ERROR, errorMessage)));
+          return;
+        }
+
+        mailService.sendEmail(configurations, entity).setHandler(sendEmailHandler -> {
+          if (sendEmailHandler.failed()) {
+            String errorMessage = sendEmailHandler.cause().getMessage();
+            logger.error(errorMessage);
+            asyncResultHandler.handle(Future.succeededFuture(createResponse(Status.INTERNAL_SERVER_ERROR, errorMessage)));
+            return;
+          }
+          asyncResultHandler.handle(Future.succeededFuture(createResponse(Status.OK, SUCCESS_SEND_EMAIL)));
+        });
+      });
+    } catch (Exception ex) {
+      logger.error(ex.getMessage(), ex);
+      asyncResultHandler.handle(Future.failedFuture(ex));
+    }
+  }
+
+  private Future<JsonObject> lookupConfig(MultiMap headers) {
+    Future<JsonObject> future = Future.future();
+    String okapiUrl = headers.get(OKAPI_URL_HEADER);
+    String okapiToken = headers.get(OKAPI_HEADER_TOKEN);
+    String requestUrl = String.format(REQUEST_URL_TEMPLATE, okapiUrl, REQUEST_URI_PATH, MODULE_EMAIL_SMPT_SERVER);
+    HttpClientRequest request = httpClient.getAbs(requestUrl);
+    request
+      .putHeader(OKAPI_HEADER_TOKEN, okapiToken)
+      .putHeader(OKAPI_HEADER_TENANT, tenantId)
+      .putHeader(HTTP_HEADER_CONTENT_TYPE, MediaType.APPLICATION_JSON)
+      .putHeader(HTTP_HEADER_ACCEPT, MediaType.APPLICATION_JSON)
+      .handler(response -> {
+        if (response.statusCode() != 200) {
+          response.bodyHandler(bufHandler ->
+            future.fail(String.format(ERROR_LOOKING_UP_MOD_CONFIG, requestUrl, response.statusCode(), bufHandler.toString())));
+        } else {
+          response.bodyHandler(bufHandler -> {
+            JsonObject resultObject = bufHandler.toJsonObject();
+            future.complete(resultObject);
+          });
+        }
+      });
+    request.end();
+    return future;
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "configs": {
+      "id": "configurationData",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "$ref": "configuration.json"
+      }
+    },
+    "totalRecords": {
+      "type": "integer"
+    },
+    "resultInfo": {
+      "readonly": true
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "configs",
+    "totalRecords"
+  ]
+}
