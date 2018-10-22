@@ -1,4 +1,7 @@
 {
   "srvcId": "${artifactId}-${version}",
-  "nodeId": "10.0.2.15"
+  "nodeId": "localhost",
+  "descriptor": {
+    "exec": "java -Dport=%p -jar ../mod-login/target/${artifactId}-fat.jar -Dhttp.port=%p embed_postgres=true"
+  }
 }

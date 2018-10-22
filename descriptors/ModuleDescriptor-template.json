@@ -10,7 +10,10 @@
           "methods": [
             "POST"
           ],
-          "pathPattern": "/email"
+          "pathPattern": "/email",
+          "permissionsRequired": [
+            "configuration.entries.item.get"
+          ]
         }
       ]
     },
@@ -35,8 +38,29 @@
     }
   ],
   "requires": [],
+  "permissionSets": [
+    {
+      "permissionName": "configuration.entries.collection.get",
+      "displayName": "configuration - get configuration entries collection",
+      "description": "get configuration entries from storage"
+    },
+    {
+      "permissionName": "configuration.entries.item.get",
+      "displayName": "configuration - get configuration entry",
+      "description": "get individual configuration entry from storage"
+    },
+    {
+      "permissionName": "configuration.all",
+      "displayName": "configuration module - all permissions",
+      "description": "entire set of permissions needed to use the configuration module",
+      "subPermissions": [
+        "configuration.entries.collection.get",
+        "configuration.entries.item.get"
+      ]
+    }
+  ],
   "launchDescriptor": {
-    "dockerImage": "${artifactId}",
+    "dockerImage": "${artifactId}:${version}",
     "dockerArgs": {
       "HostConfig": {
         "PortBindings": {
