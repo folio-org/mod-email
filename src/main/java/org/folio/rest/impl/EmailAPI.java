@@ -9,7 +9,6 @@ import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.resource.Email;
 import org.folio.services.MailService;
-import org.folio.services.impl.MailServiceImpl;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -35,10 +34,10 @@ public class EmailAPI implements Email {
   private static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SNTP server, the min config is: %s";
 
   private final Logger logger = LoggerFactory.getLogger(EmailAPI.class);
+  private final Vertx vertx;
 
   private String tenantId;
   private HttpClient httpClient;
-  private MailService mailService;
 
   /**
    * Timeout to wait for response
@@ -47,22 +46,18 @@ public class EmailAPI implements Email {
 
   public EmailAPI(final Vertx vertx, final String tenantId) {
     this.tenantId = tenantId;
-    initMailService(vertx);
-    initHttpClient(vertx);
+    this.vertx = vertx;
+    initHttpClient();
   }
 
   /**
    * init the http client to 'mod-config'
    */
-  private void initHttpClient(final Vertx vertx) {
+  private void initHttpClient() {
     HttpClientOptions options = new HttpClientOptions();
     options.setConnectTimeout(lookupTimeout);
     options.setIdleTimeout(lookupTimeout);
     this.httpClient = vertx.createHttpClient(options);
-  }
-
-  private void initMailService(final Vertx vertx) {
-    this.mailService = new MailServiceImpl(vertx);
   }
 
   @Override
@@ -83,9 +78,12 @@ public class EmailAPI implements Email {
           return;
         }
 
-        mailService.sendEmail(configurations, entity).setHandler(sendEmailHandler -> {
-          if (sendEmailHandler.failed()) {
-            String errorMessage = sendEmailHandler.cause().getMessage();
+        MailService mailService = MailService.createProxy(vertx, MAIL_SERVICE_ADDRESS);
+        JsonObject congJson = JsonObject.mapFrom(configurations);
+        JsonObject entityJson = JsonObject.mapFrom(entity);
+        mailService.sendEmail(congJson, entityJson, result -> {
+          if (result.failed()) {
+            String errorMessage = result.cause().getMessage();
             logger.error(errorMessage);
             asyncResultHandler.handle(Future.succeededFuture(createResponse(Status.INTERNAL_SERVER_ERROR, errorMessage)));
             return;

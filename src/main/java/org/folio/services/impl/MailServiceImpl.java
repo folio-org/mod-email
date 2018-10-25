@@ -1,6 +1,8 @@
 package org.folio.services.impl;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
@@ -31,14 +33,16 @@ public class MailServiceImpl implements MailService {
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
 
   private final Logger logger = LoggerFactory.getLogger(MailServiceImpl.class);
-  private Vertx vertx;
+  private final Vertx vertx;
 
   public MailServiceImpl(Vertx vertx) {
     this.vertx = vertx;
   }
 
-  public Future<JsonObject> sendEmail(Configurations configurations, EmailEntity emailEntity) {
-    Future<JsonObject> future = Future.future();
+  @Override
+  public void sendEmail(JsonObject configJson, JsonObject emailEntityJson, Handler<AsyncResult<JsonObject>> resultHandler) {
+    EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
+    Configurations configurations = configJson.mapTo(Configurations.class);
     MailConfig mailConfig = getMailConfig(configurations);
     MailMessage mailMessage = getMailMessage(emailEntity);
     MailClient
@@ -46,13 +50,13 @@ public class MailServiceImpl implements MailService {
       .sendMail(mailMessage, mailHandler -> {
         if (mailHandler.succeeded()) {
           // the logic of sending the result of sending email to `mod-notify`
-          future.complete();
+          JsonObject messageId = JsonObject.mapFrom(mailHandler.result().getMessageID());
+          resultHandler.handle(Future.succeededFuture(messageId));
         } else {
           logger.error(String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage()));
-          future.fail(mailHandler.cause());
+          resultHandler.handle(Future.failedFuture(mailHandler.cause()));
         }
       });
-    return future;
   }
 
   private MailConfig getMailConfig(Configurations configurations) {

@@ -12,12 +12,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import junit.framework.AssertionFailedError;
 import org.apache.http.HttpStatus;
-import org.folio.enums.SmtpEmail;
 import org.folio.rest.RestVerticle;
-import org.folio.rest.jaxrs.model.Config;
-import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -115,10 +111,9 @@ public class EmailAPITest {
   @Test
   public void shouldReturnFailedResultIncorrectSmtpConfig() {
     int mockServerPort = userMockServer.port();
-    Configurations configurations = getConfigurations();
     initModConfigStub(mockServerPort, getConfigurations());
     String okapiUrl = "http://localhost:" + mockServerPort;
-    String expectedResponse = "failed to resolve '%s'";
+    String expectedResponse = "failed to resolve";
 
     Response response = RestAssured.given()
       .port(EmailAPITest.port)
@@ -133,13 +128,7 @@ public class EmailAPITest {
       .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
       .extract().response();
 
-    String smtpHostVal = configurations.getConfigs().stream()
-      .filter(config -> config.getCode().equals(SmtpEmail.EMAIL_SMTP_HOST.name()))
-      .map(Config::getValue)
-      .findFirst()
-      .orElseThrow(AssertionFailedError::new);
-
-    assertTrue(response.asString().contains(String.format(expectedResponse, smtpHostVal)));
+    assertTrue(response.asString().contains(expectedResponse));
   }
 
   @Test

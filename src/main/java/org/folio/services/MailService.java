@@ -1,10 +1,39 @@
 package org.folio.services;
 
-import io.vertx.core.Future;
+import io.vertx.codegen.annotations.ProxyGen;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import org.folio.rest.jaxrs.model.Configurations;
-import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.services.impl.MailServiceImpl;
 
+/**
+ * The service provides the ability to send email using the SMTP server
+ */
+@ProxyGen
 public interface MailService {
-   Future<JsonObject> sendEmail(Configurations configurations, EmailEntity emailEntity);
+
+  static MailService create(Vertx vertx) {
+    return new MailServiceImpl(vertx);
+  }
+
+  /**
+   * Creates proxy instance that helps to push message into the message queue
+   *
+   * @param vertx   vertx instance
+   * @param address host address
+   * @return ValidationEngineService instance
+   */
+  static MailService createProxy(Vertx vertx, String address) {
+    return new MailServiceVertxEBProxy(vertx, address);
+  }
+
+  /**
+   * send a single mail via MailClient
+   *
+   * @param configJson      represents the configuration of a mail service with mail server hostname,
+   *                        port, security options, login options and login/password
+   * @param emailEntityJson MailMessage object containing the mail text, from/to, attachments etc
+   */
+  void sendEmail(JsonObject configJson, JsonObject emailEntityJson, Handler<AsyncResult<JsonObject>> resultHandler);
 }
