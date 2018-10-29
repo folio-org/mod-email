@@ -31,6 +31,8 @@ public class MailServiceImpl implements MailService {
   private static final String ERROR_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message: %s";
   private static final String ERROR_ATTACHMENT_DATA = "Error attaching the `%s` file to email!";
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
+  private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
+  private static final String MESSAGE_RESULT = "result";
 
   private final Logger logger = LoggerFactory.getLogger(MailServiceImpl.class);
   private final Vertx vertx;
@@ -41,22 +43,28 @@ public class MailServiceImpl implements MailService {
 
   @Override
   public void sendEmail(JsonObject configJson, JsonObject emailEntityJson, Handler<AsyncResult<JsonObject>> resultHandler) {
-    EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
-    Configurations configurations = configJson.mapTo(Configurations.class);
-    MailConfig mailConfig = getMailConfig(configurations);
-    MailMessage mailMessage = getMailMessage(emailEntity);
-    MailClient
-      .createShared(vertx, mailConfig)
-      .sendMail(mailMessage, mailHandler -> {
-        if (mailHandler.succeeded()) {
-          // the logic of sending the result of sending email to `mod-notify`
-          JsonObject messageId = JsonObject.mapFrom(mailHandler.result().getMessageID());
-          resultHandler.handle(Future.succeededFuture(messageId));
-        } else {
-          logger.error(String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage()));
-          resultHandler.handle(Future.failedFuture(mailHandler.cause()));
-        }
-      });
+    try {
+      EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
+      Configurations configurations = configJson.mapTo(Configurations.class);
+      MailConfig mailConfig = getMailConfig(configurations);
+      MailMessage mailMessage = getMailMessage(emailEntity);
+      MailClient
+        .createShared(vertx, mailConfig)
+        .sendMail(mailMessage, mailHandler -> {
+          if (mailHandler.succeeded()) {
+            // the logic of sending the result of sending email to `mod-notify`
+            JsonObject message = new JsonObject()
+              .put(MESSAGE_RESULT, String.format(SUCCESS_SEND_EMAIL, String.join(",", mailHandler.result().getRecipients())));
+            resultHandler.handle(Future.succeededFuture(message));
+          } else {
+            logger.error(String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage()));
+            resultHandler.handle(Future.failedFuture(mailHandler.cause()));
+          }
+        });
+    } catch (Exception ex) {
+      logger.error(String.format(ERROR_SENDING_EMAIL, ex.getMessage()));
+      resultHandler.handle(Future.failedFuture(ex.getMessage()));
+    }
   }
 
   private MailConfig getMailConfig(Configurations configurations) {
