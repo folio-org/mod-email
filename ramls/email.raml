@@ -26,21 +26,21 @@ resourceTypes:
 
 /email:
   post:
-   description: Send email notifications
-   body:
-    application/json:
-      schema: emailEntity
-   responses:
+    description: Send email notifications
+    body:
+      application/json:
+        schema: emailEntity
+    responses:
       200:
         description: "success"
         body:
-           text/plain:
-             example: "200 Ok"
+          text/plain:
+            example: "200 Ok"
       400:
         description: "Bad request"
         body:
           text/plain:
-             example: "Bad request"
+            example: "Bad request"
       500:
         description: "Internal server error"
         body:
