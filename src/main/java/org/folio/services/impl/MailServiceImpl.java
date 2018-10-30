@@ -23,8 +23,7 @@ import java.util.stream.Collectors;
 
 import static org.folio.enums.SmtpEmail.EMAIL_SMTP_HOST;
 import static org.folio.enums.SmtpEmail.EMAIL_SMTP_PORT;
-import static org.folio.util.EmailUtils.getEmailConfig;
-import static org.folio.util.EmailUtils.getMessageConfig;
+import static org.folio.util.EmailUtils.*;
 
 public class MailServiceImpl implements MailService {
 
@@ -32,7 +31,6 @@ public class MailServiceImpl implements MailService {
   private static final String ERROR_ATTACHMENT_DATA = "Error attaching the `%s` file to email!";
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
-  private static final String MESSAGE_RESULT = "result";
 
   private final Logger logger = LoggerFactory.getLogger(MailServiceImpl.class);
   private final Vertx vertx;
@@ -51,15 +49,14 @@ public class MailServiceImpl implements MailService {
       MailClient
         .createShared(vertx, mailConfig)
         .sendMail(mailMessage, mailHandler -> {
-          if (mailHandler.succeeded()) {
-            // the logic of sending the result of sending email to `mod-notify`
-            JsonObject message = new JsonObject()
-              .put(MESSAGE_RESULT, String.format(SUCCESS_SEND_EMAIL, String.join(",", mailHandler.result().getRecipients())));
-            resultHandler.handle(Future.succeededFuture(message));
-          } else {
+          if (mailHandler.failed()) {
             logger.error(String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage()));
             resultHandler.handle(Future.failedFuture(mailHandler.cause()));
+            return;
           }
+          // the logic of sending the result of sending email to `mod-notify`
+          JsonObject message = createMessage(mailHandler);
+          resultHandler.handle(Future.succeededFuture(message));
         });
     } catch (Exception ex) {
       logger.error(String.format(ERROR_SENDING_EMAIL, ex.getMessage()));
@@ -117,5 +114,10 @@ public class MailServiceImpl implements MailService {
     // Decode incoming data from JSON
     byte[] decode = Base64.getDecoder().decode(file);
     return Buffer.buffer(decode);
+  }
+
+  private JsonObject createMessage(AsyncResult<MailResult> mailHandler) {
+    String message = String.format(SUCCESS_SEND_EMAIL, String.join(",", mailHandler.result().getRecipients()));
+    return new JsonObject().put(MESSAGE_RESULT, message);
   }
 }

@@ -21,6 +21,7 @@ import static org.folio.enums.SmtpEmail.*;
 public class EmailUtils {
 
   public static final String MAIL_SERVICE_ADDRESS = "mail-service.queue";
+  public static final String MESSAGE_RESULT = "result";
 
   private EmailUtils() {
     //not called

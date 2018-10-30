@@ -29,7 +29,6 @@ public class EmailAPI implements Email {
   private static final String LOOKUP_TIMEOUT = "lookup.timeout";
   private static final String LOOKUP_TIMEOUT_VAL = "1000";
 
-  private static final String SUCCESS_SEND_EMAIL = "The message has been delivered";
   private static final String ERROR_LOOKING_UP_MOD_CONFIG = "Error looking up config at url=%s | Expected status code 200, got %s | error message: %s";
   private static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SNTP server, the min config is: %s";
 
@@ -88,7 +87,8 @@ public class EmailAPI implements Email {
             asyncResultHandler.handle(Future.succeededFuture(createResponse(Status.INTERNAL_SERVER_ERROR, errorMessage)));
             return;
           }
-          asyncResultHandler.handle(Future.succeededFuture(createResponse(Status.OK, SUCCESS_SEND_EMAIL)));
+          String message = result.result().getString(MESSAGE_RESULT);
+          asyncResultHandler.handle(Future.succeededFuture(createResponse(Status.OK, message)));
         });
       });
     } catch (Exception ex) {
