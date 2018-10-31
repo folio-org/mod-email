@@ -1,0 +1,9 @@
+{
+  "module": "SMPT_SERVER",
+  "configName": "locale",
+  "code": "EMAIL_SMTP_HOST",
+  "description": "server smtp host",
+  "default": true,
+  "enabled": true,
+  "value": "smtp.googlemail.com"
+}

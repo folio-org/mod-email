@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "SMTP service configuration",
+  "type": "object",
+  "properties": {
+    "id": {
+      "description":"id",
+      "type": "string"
+    },
+    "module": {
+      "description":"global module name",
+      "type": "string"
+    },
+    "configName": {
+      "description":"description",
+      "type": "string"
+    },
+    "code": {
+      "description":"module name",
+      "type": "string"
+    },
+    "description": {
+      "description":"description",
+      "type": "string"
+    },
+    "default": {
+      "description":"default value",
+      "type": "boolean"
+    },
+    "enabled": {
+      "description":"configuration availability",
+      "type": "boolean"
+    },
+    "value": {
+      "description":"value",
+      "type": "string"
+    },
+    "userId": {
+      "description":"user id",
+      "type": "string"
+    },
+    "metadata": {
+      "description":"metadata",
+      "readonly": true
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "module",
+    "configName"
+  ]
+}

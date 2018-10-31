@@ -1,0 +1,36 @@
+{
+  "title": "Email attachment",
+  "description": "Represent a mail attachment that can be used in a MailMessage",
+  "type": "object",
+  "properties": {
+    "contentType": {
+      "description":"Content-Type",
+      "type": "string"
+    },
+    "name": {
+      "description":"name of the attachment",
+      "type": "string"
+    },
+    "description": {
+      "description":"description field to be used in the attachment",
+      "type": "string"
+    },
+    "data": {
+      "description":"data",
+      "type": "string"
+    },
+    "disposition": {
+      "description":"disposition field to be used in the attachment",
+      "type": "string"
+    },
+    "contentId": {
+      "description":"Content-ID field to be used in the attachment",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contentType",
+    "name",
+    "data"
+  ]
+}

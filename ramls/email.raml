@@ -1,0 +1,48 @@
+#%RAML 1.0
+
+title: Email API
+version: v0.1
+protocols: [ HTTP, HTTPS ]
+baseUri: http://localhost
+
+documentation:
+  - title: mod-email API
+    content: The module should provide possibility of sending email through REST API of module.
+
+types:
+  errors: !include raml-util/schemas/errors.schema
+  emailEntity: !include email_entity.json
+  configurations: !include configurations.json
+
+traits:
+  validate: !include raml-util/traits/validation.raml
+  language: !include raml-util/traits/language.raml
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+
+resourceTypes:
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item: !include raml-util/rtypes/item-collection.raml
+
+/email:
+  post:
+    description: Send email notifications
+    body:
+      application/json:
+        schema: emailEntity
+    responses:
+      200:
+        description: "success"
+        body:
+          text/plain:
+            example: "200 Ok"
+      400:
+        description: "Bad request"
+        body:
+          text/plain:
+            example: "Bad request"
+      500:
+        description: "Internal server error"
+        body:
+          text/plain:
+            example: "Internal server error"
