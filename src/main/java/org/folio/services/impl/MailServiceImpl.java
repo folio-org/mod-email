@@ -81,7 +81,7 @@ public class MailServiceImpl implements MailService {
       .setFrom(getMessageConfig(emailEntity.getFrom()))
       .setTo(getMessageConfig(emailEntity.getTo()))
       .setSubject(getMessageConfig(emailEntity.getHeader()))
-      .setText(getMessageConfig(emailEntity.getBody()))
+      .setHtml(getMessageConfig(emailEntity.getBody()))
       .setAttachment(getMailAttachments(emailEntity.getAttachments()));
   }
 
