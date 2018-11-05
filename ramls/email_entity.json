@@ -21,7 +21,7 @@
       "type": "string"
     },
     "outputFormat": {
-      "description":"format type: html or text",
+      "description":"format type: `text/html` or `text/plain`",
       "type": "string"
     },
     "body": {

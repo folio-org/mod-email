@@ -85,7 +85,7 @@ public class MailServiceImpl implements MailService {
       .setAttachment(getMailAttachments(emailEntity.getAttachments()));
 
     String outputFormat = emailEntity.getOutputFormat();
-    if (StringUtils.isNoneBlank(outputFormat) && outputFormat.equalsIgnoreCase(MediaType.TEXT_HTML)) {
+    if (StringUtils.isNoneBlank(outputFormat) && outputFormat.trim().equalsIgnoreCase(MediaType.TEXT_HTML)) {
       mailMessage.setHtml(getMessageConfig(emailEntity.getBody()));
     } else {
       mailMessage.setText(getMessageConfig(emailEntity.getBody()));
