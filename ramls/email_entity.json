@@ -20,6 +20,10 @@
       "description":"subject of email",
       "type": "string"
     },
+    "outputFormat": {
+      "description":"format type: `text/html` or `text/plain`",
+      "type": "string"
+    },
     "body": {
       "description":"text of email",
       "type": "string"
@@ -36,7 +40,6 @@
   },
   "required": [
     "notificationId",
-    "from",
     "to",
     "header",
     "body"

@@ -16,6 +16,7 @@ import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.services.MailService;
 
+import javax.ws.rs.core.MediaType;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
@@ -77,12 +78,19 @@ public class MailServiceImpl implements MailService {
   }
 
   private MailMessage getMailMessage(EmailEntity emailEntity) {
-    return new MailMessage()
+    MailMessage mailMessage = new MailMessage()
       .setFrom(getMessageConfig(emailEntity.getFrom()))
       .setTo(getMessageConfig(emailEntity.getTo()))
       .setSubject(getMessageConfig(emailEntity.getHeader()))
-      .setHtml(getMessageConfig(emailEntity.getBody()))
       .setAttachment(getMailAttachments(emailEntity.getAttachments()));
+
+    String outputFormat = emailEntity.getOutputFormat();
+    if (StringUtils.isNoneBlank(outputFormat) && outputFormat.trim().equalsIgnoreCase(MediaType.TEXT_HTML)) {
+      mailMessage.setHtml(getMessageConfig(emailEntity.getBody()));
+    } else {
+      mailMessage.setText(getMessageConfig(emailEntity.getBody()));
+    }
+    return mailMessage;
   }
 
   private List<MailAttachment> getMailAttachments(List<Attachment> attachments) {
