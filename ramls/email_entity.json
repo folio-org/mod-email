@@ -20,6 +20,10 @@
       "description":"subject of email",
       "type": "string"
     },
+    "outputFormat": {
+      "description":"format type: html or text",
+      "type": "string"
+    },
     "body": {
       "description":"text of email",
       "type": "string"

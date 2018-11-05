@@ -67,7 +67,7 @@ public class EmailAPITest {
     String okapiTenant = "test_tenant";
     String okapiUrl = "http://localhost:" + mockServerPort;
     String okapiToken = "test_token";
-    String okapiEmailEntity = getEmailEntity(1, "user@user.com", "admin@admin.com", "Reset password", "Text body", "Text message");
+    String okapiEmailEntity = getEmailEntity(1, "user@user.com", "admin@admin.com", "Reset password", "Text body", "Text message", null);
 
     RestAssured.given()
       .port(port)
@@ -98,7 +98,7 @@ public class EmailAPITest {
       .header(new Header(OKAPI_HEADER_TENANT, "tenant"))
       .header(new Header(OKAPI_URL, okapiUrl))
       .header(new Header(OKAPI_HEADER_TOKEN, "token"))
-      .body(getEmailEntity(1, "user@user.com", "admin@admin.com", "Reset password", "body", "message"))
+      .body(getEmailEntity(1, "user@user.com", "admin@admin.com", "Reset password", "body", "message", "text"))
       .when()
       .post(REST_PATH)
       .then()
@@ -121,7 +121,7 @@ public class EmailAPITest {
       .header(new Header(OKAPI_HEADER_TENANT, "tenant"))
       .header(new Header(OKAPI_URL, okapiUrl))
       .header(new Header(OKAPI_HEADER_TOKEN, "token"))
-      .body(getEmailEntity(1, "user@user.com", "admin@admin.com", "Reset password", "body", "message"))
+      .body(getEmailEntity(1, "user@user.com", "admin@admin.com", "Reset password", "body", "message", "text/html"))
       .when()
       .post(REST_PATH)
       .then()
@@ -164,7 +164,7 @@ public class EmailAPITest {
       .header(new Header(OKAPI_HEADER_TENANT, "tenant"))
       .header(new Header(OKAPI_URL, okapiUrl))
       .header(new Header(OKAPI_HEADER_TOKEN, "token"))
-      .body(getEmailEntity(1, null, "admin@admin.com", "Reset password", "body", null))
+      .body(getEmailEntity(1, null, "admin@admin.com", "Reset password", "body", null, null))
       .when()
       .post(REST_PATH)
       .then()

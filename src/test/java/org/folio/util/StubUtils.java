@@ -2,9 +2,10 @@ package org.folio.util;
 
 import com.google.common.collect.Lists;
 import io.vertx.core.json.JsonObject;
+import org.apache.commons.lang3.StringUtils;
+import org.folio.enums.SmtpEmail;
 import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
-import org.folio.enums.SmtpEmail;
 
 import java.util.Random;
 
@@ -12,8 +13,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 public class StubUtils {
 
-  public static String getEmailEntity(int notificationId, String to, String from, String header, String body, String message) {
-    return new JsonObject()
+  public static String getEmailEntity(int notificationId, String to, String from, String header, String body, String message, String outputFormat) {
+    JsonObject entries = new JsonObject();
+    if (StringUtils.isNoneBlank(outputFormat)) {
+      entries.put("outputFormat", outputFormat);
+    }
+    return entries
       .put("notificationId", notificationId)
       .put("to", to)
       .put("from", from)
