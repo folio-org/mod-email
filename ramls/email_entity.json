@@ -40,7 +40,6 @@
   },
   "required": [
     "notificationId",
-    "from",
     "to",
     "header",
     "body"
