@@ -6,7 +6,7 @@
   "properties": {
     "notificationId": {
       "description":"notification identifier",
-      "type": "integer"
+      "type": "string"
     },
     "from": {
       "description":"sender's address",
