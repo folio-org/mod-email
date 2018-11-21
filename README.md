@@ -29,25 +29,25 @@ The module supports the following configuration for SMTP server:
  |  EMAIL_START_TLS_OPTIONS |  TLS security mode for the connection  | NONE, OPTIONAL or REQUIRED     |
  |  EMAIL_USERNAME          |  the username for the login            | 'login'                        |
  |  EMAIL_PASSWORD          |  the password for the login            | 'pasword'                      |
- 
+
 
  Required configuration options:
   * EMAIL_SMTP_HOST
-  * EMAIL_SMTP_PORT 
+  * EMAIL_SMTP_PORT
   * EMAIL_USERNAME
   * EMAIL_PASSWORD
-  
- The main name of the module : "SMPT_SERVER" 
- 
+
+ The main name of the module : "SMPT_SERVER"
+
  Module configuration example:
- 
+
  ```
 curl -X POST \
   http://localhost:9130/configurations/entries \
   -H 'Content-Type: application/json' \
   -H 'X-Okapi-Tenant: <tenant>' \
   -H 'x-okapi-token: <token>' \
-  -d 
+  -d
     '{
       "module": "SMPT_SERVER",
       "configName": "locale",
@@ -58,7 +58,7 @@ curl -X POST \
       "value": "smtp.googlemail.com"
     }'
  ```
- 
+
 ## API
 
 Module provides next API:
@@ -80,9 +80,9 @@ See that it says "BUILD SUCCESS" near the end.
 Build the docker container with:
 
   * docker build -t mod-email .
-   
+
 Test that it runs with:
-  
+
   * docker run -t -i -p 8081:8081 mod-email
 
 ## Installing the module
