@@ -15,7 +15,7 @@
             "email.message.post"
           ],
           "modulePermissions": [
-            "configuration.entries.item.get"
+            "configuration.entries.collection.get"
           ]
         }
       ]
