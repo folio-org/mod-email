@@ -1,6 +1,12 @@
 {
   "id": "${artifactId}-${version}",
   "name": "email",
+  "requires": [
+    {
+    "id": "configuration",
+    "version": "2.0"
+    }
+  ],
   "provides": [
     {
       "id": "email",
@@ -40,7 +46,6 @@
       ]
     }
   ],
-  "requires": [],
   "permissionSets": [
     {
       "permissionName": "email.message.post",
