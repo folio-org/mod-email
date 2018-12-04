@@ -1,5 +1,4 @@
-## 2018-10-15 v0.0.1
- * Initial module setup
+## 2018-10-15 v1.0.0
  * Add the endpoint /email with POST method
  * Implement EmailAPI and MailServiceImpl services
  
