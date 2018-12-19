@@ -11,6 +11,7 @@ Version 2.0. See the file "[LICENSE](LICENSE)" for more information.
 * [Docker](#docker)
 * [Installing the module](#installing-the-module)
 * [Deploying the module](#deploying-the-module)
+* [Additional information](#additional-information)
 
 ## Introduction
 
@@ -29,25 +30,25 @@ The module supports the following configuration for SMTP server:
  |  EMAIL_START_TLS_OPTIONS |  TLS security mode for the connection  | NONE, OPTIONAL or REQUIRED     |
  |  EMAIL_USERNAME          |  the username for the login            | 'login'                        |
  |  EMAIL_PASSWORD          |  the password for the login            | 'pasword'                      |
- 
+
 
  Required configuration options:
   * EMAIL_SMTP_HOST
-  * EMAIL_SMTP_PORT 
+  * EMAIL_SMTP_PORT
   * EMAIL_USERNAME
   * EMAIL_PASSWORD
-  
- The main name of the module : "SMPT_SERVER" 
- 
+
+ The main name of the module : "SMPT_SERVER"
+
  Module configuration example:
- 
+
  ```
 curl -X POST \
   http://localhost:9130/configurations/entries \
   -H 'Content-Type: application/json' \
   -H 'X-Okapi-Tenant: <tenant>' \
   -H 'x-okapi-token: <token>' \
-  -d 
+  -d
     '{
       "module": "SMPT_SERVER",
       "configName": "locale",
@@ -58,7 +59,7 @@ curl -X POST \
       "value": "smtp.googlemail.com"
     }'
  ```
- 
+
 ## API
 
 Module provides next API:
@@ -80,9 +81,9 @@ See that it says "BUILD SUCCESS" near the end.
 Build the docker container with:
 
   * docker build -t mod-email .
-   
+
 Test that it runs with:
-  
+
   * docker run -t -i -p 8081:8081 mod-email
 
 ## Installing the module
@@ -135,7 +136,9 @@ curl -w '\n' -X POST -D -   \
     http://localhost:9130/_/proxy/tenants/<tenant_name>/modules
 ```
 
+## Additional information
+
 ### Issue tracker
 
-See project [MODLOGIN](https://issues.folio.org/browse/MODLOGIN)
+See project [MODEMAIL](https://issues.folio.org/browse/MODEMAIL)
 at the [FOLIO issue tracker](https://dev.folio.org/guidelines/issue-tracker/).
