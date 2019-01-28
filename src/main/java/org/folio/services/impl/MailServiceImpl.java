@@ -46,7 +46,7 @@ public class MailServiceImpl implements MailService {
       EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
       Configurations configurations = configJson.mapTo(Configurations.class);
       MailConfig mailConfig = getMailConfig(configurations);
-      MailMessage mailMessage = getMailMessage(emailEntity);
+      MailMessage mailMessage = getMailMessage(emailEntity, configurations);
       MailClient
         .createShared(vertx, mailConfig)
         .sendMail(mailMessage, mailHandler -> {
@@ -77,9 +77,13 @@ public class MailServiceImpl implements MailService {
       .setPassword(getEmailConfig(configurations, SmtpEmail.EMAIL_PASSWORD, String.class));
   }
 
-  private MailMessage getMailMessage(EmailEntity emailEntity) {
+  private MailMessage getMailMessage(EmailEntity emailEntity, Configurations configurations) {
+    String from = emailEntity.getFrom();
+    if (StringUtils.isBlank(from)) {
+      from = getEmailConfig(configurations, SmtpEmail.EMAIL_FROM, String.class);
+    }
     MailMessage mailMessage = new MailMessage()
-      .setFrom(getMessageConfig(emailEntity.getFrom()))
+      .setFrom(from)
       .setTo(getMessageConfig(emailEntity.getTo()))
       .setSubject(getMessageConfig(emailEntity.getHeader()))
       .setAttachment(getMailAttachments(emailEntity.getAttachments()));
