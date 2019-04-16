@@ -36,6 +36,15 @@ public class StubUtils {
         .withBody(JsonObject.mapFrom(configurations).toString())));
   }
 
+  public static void initFailModConfigStub(int port) {
+    stubFor(get(urlEqualTo("/configurations/entries?query=module==SMPT_SERVER"))
+      .willReturn(aResponse()
+        .withStatus(404)
+        .withHeader("Content-Type", "application/json")
+        .withHeader("x-okapi-token", "x-okapi-token-TEST")
+        .withHeader("x-okapi-url", "http://localhost:" + port)));
+  }
+
   public static Configurations initIncorrectConfigurations() {
     Configurations configurations = new Configurations();
     configurations.setTotalRecords(new Random().nextInt(5));

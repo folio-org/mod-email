@@ -97,6 +97,22 @@ public class EmailAPITest {
   }
 
   @Test
+  public void checkFailResponseFromConfigModule() {
+    int mockServerPort = userMockServer.port();
+    initFailModConfigStub(mockServerPort);
+
+    String okapiUrl = String.format(OKAPI_URL_TEMPLATE, mockServerPort);
+    String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", null);
+
+    getResponse(okapiUrl, okapiEmailEntity)
+      .then()
+      .statusCode(HttpStatus.SC_BAD_REQUEST)
+      .header(OKAPI_HEADER_TENANT, OKAPI_TENANT)
+      .header(OKAPI_URL, okapiUrl)
+      .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN);
+  }
+
+  @Test
   public void shouldReturnFailedResultWithMessageWhenConfigNotFound() {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, initIncorrectConfigurations());

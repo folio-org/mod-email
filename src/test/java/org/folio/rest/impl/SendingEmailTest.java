@@ -103,14 +103,15 @@ public class SendingEmailTest {
     initModConfigStub(mockServerPort, getMockConfigurations());
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String msg = "Test text for the message. Random text: "+ RandomStringUtils.randomAlphabetic(20);
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
       .withTo(recipient)
       .withFrom(sender)
       .withHeader("Reset password")
-      .withBody("Test text for the message")
-      .withOutputFormat(MediaType.TEXT_HTML);
+      .withBody(msg)
+      .withOutputFormat(MediaType.TEXT_PLAIN);
 
     Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), emailEntity)
       .then()
@@ -135,7 +136,7 @@ public class SendingEmailTest {
       .withTo(recipient)
       .withFrom(sender)
       .withHeader("Update password")
-      .withBody("Test text for the message")
+      .withBody("<b>Test</b> text for <br> the message")
       .withOutputFormat(MediaType.TEXT_HTML);
 
     Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), emailEntity)
@@ -161,7 +162,7 @@ public class SendingEmailTest {
       .withTo(recipient)
       .withFrom(sender)
       .withHeader("Test header")
-      .withBody("Test text for the message")
+      .withBody("<p>Test text for the message</p>")
       .withAttachments(Collections.singletonList(
         new Attachment()
           .withContentId(UUID.randomUUID().toString())
