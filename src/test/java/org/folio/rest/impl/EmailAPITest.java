@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.restassured.RestAssured;
 import io.restassured.http.Header;
 import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -34,6 +35,9 @@ public class EmailAPITest {
   private static final String OKAPI_URL = "x-okapi-url";
   private static final String HTTP_PORT = "http.port";
   private static final String REST_PATH = "/email";
+  private static final String OKAPI_TENANT = "test_tenant";
+  private static final String OKAPI_TOKEN = "test_token";
+  private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
 
   private static Vertx vertx;
   private static int port;
@@ -64,46 +68,47 @@ public class EmailAPITest {
   public void checkHeadersInRequestToConfigModule() {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, initIncorrectConfigurations());
-    String okapiTenant = "test_tenant";
-    String okapiUrl = "http://localhost:" + mockServerPort;
-    String okapiToken = "test_token";
-    String okapiEmailEntity = getEmailEntity(1, "user@user.com", "admin@admin.com", "Reset password", "Text body", "Text message", null);
 
-    RestAssured.given()
-      .port(port)
-      .contentType(MediaType.APPLICATION_JSON)
-      .header(new Header(OKAPI_HEADER_TENANT, okapiTenant))
-      .header(new Header(OKAPI_URL, okapiUrl))
-      .header(new Header(OKAPI_HEADER_TOKEN, okapiToken))
-      .body(okapiEmailEntity)
-      .when()
-      .post(REST_PATH)
+    String okapiUrl = String.format(OKAPI_URL_TEMPLATE, mockServerPort);
+    String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", null);
+
+    getResponse(okapiUrl, okapiEmailEntity)
       .then()
       .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-      .header(OKAPI_HEADER_TENANT, okapiTenant)
+      .header(OKAPI_HEADER_TENANT, OKAPI_TENANT)
       .header(OKAPI_URL, okapiUrl)
-      .header(OKAPI_HEADER_TOKEN, okapiToken);
+      .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN);
+  }
+
+  @Test
+  public void checkIncorrectConfigurationFromConfigModule() {
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getInvalidConfigurations());
+
+    String okapiUrl = String.format(OKAPI_URL_TEMPLATE, mockServerPort);
+    String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", null);
+
+    getResponse(okapiUrl, okapiEmailEntity)
+      .then()
+      .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+      .header(OKAPI_HEADER_TENANT, OKAPI_TENANT)
+      .header(OKAPI_URL, okapiUrl)
+      .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN);
   }
 
   @Test
   public void shouldReturnFailedResultWithMessageWhenConfigNotFound() {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, initIncorrectConfigurations());
-    String okapiUrl = "http://localhost:" + mockServerPort;
-    String expectedResponse = "The 'mod-config' module doesn't have a minimum config for SNTP server";
 
-    Response response = RestAssured.given()
-      .port(EmailAPITest.port)
-      .contentType(MediaType.APPLICATION_JSON)
-      .header(new Header(OKAPI_HEADER_TENANT, "tenant"))
-      .header(new Header(OKAPI_URL, okapiUrl))
-      .header(new Header(OKAPI_HEADER_TOKEN, "token"))
-      .body(getEmailEntity(1, "user@user.com", "admin@admin.com", "Reset password", "body", "message", "text"))
-      .when()
-      .post(REST_PATH)
+    String expectedResponse = "The 'mod-config' module doesn't have a minimum config for SMTP server";
+    String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", "text");
+
+    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), okapiEmailEntity)
       .then()
       .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-      .extract().response();
+      .extract()
+      .response();
 
     assertTrue(response.asString().contains(expectedResponse));
   }
@@ -112,65 +117,66 @@ public class EmailAPITest {
   public void shouldReturnFailedResultIncorrectSmtpConfig() {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getConfigurations());
-    String okapiUrl = "http://localhost:" + mockServerPort;
-    String expectedResponse = "failed to resolve";
 
-    Response response = RestAssured.given()
-      .port(EmailAPITest.port)
-      .contentType(MediaType.APPLICATION_JSON)
-      .header(new Header(OKAPI_HEADER_TENANT, "tenant"))
-      .header(new Header(OKAPI_URL, okapiUrl))
-      .header(new Header(OKAPI_HEADER_TOKEN, "token"))
-      .body(getEmailEntity(1, "user@user.com", "admin@admin.com", "Reset password", "body", "message", "text/html"))
-      .when()
-      .post(REST_PATH)
+    String expectedResponse = "failed to resolve";
+    String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", "text/html");
+
+    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), okapiEmailEntity)
       .then()
       .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-      .extract().response();
+      .extract()
+      .response();
 
     assertTrue(response.asString().contains(expectedResponse));
   }
 
   @Test
   public void shouldReturnFailedResultWhenRequestWithoutJson() {
-    int mockServerPort = userMockServer.port();
-    String okapiUrl = "http://localhost:" + mockServerPort;
     String expectedResponse = "The object to be validated must not be null";
 
-    Response response = RestAssured.given()
-      .port(EmailAPITest.port)
-      .contentType(MediaType.APPLICATION_JSON)
-      .header(new Header(OKAPI_HEADER_TENANT, "tenant"))
-      .header(new Header(OKAPI_URL, okapiUrl))
-      .header(new Header(OKAPI_HEADER_TOKEN, "token"))
-      .when()
-      .post(REST_PATH)
+    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, userMockServer.port()))
       .then()
       .statusCode(HttpStatus.SC_BAD_REQUEST)
-      .extract().response();
+      .extract()
+      .response();
 
     assertTrue(response.asString().contains(expectedResponse));
   }
 
   @Test
   public void shouldReturnFailedResultWhenRequestWithIncorrectEmailEntity() {
-    int mockServerPort = userMockServer.port();
-    String okapiUrl = "http://localhost:" + mockServerPort;
     String expectedResponse = "\"message\":\"may not be null\"";
+    String okapiEmailEntity = getEmailEntity(null, "admin@admin.com", null);
 
-    Response response = RestAssured.given()
-      .port(EmailAPITest.port)
-      .contentType(MediaType.APPLICATION_JSON)
-      .header(new Header(OKAPI_HEADER_TENANT, "tenant"))
-      .header(new Header(OKAPI_URL, okapiUrl))
-      .header(new Header(OKAPI_HEADER_TOKEN, "token"))
-      .body(getEmailEntity(1, null, "admin@admin.com", "Reset password", "body", null, null))
-      .when()
-      .post(REST_PATH)
+    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, userMockServer.port()), okapiEmailEntity)
       .then()
       .statusCode(HttpStatus.SC_UNPROCESSABLE_ENTITY)
-      .extract().response();
+      .extract()
+      .response();
 
     assertTrue(response.asString().contains(expectedResponse));
   }
+
+  private Response getResponse(String okapiUrl) {
+    return getRequestSpecification(okapiUrl)
+      .when()
+      .post(REST_PATH);
+  }
+
+  private Response getResponse(String okapiUrl, String body) {
+    return getRequestSpecification(okapiUrl)
+      .body(body)
+      .when()
+      .post(REST_PATH);
+  }
+
+  private RequestSpecification getRequestSpecification(String okapiUrl) {
+    return RestAssured.given()
+      .port(port)
+      .contentType(MediaType.APPLICATION_JSON)
+      .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
+      .header(new Header(OKAPI_URL, okapiUrl))
+      .header(new Header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN));
+  }
+
 }

@@ -30,7 +30,7 @@ public class EmailAPI implements Email {
   private static final String LOOKUP_TIMEOUT_VAL = "1000";
 
   private static final String ERROR_LOOKING_UP_MOD_CONFIG = "Error looking up config at url=%s | Expected status code 200, got %s | error message: %s";
-  private static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SNTP server, the min config is: %s";
+  private static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SMTP server, the min config is: %s";
 
   private final Logger logger = LoggerFactory.getLogger(EmailAPI.class);
   private final Vertx vertx;
@@ -70,7 +70,7 @@ public class EmailAPI implements Email {
           return;
         }
         Configurations configurations = lookupConfigHandler.result().mapTo(Configurations.class);
-        if (checkMinConfigSntpServer(configurations)) {
+        if (checkMinConfigSmtpServer(configurations)) {
           String errorMessage = String.format(ERROR_MIN_REQUIREMENT_MOD_CONFIG, REQUIREMENTS_CONFIG_SET);
           logger.error(errorMessage);
           asyncResultHandler.handle(Future.succeededFuture(createResponse(Status.INTERNAL_SERVER_ERROR, errorMessage)));

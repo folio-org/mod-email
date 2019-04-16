@@ -13,18 +13,17 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 public class StubUtils {
 
-  public static String getEmailEntity(int notificationId, String to, String from, String header, String body, String message, String outputFormat) {
+  public static String getEmailEntity(String to, String from, String outputFormat) {
     JsonObject entries = new JsonObject();
     if (StringUtils.isNoneBlank(outputFormat)) {
       entries.put("outputFormat", outputFormat);
     }
     return entries
-      .put("notificationId", notificationId)
+      .put("notificationId", 1)
       .put("to", to)
       .put("from", from)
-      .put("header", header)
-      .put("body", body)
-      .put("message", message)
+      .put("header", "Reset password")
+      .put("body", "Test message")
       .toString();
   }
 
@@ -50,6 +49,30 @@ public class StubUtils {
       createConfig(SmtpEmail.EMAIL_PASSWORD, "password"),
       createConfig(SmtpEmail.EMAIL_SMTP_HOST, "smtp_host"),
       createConfig(SmtpEmail.EMAIL_SMTP_PORT, "500")
+    ));
+    configurations.setTotalRecords(6);
+    return configurations;
+  }
+
+  public static Configurations getInvalidConfigurations() {
+    Configurations configurations = new Configurations();
+    configurations.setConfigs(Lists.newArrayList(
+      createConfig(SmtpEmail.EMAIL_USERNAME, ""),
+      createConfig(SmtpEmail.EMAIL_PASSWORD, ""),
+      createConfig(SmtpEmail.EMAIL_SMTP_HOST, ""),
+      createConfig(SmtpEmail.EMAIL_SMTP_PORT, "")
+    ));
+    configurations.setTotalRecords(6);
+    return configurations;
+  }
+
+  public static Configurations getMockConfigurations() {
+    Configurations configurations = new Configurations();
+    configurations.setConfigs(Lists.newArrayList(
+      createConfig(SmtpEmail.EMAIL_USERNAME, "user"),
+      createConfig(SmtpEmail.EMAIL_PASSWORD, "password"),
+      createConfig(SmtpEmail.EMAIL_SMTP_HOST, "localhost"),
+      createConfig(SmtpEmail.EMAIL_SMTP_PORT, "2500")
     ));
     configurations.setTotalRecords(6);
     return configurations;
