@@ -30,6 +30,7 @@ The module supports the following configuration for SMTP server:
  |  EMAIL_START_TLS_OPTIONS |  TLS security mode for the connection  | NONE, OPTIONAL or REQUIRED     |
  |  EMAIL_USERNAME          |  the username for the login            | 'login'                        |
  |  EMAIL_PASSWORD          |  the password for the login            | 'pasword'                      |
+ |  EMAIL_FROM              |  'from' property of the email          | noreply@folio.org              |
 
 
  Required configuration options:
@@ -37,6 +38,8 @@ The module supports the following configuration for SMTP server:
   * EMAIL_SMTP_PORT
   * EMAIL_USERNAME
   * EMAIL_PASSWORD
+  * EMAIL_FROM
+  * EMAIL_SMTP_SSL
 
  The main name of the module : "SMPT_SERVER"
 
