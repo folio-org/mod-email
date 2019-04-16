@@ -54,7 +54,7 @@ curl -X POST \
   -d
     '{
       "module": "SMPT_SERVER",
-      "configName": "locale",
+      "configName": "smtp",
       "code": "EMAIL_SMTP_HOST",
       "description": "server smtp host",
       "default": true,
