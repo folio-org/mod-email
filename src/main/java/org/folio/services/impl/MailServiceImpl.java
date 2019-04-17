@@ -8,7 +8,13 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.mail.*;
+import io.vertx.ext.mail.LoginOption;
+import io.vertx.ext.mail.MailAttachment;
+import io.vertx.ext.mail.MailClient;
+import io.vertx.ext.mail.MailConfig;
+import io.vertx.ext.mail.MailMessage;
+import io.vertx.ext.mail.MailResult;
+import io.vertx.ext.mail.StartTLSOptions;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.enums.SmtpEmail;
 import org.folio.rest.jaxrs.model.Attachment;
@@ -106,7 +112,7 @@ public class MailServiceImpl implements MailService {
   private MailAttachment getMailAttachment(Attachment data) {
     if (Objects.isNull(data) || StringUtils.isEmpty(data.getData())) {
       logger.error(INCORRECT_ATTACHMENT_DATA);
-      return new MailAttachment();
+      return new MailAttachment().setData(Buffer.buffer());
     }
     return new MailAttachment()
       .setContentType(data.getContentType())

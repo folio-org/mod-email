@@ -36,8 +36,10 @@ public class EmailUtils {
 
   /**
    * Check the minimum SMTP server configuration
+   *
+   * @return true if the configuration doesn't satisfy the minimum SMTP configs for sending the email
    */
-  public static boolean checkMinConfigSntpServer(Configurations configurations) {
+  public static boolean checkMinConfigSmtpServer(Configurations configurations) {
     Set<String> configSet = configurations.getConfigs().stream()
       .map(val -> val.getCode().toUpperCase())
       .collect(Collectors.toSet());
@@ -50,8 +52,6 @@ public class EmailUtils {
         return PostEmailResponse.respond200WithTextPlain(message);
       case BAD_REQUEST:
         return PostEmailResponse.respond400WithTextPlain(message);
-      case INTERNAL_SERVER_ERROR:
-        return PostEmailResponse.respond500WithTextPlain(message);
       default:
         return PostEmailResponse.respond500WithTextPlain("Internal Server Error");
     }
