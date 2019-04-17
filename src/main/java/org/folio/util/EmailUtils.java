@@ -53,7 +53,7 @@ public class EmailUtils {
       case BAD_REQUEST:
         return PostEmailResponse.respond400WithTextPlain(message);
       default:
-        return PostEmailResponse.respond500WithTextPlain(message);
+        return PostEmailResponse.respond500WithTextPlain("Internal Server Error");
     }
   }
 

@@ -117,7 +117,7 @@ public class EmailAPITest {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, initIncorrectConfigurations());
 
-    String expectedResponse = "The 'mod-config' module doesn't have a minimum config for SMTP server";
+    String expectedResponse = "Internal Server Error";
     String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", "text");
 
     Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), okapiEmailEntity)
@@ -134,7 +134,7 @@ public class EmailAPITest {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getConfigurations());
 
-    String expectedResponse = "failed to resolve";
+    String expectedResponse = "Internal Server Error";
     String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", "text/html");
 
     Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), okapiEmailEntity)
