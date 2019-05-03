@@ -42,6 +42,9 @@ public class MailServiceImpl implements MailService {
   private final Logger logger = LoggerFactory.getLogger(MailServiceImpl.class);
   private final Vertx vertx;
 
+  private MailClient client = null;
+  private MailConfig config = null;
+
   public MailServiceImpl(Vertx vertx) {
     this.vertx = vertx;
   }
@@ -53,8 +56,8 @@ public class MailServiceImpl implements MailService {
       Configurations configurations = configJson.mapTo(Configurations.class);
       MailConfig mailConfig = getMailConfig(configurations);
       MailMessage mailMessage = getMailMessage(emailEntity, configurations);
-      MailClient
-        .createNonShared(vertx, mailConfig)
+
+      defineMailClient(mailConfig)
         .sendMail(mailMessage, mailHandler -> {
           if (mailHandler.failed()) {
             logger.error(String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage()));
@@ -69,6 +72,14 @@ public class MailServiceImpl implements MailService {
       logger.error(String.format(ERROR_SENDING_EMAIL, ex.getMessage()));
       resultHandler.handle(Future.failedFuture(ex.getMessage()));
     }
+  }
+
+  private MailClient defineMailClient(MailConfig mailConfig) {
+    if (Objects.isNull(config) || !config.equals(mailConfig)) {
+      config = mailConfig;
+      client = MailClient.createNonShared(vertx, mailConfig);
+    }
+    return client;
   }
 
   private MailConfig getMailConfig(Configurations configurations) {
