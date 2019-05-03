@@ -37,9 +37,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
 
+import static junit.framework.TestCase.fail;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TOKEN;
-import static org.folio.util.StubUtils.getMockConfigurations;
+import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
+import static org.folio.util.StubUtils.getWiserMockConfigurations;
 import static org.folio.util.StubUtils.initModConfigStub;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -100,10 +102,10 @@ public class SendingEmailTest {
   @Test
   public void sendTextEmail() throws Exception {
     int mockServerPort = userMockServer.port();
-    initModConfigStub(mockServerPort, getMockConfigurations());
+    initModConfigStub(mockServerPort, getWiserMockConfigurations());
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
-    String msg = "Test text for the message. Random text: "+ RandomStringUtils.randomAlphabetic(20);
+    String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -120,14 +122,14 @@ public class SendingEmailTest {
       .response();
     checkResponse(response, recipient);
 
-    WiserMessage wiserMessage = findWiserMessageOnServer(sender);
+    WiserMessage wiserMessage = findMessageOnWiserServer(sender);
     checkMessagesOnWiserServer(wiserMessage, emailEntity);
   }
 
   @Test
   public void sendHtmlEmail() throws Exception {
     int mockServerPort = userMockServer.port();
-    initModConfigStub(mockServerPort, getMockConfigurations());
+    initModConfigStub(mockServerPort, getWiserMockConfigurations());
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
 
@@ -146,14 +148,14 @@ public class SendingEmailTest {
       .response();
     checkResponse(response, recipient);
 
-    WiserMessage wiserMessage = findWiserMessageOnServer(sender);
+    WiserMessage wiserMessage = findMessageOnWiserServer(sender);
     checkMessagesOnWiserServer(wiserMessage, emailEntity);
   }
 
   @Test
   public void sendHtmlEmailAttachments() throws Exception {
     int mockServerPort = userMockServer.port();
-    initModConfigStub(mockServerPort, getMockConfigurations());
+    initModConfigStub(mockServerPort, getWiserMockConfigurations());
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
 
@@ -180,7 +182,7 @@ public class SendingEmailTest {
       .response();
     checkResponse(response, recipient);
 
-    WiserMessage wiserMessage = findWiserMessageOnServer(sender);
+    WiserMessage wiserMessage = findMessageOnWiserServer(sender);
     checkMessagesOnWiserServer(wiserMessage, emailEntity);
 
     String fullMessageInfo = wiserMessage.toString();
@@ -195,7 +197,7 @@ public class SendingEmailTest {
   @Test
   public void sendHtmlEmailAttachmentsWithoutData() throws Exception {
     int mockServerPort = userMockServer.port();
-    initModConfigStub(mockServerPort, getMockConfigurations());
+    initModConfigStub(mockServerPort, getWiserMockConfigurations());
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
 
@@ -222,7 +224,61 @@ public class SendingEmailTest {
       .response();
     checkResponse(response, recipient);
 
-    WiserMessage wiserMessage = findWiserMessageOnServer(sender);
+    WiserMessage wiserMessage = findMessageOnWiserServer(sender);
+    checkMessagesOnWiserServer(wiserMessage, emailEntity);
+  }
+
+  @Test
+  public void checkSendingEmailWithDifferentConfigs() throws Exception {
+    int mockServerPort = userMockServer.port();
+
+    // init incorrect SMTP mock configuration
+    initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
+    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
+    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+
+    EmailEntity emailEntity = new EmailEntity()
+      .withNotificationId("1")
+      .withTo(recipient)
+      .withFrom(sender)
+      .withHeader("Support issue")
+      .withBody("Test text for the message")
+      .withAttachments(Collections.singletonList(
+        new Attachment()
+          .withContentId(UUID.randomUUID().toString())
+          .withContentType("jpg")
+          .withDescription("Description")
+          .withName("image.jpg")
+          .withData("")
+      ))
+      .withOutputFormat(MediaType.TEXT_HTML);
+
+    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), emailEntity)
+      .then()
+      .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+      .extract()
+      .response();
+    assertEquals("Internal Server Error", response.getBody().asString());
+
+    try {
+      findMessageOnWiserServer(sender);
+      fail();
+    } catch (AssertionFailedError ex) {
+      //ignore
+    }
+
+    // init correct SMTP mock configuration
+    initModConfigStub(mockServerPort, getWiserMockConfigurations());
+
+    response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), emailEntity)
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+
+    checkResponse(response, recipient);
+
+    WiserMessage wiserMessage = findMessageOnWiserServer(sender);
     checkMessagesOnWiserServer(wiserMessage, emailEntity);
   }
 
@@ -250,7 +306,7 @@ public class SendingEmailTest {
     assertTrue(isContainsSenderAddress(expectedAddress, address));
   }
 
-  private WiserMessage findWiserMessageOnServer(String sender) {
+  private WiserMessage findMessageOnWiserServer(String sender) {
     return wiser.getMessages().stream()
       .filter(msg -> {
         try {
