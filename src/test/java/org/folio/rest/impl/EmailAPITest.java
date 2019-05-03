@@ -83,7 +83,7 @@ public class EmailAPITest {
   @Test
   public void checkIncorrectConfigurationFromConfigModule() {
     int mockServerPort = userMockServer.port();
-    initModConfigStub(mockServerPort, getInvalidConfigurations());
+    initModConfigStub(mockServerPort, getIncorrectConfigurations());
 
     String okapiUrl = String.format(OKAPI_URL_TEMPLATE, mockServerPort);
     String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", null);

@@ -1,5 +1,6 @@
 package org.folio.util;
 
+import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.google.common.collect.Lists;
 import io.vertx.core.json.JsonObject;
 import org.apache.commons.lang3.StringUtils;
@@ -12,6 +13,12 @@ import java.util.Random;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 public class StubUtils {
+
+  private static final String URL_CONFIGURATIONS_TO_SMPT_SERVER = "/configurations/entries?query=module==SMPT_SERVER";
+
+  private StubUtils() {
+    //not called
+  }
 
   public static String getEmailEntity(String to, String from, String outputFormat) {
     JsonObject entries = new JsonObject();
@@ -28,7 +35,7 @@ public class StubUtils {
   }
 
   public static void initModConfigStub(int port, Configurations configurations) {
-    stubFor(get(urlEqualTo("/configurations/entries?query=module==SMPT_SERVER"))
+    stubFor(createMappingBuilder()
       .willReturn(aResponse()
         .withHeader("Content-Type", "application/json")
         .withHeader("x-okapi-token", "x-okapi-token-TEST")
@@ -37,7 +44,7 @@ public class StubUtils {
   }
 
   public static void initFailModConfigStub(int port) {
-    stubFor(get(urlEqualTo("/configurations/entries?query=module==SMPT_SERVER"))
+    stubFor(createMappingBuilder()
       .willReturn(aResponse()
         .withStatus(404)
         .withHeader("Content-Type", "application/json")
@@ -46,45 +53,37 @@ public class StubUtils {
   }
 
   public static Configurations initIncorrectConfigurations() {
-    Configurations configurations = new Configurations();
-    configurations.setTotalRecords(new Random().nextInt(5));
-    return configurations;
+    return new Configurations().withTotalRecords(new Random().nextInt(5));
   }
 
   public static Configurations getConfigurations() {
-    Configurations configurations = new Configurations();
-    configurations.setConfigs(Lists.newArrayList(
-      createConfig(SmtpEmail.EMAIL_USERNAME, "user"),
-      createConfig(SmtpEmail.EMAIL_PASSWORD, "password"),
-      createConfig(SmtpEmail.EMAIL_SMTP_HOST, "smtp_host"),
-      createConfig(SmtpEmail.EMAIL_SMTP_PORT, "500")
-    ));
-    configurations.setTotalRecords(6);
-    return configurations;
+    return createConfigurations("user", "password", "smtp_host", "500");
   }
 
-  public static Configurations getInvalidConfigurations() {
-    Configurations configurations = new Configurations();
-    configurations.setConfigs(Lists.newArrayList(
-      createConfig(SmtpEmail.EMAIL_USERNAME, ""),
-      createConfig(SmtpEmail.EMAIL_PASSWORD, ""),
-      createConfig(SmtpEmail.EMAIL_SMTP_HOST, ""),
-      createConfig(SmtpEmail.EMAIL_SMTP_PORT, "")
-    ));
-    configurations.setTotalRecords(6);
-    return configurations;
+  public static Configurations getIncorrectConfigurations() {
+    return createConfigurations("", "", "", "");
   }
 
-  public static Configurations getMockConfigurations() {
-    Configurations configurations = new Configurations();
-    configurations.setConfigs(Lists.newArrayList(
-      createConfig(SmtpEmail.EMAIL_USERNAME, "user"),
-      createConfig(SmtpEmail.EMAIL_PASSWORD, "password"),
-      createConfig(SmtpEmail.EMAIL_SMTP_HOST, "localhost"),
-      createConfig(SmtpEmail.EMAIL_SMTP_PORT, "2500")
-    ));
-    configurations.setTotalRecords(6);
-    return configurations;
+  public static Configurations getWiserMockConfigurations() {
+    return createConfigurations("user", "password", "localhost", "2500");
+  }
+
+  public static Configurations getIncorrectWiserMockConfigurations() {
+    String incorrectPort = "555";
+    return createConfigurations("user", "pws", "localhost", incorrectPort);
+  }
+
+  private static MappingBuilder createMappingBuilder() {
+    return get(urlEqualTo(URL_CONFIGURATIONS_TO_SMPT_SERVER));
+  }
+
+  private static Configurations createConfigurations(String user, String password, String host, String port) {
+    return new Configurations().withConfigs(Lists.newArrayList(
+      createConfig(SmtpEmail.EMAIL_USERNAME, user),
+      createConfig(SmtpEmail.EMAIL_PASSWORD, password),
+      createConfig(SmtpEmail.EMAIL_SMTP_HOST, host),
+      createConfig(SmtpEmail.EMAIL_SMTP_PORT, port)
+    )).withTotalRecords(6);
   }
 
   private static Config createConfig(SmtpEmail smtpEmail, String value) {

@@ -54,7 +54,7 @@ public class MailServiceImpl implements MailService {
       MailConfig mailConfig = getMailConfig(configurations);
       MailMessage mailMessage = getMailMessage(emailEntity, configurations);
       MailClient
-        .createShared(vertx, mailConfig)
+        .createNonShared(vertx, mailConfig)
         .sendMail(mailMessage, mailHandler -> {
           if (mailHandler.failed()) {
             logger.error(String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage()));
