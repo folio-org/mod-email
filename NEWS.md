@@ -1,3 +1,9 @@
+## 2019-05-10 v1.2.0
+ * Module descriptor - remove _tenant interface (MODEMAIL-13)
+ * Increase test coverage for mod-email (MODEMAIL-12)
+ * Add 'EMAIL_FROM' config description to README
+ * The 'Vertx.MailClient' configuration for sending email should not cache the first configuration for the SMTP server (MODEMAIL-14)
+ 
 ## 2019-03-14 v1.1.0
  * Fix security vulnerabilities reported in jackson-databind (MODEMAIL-5)
  * Setting 'from' property for sending email
