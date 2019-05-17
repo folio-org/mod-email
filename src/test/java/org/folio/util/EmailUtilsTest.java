@@ -4,7 +4,7 @@ import org.folio.enums.SmtpEmail;
 import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.resource.Email;
-import org.folio.services.MailService;
+import org.folio.services.email.MailService;
 import org.junit.Test;
 
 import javax.ws.rs.core.Response.Status;
@@ -58,5 +58,4 @@ public class EmailUtilsTest {
       fail();
     }
   }
-
 }

@@ -4,6 +4,10 @@
   "title": "Email Entity Schema",
   "type": "object",
   "properties": {
+    "id": {
+      "description":"unique identifier of entity",
+      "type": "string"
+    },
     "notificationId": {
       "description":"notification identifier",
       "type": "string"
@@ -27,6 +31,16 @@
     "body": {
       "description":"text of email",
       "type": "string"
+    },
+    "status": {
+      "description":"status of email",
+      "type": "string",
+      "default": "NEW"
+    },
+    "date ": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The date the message was created"
     },
     "attachments": {
       "description":"attachment list",

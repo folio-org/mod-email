@@ -1,0 +1,14 @@
+{
+  "emails": [
+    {
+      "id":"1",
+      "notificationId": "1",
+      "from": "from@from.com",
+      "to": "to@to.com",
+      "header": "subject of email",
+      "outputFormat": "format type: `text/html` or `text/plain`",
+      "body": "text of email",
+    }
+  ],
+  "totalRecords": 1
+}

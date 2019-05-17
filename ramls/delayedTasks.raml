@@ -1,0 +1,43 @@
+#%RAML 1.0
+
+title: Email API
+version: v0.1
+protocols: [ HTTP, HTTPS ]
+baseUri: http://localhost
+
+documentation:
+  - title: mod-email API
+    content: The module should provide possibility of sending email through REST API of module.
+
+types:
+  errors: !include raml-util/schemas/errors.schema
+
+/delayedTask:
+  /sendBatchEmails:
+    get:
+      description: Send batch emails
+      responses:
+        200:
+          description: "success"
+          body:
+            text/plain:
+              example: "200 Ok"
+        500:
+          description: "Internal server error"
+          body:
+            text/plain:
+              example: "Internal server error"
+  /expiredMessages:
+    delete:
+      description: delete expired email messges
+      responses:
+        200:
+          description: "success"
+          body:
+            text/plain:
+              example: "200 Ok"
+        500:
+          description: "Internal server error"
+          body:
+            text/plain:
+              example: "Internal server error"

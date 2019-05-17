@@ -34,10 +34,12 @@ public class EmailAPITest {
 
   private static final String OKAPI_URL = "x-okapi-url";
   private static final String HTTP_PORT = "http.port";
-  private static final String REST_PATH = "/email";
+  private static final String REST_SEND_EMAIL = "/email";
   private static final String OKAPI_TENANT = "test_tenant";
   private static final String OKAPI_TOKEN = "test_token";
   private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
+  private static final String SENDER_EMAIL = "admin@admin.com";
+  private static final String RECIPIENT_EMAIL = "user@user.com";
 
   private static Vertx vertx;
   private static int port;
@@ -70,7 +72,7 @@ public class EmailAPITest {
     initModConfigStub(mockServerPort, initIncorrectConfigurations());
 
     String okapiUrl = String.format(OKAPI_URL_TEMPLATE, mockServerPort);
-    String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", null);
+    String okapiEmailEntity = getEmailEntity(RECIPIENT_EMAIL, SENDER_EMAIL, null);
 
     getResponse(okapiUrl, okapiEmailEntity)
       .then()
@@ -86,7 +88,7 @@ public class EmailAPITest {
     initModConfigStub(mockServerPort, getIncorrectConfigurations());
 
     String okapiUrl = String.format(OKAPI_URL_TEMPLATE, mockServerPort);
-    String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", null);
+    String okapiEmailEntity = getEmailEntity(RECIPIENT_EMAIL, SENDER_EMAIL, null);
 
     getResponse(okapiUrl, okapiEmailEntity)
       .then()
@@ -102,7 +104,7 @@ public class EmailAPITest {
     initFailModConfigStub(mockServerPort);
 
     String okapiUrl = String.format(OKAPI_URL_TEMPLATE, mockServerPort);
-    String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", null);
+    String okapiEmailEntity = getEmailEntity(RECIPIENT_EMAIL, SENDER_EMAIL, null);
 
     getResponse(okapiUrl, okapiEmailEntity)
       .then()
@@ -118,7 +120,7 @@ public class EmailAPITest {
     initModConfigStub(mockServerPort, initIncorrectConfigurations());
 
     String expectedResponse = "Internal Server Error";
-    String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", "text");
+    String okapiEmailEntity = getEmailEntity(RECIPIENT_EMAIL, SENDER_EMAIL, "text");
 
     Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), okapiEmailEntity)
       .then()
@@ -135,7 +137,7 @@ public class EmailAPITest {
     initModConfigStub(mockServerPort, getConfigurations());
 
     String expectedResponse = "Internal Server Error";
-    String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", "text/html");
+    String okapiEmailEntity = getEmailEntity(RECIPIENT_EMAIL, SENDER_EMAIL, "text/html");
 
     Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), okapiEmailEntity)
       .then()
@@ -162,7 +164,7 @@ public class EmailAPITest {
   @Test
   public void shouldReturnFailedResultWhenRequestWithIncorrectEmailEntity() {
     String expectedResponse = "\"message\":\"may not be null\"";
-    String okapiEmailEntity = getEmailEntity(null, "admin@admin.com", null);
+    String okapiEmailEntity = getEmailEntity(null, SENDER_EMAIL, null);
 
     Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, userMockServer.port()), okapiEmailEntity)
       .then()
@@ -176,14 +178,14 @@ public class EmailAPITest {
   private Response getResponse(String okapiUrl) {
     return getRequestSpecification(okapiUrl)
       .when()
-      .post(REST_PATH);
+      .post(REST_SEND_EMAIL);
   }
 
   private Response getResponse(String okapiUrl, String body) {
     return getRequestSpecification(okapiUrl)
       .body(body)
       .when()
-      .post(REST_PATH);
+      .post(REST_SEND_EMAIL);
   }
 
   private RequestSpecification getRequestSpecification(String okapiUrl) {
@@ -194,5 +196,4 @@ public class EmailAPITest {
       .header(new Header(OKAPI_URL, okapiUrl))
       .header(new Header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN));
   }
-
 }

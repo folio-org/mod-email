@@ -1,5 +1,7 @@
 package org.folio.enums;
 
+import org.folio.rest.jaxrs.model.Config;
+
 /**
  * Represents a mail configuration with mail server hostname,
  * port, security options, login options and login/password
@@ -13,5 +15,9 @@ public enum SmtpEmail {
   EMAIL_START_TLS_OPTIONS,
   EMAIL_USERNAME,
   EMAIL_PASSWORD,
-  EMAIL_FROM
+  EMAIL_FROM;
+
+  public static boolean isContainsEmailFrom(Config from) {
+    return EMAIL_FROM.name().equalsIgnoreCase(from.getCode());
+  }
 }

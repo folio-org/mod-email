@@ -1,8 +1,7 @@
-package org.folio.services.impl;
+package org.folio.services.email;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
@@ -20,7 +19,6 @@ import org.folio.enums.SmtpEmail;
 import org.folio.rest.jaxrs.model.Attachment;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
-import org.folio.services.MailService;
 
 import javax.ws.rs.core.MediaType;
 import java.util.Base64;
@@ -32,57 +30,45 @@ import static org.folio.enums.SmtpEmail.EMAIL_SMTP_HOST;
 import static org.folio.enums.SmtpEmail.EMAIL_SMTP_PORT;
 import static org.folio.util.EmailUtils.*;
 
-public class MailServiceImpl implements MailService {
+public class AbstractMailService {
 
-  private static final String ERROR_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message: %s";
+  protected static final Logger logger = LoggerFactory.getLogger(AbstractMailService.class);
+
+  protected static final String ERROR_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message: %s";
+  protected static final String ERROR_UPDATING_MAIL_CLIENT_CONFIG = "Error creating and updating the MailClient configuration | message: %s";
+  protected static final String SUCCESS_SEND_BATCH_EMAILS = "All messages have been delivered";
   private static final String ERROR_ATTACHMENT_DATA = "Error attaching the `%s` file to email!";
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
 
-  private final Logger logger = LoggerFactory.getLogger(MailServiceImpl.class);
   private final Vertx vertx;
 
-  private MailClient client = null;
+  protected MailClient client = null;
   private MailConfig config = null;
 
-  public MailServiceImpl(Vertx vertx) {
+  public AbstractMailService(Vertx vertx) {
     this.vertx = vertx;
   }
 
-  @Override
-  public void sendEmail(JsonObject configJson, JsonObject emailEntityJson, Handler<AsyncResult<JsonObject>> resultHandler) {
-    try {
-      EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
-      Configurations configurations = configJson.mapTo(Configurations.class);
-      MailConfig mailConfig = getMailConfig(configurations);
-      MailMessage mailMessage = getMailMessage(emailEntity, configurations);
-
-      defineMailClient(mailConfig)
-        .sendMail(mailMessage, mailHandler -> {
-          if (mailHandler.failed()) {
-            logger.error(String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage()));
-            resultHandler.handle(Future.failedFuture(mailHandler.cause()));
-            return;
-          }
-          // the logic of sending the result of sending email to `mod-notify`
-          JsonObject message = createMessage(mailHandler);
-          resultHandler.handle(Future.succeededFuture(message));
-        });
-    } catch (Exception ex) {
-      logger.error(String.format(ERROR_SENDING_EMAIL, ex.getMessage()));
-      resultHandler.handle(Future.failedFuture(ex.getMessage()));
-    }
+  protected MailClient defineMailClient(MailConfig mailConfig) {
+    return (Objects.isNull(config) || !config.equals(mailConfig))
+      ? createMailClient(mailConfig)
+      : client;
   }
 
-  private MailClient defineMailClient(MailConfig mailConfig) {
-    if (Objects.isNull(config) || !config.equals(mailConfig)) {
-      config = mailConfig;
-      client = MailClient.createNonShared(vertx, mailConfig);
+  private MailClient createMailClient(MailConfig mailConfig) {
+    if (client != null) {
+      logger.debug("The MailClient has been closed");
+      client.close();
     }
+
+    config = mailConfig;
+    client = MailClient.createShared(vertx, mailConfig);
+    logger.debug("A new MailClient has been created");
     return client;
   }
 
-  private MailConfig getMailConfig(Configurations configurations) {
+  protected MailConfig createMailConfig(Configurations configurations) {
     return new MailConfig()
       .setHostname(getEmailConfig(configurations, EMAIL_SMTP_HOST, String.class))
       .setPort(getEmailConfig(configurations, EMAIL_SMTP_PORT, Integer.class))
@@ -94,33 +80,36 @@ public class MailServiceImpl implements MailService {
       .setPassword(getEmailConfig(configurations, SmtpEmail.EMAIL_PASSWORD, String.class));
   }
 
-  private MailMessage getMailMessage(EmailEntity emailEntity, Configurations configurations) {
+  protected MailMessage buildMailMessage(EmailEntity emailEntity, Configurations configurations) {
     String from = emailEntity.getFrom();
     if (StringUtils.isBlank(from)) {
-      from = getEmailConfig(configurations, SmtpEmail.EMAIL_FROM, String.class);
+      emailEntity.setFrom(getEmailConfig(configurations, SmtpEmail.EMAIL_FROM, String.class));
     }
-    MailMessage mailMessage = new MailMessage()
-      .setFrom(from)
-      .setTo(getMessageConfig(emailEntity.getTo()))
-      .setSubject(getMessageConfig(emailEntity.getHeader()))
-      .setAttachment(getMailAttachments(emailEntity.getAttachments()));
+    return buildMailMessage(emailEntity);
+  }
 
+  protected MailMessage buildMailMessage(EmailEntity emailEntity) {
+    MailMessage mailMessage = new MailMessage();
     String outputFormat = emailEntity.getOutputFormat();
     if (StringUtils.isNoneBlank(outputFormat) && outputFormat.trim().equalsIgnoreCase(MediaType.TEXT_HTML)) {
       mailMessage.setHtml(getMessageConfig(emailEntity.getBody()));
     } else {
       mailMessage.setText(getMessageConfig(emailEntity.getBody()));
     }
-    return mailMessage;
+    return mailMessage
+      .setFrom(getMessageConfig(emailEntity.getFrom()))
+      .setTo(getMessageConfig(emailEntity.getTo()))
+      .setSubject(getMessageConfig(emailEntity.getHeader()))
+      .setAttachment(fillMailAttachments(emailEntity.getAttachments()));
   }
 
-  private List<MailAttachment> getMailAttachments(List<Attachment> attachments) {
+  private List<MailAttachment> fillMailAttachments(List<Attachment> attachments) {
     return attachments.stream()
-      .map(this::getMailAttachment)
+      .map(this::fillMailAttachment)
       .collect(Collectors.toList());
   }
 
-  private MailAttachment getMailAttachment(Attachment data) {
+  private MailAttachment fillMailAttachment(Attachment data) {
     if (Objects.isNull(data) || StringUtils.isEmpty(data.getData())) {
       logger.error(INCORRECT_ATTACHMENT_DATA);
       return new MailAttachment().setData(Buffer.buffer());
@@ -131,10 +120,10 @@ public class MailServiceImpl implements MailService {
       .setDescription(data.getDescription())
       .setDisposition(data.getDisposition())
       .setContentId(data.getContentId())
-      .setData(getAttachmentData(data));
+      .setData(fillAttachmentData(data));
   }
 
-  private Buffer getAttachmentData(Attachment data) {
+  private Buffer fillAttachmentData(Attachment data) {
     String file = data.getData();
     if (StringUtils.isEmpty(file)) {
       logger.error(String.format(ERROR_ATTACHMENT_DATA, data.getName()));
@@ -145,8 +134,21 @@ public class MailServiceImpl implements MailService {
     return Buffer.buffer(decode);
   }
 
-  private JsonObject createMessage(AsyncResult<MailResult> mailHandler) {
+  protected JsonObject createSuccessMessage(AsyncResult<MailResult> mailHandler) {
     String message = String.format(SUCCESS_SEND_EMAIL, String.join(",", mailHandler.result().getRecipients()));
     return new JsonObject().put(MESSAGE_RESULT, message);
+  }
+
+  protected Future sendMessage(MailClient mailClient, MailMessage mailMessage) {
+    Future future = Future.future();
+    mailClient.sendMail(mailMessage, mailHandler -> {
+      if (mailHandler.failed()) {
+        logger.error(String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage()));
+        future.fail(mailHandler.cause());
+        return;
+      }
+      future.complete();
+    });
+    return future;
   }
 }

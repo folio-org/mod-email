@@ -19,6 +19,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.HttpStatus;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.jaxrs.model.Attachment;
+import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
@@ -40,9 +41,7 @@ import java.util.UUID;
 import static junit.framework.TestCase.fail;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TOKEN;
-import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
-import static org.folio.util.StubUtils.getWiserMockConfigurations;
-import static org.folio.util.StubUtils.initModConfigStub;
+import static org.folio.util.StubUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -53,10 +52,12 @@ public class SendingEmailTest {
 
   private static final String OKAPI_URL = "x-okapi-url";
   private static final String HTTP_PORT = "http.port";
-  private static final String REST_PATH = "/email";
+  private static final String REST_SEND_EMAIL = "/email";
   private static final String OKAPI_TENANT = "test_tenant";
   private static final String OKAPI_TOKEN = "test_token";
   private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
+  private static final String DESCRIPTION_VAL = "Description";
+  private static final String IMAGE_NAME = "image.jpg";
 
   private static final String ADDRESS_TEMPLATE = "%s@localhost";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
@@ -100,7 +101,7 @@ public class SendingEmailTest {
   }
 
   @Test
-  public void sendTextEmail() throws Exception {
+  public void sendTextEmail() throws MessagingException {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
@@ -127,7 +128,7 @@ public class SendingEmailTest {
   }
 
   @Test
-  public void sendHtmlEmail() throws Exception {
+  public void sendHtmlEmail() throws MessagingException {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
@@ -153,7 +154,34 @@ public class SendingEmailTest {
   }
 
   @Test
-  public void sendHtmlEmailAttachments() throws Exception {
+  public void sendHtmlEmailWithFullConfig() throws MessagingException {
+    int mockServerPort = userMockServer.port();
+    Configurations configurations = getFullWiserMockConfigurations();
+    initModConfigStub(mockServerPort, configurations);
+
+    String sender = DEFAULT_SENDER;
+    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+
+    EmailEntity emailEntity = new EmailEntity()
+      .withNotificationId("1")
+      .withTo(recipient)
+      .withHeader("Update password")
+      .withBody("<b>Test</b> text for <br> the message")
+      .withOutputFormat(MediaType.TEXT_HTML);
+
+    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), emailEntity)
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+    checkResponse(response, recipient);
+
+    WiserMessage wiserMessage = findMessageOnWiserServer(sender);
+    checkMessagesOnWiserServer(wiserMessage, emailEntity.withFrom(sender));
+  }
+
+  @Test
+  public void sendHtmlEmailAttachments() throws MessagingException {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
@@ -169,8 +197,8 @@ public class SendingEmailTest {
         new Attachment()
           .withContentId(UUID.randomUUID().toString())
           .withContentType("jpg")
-          .withDescription("Description")
-          .withName("image.jpg")
+          .withDescription(DESCRIPTION_VAL)
+          .withName(IMAGE_NAME)
           .withData("Data")
       ))
       .withOutputFormat(MediaType.TEXT_HTML);
@@ -195,7 +223,7 @@ public class SendingEmailTest {
   }
 
   @Test
-  public void sendHtmlEmailAttachmentsWithoutData() throws Exception {
+  public void sendHtmlEmailAttachmentsWithoutData() throws MessagingException {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
@@ -211,8 +239,8 @@ public class SendingEmailTest {
         new Attachment()
           .withContentId(UUID.randomUUID().toString())
           .withContentType("jpg")
-          .withDescription("Description")
-          .withName("image.jpg")
+          .withDescription(DESCRIPTION_VAL)
+          .withName(IMAGE_NAME)
           .withData("")
       ))
       .withOutputFormat(MediaType.TEXT_HTML);
@@ -229,7 +257,7 @@ public class SendingEmailTest {
   }
 
   @Test
-  public void checkSendingEmailWithDifferentConfigs() throws Exception {
+  public void checkSendingEmailWithDifferentConfigs() throws MessagingException {
     int mockServerPort = userMockServer.port();
 
     // init incorrect SMTP mock configuration
@@ -247,8 +275,8 @@ public class SendingEmailTest {
         new Attachment()
           .withContentId(UUID.randomUUID().toString())
           .withContentType("jpg")
-          .withDescription("Description")
-          .withName("image.jpg")
+          .withDescription(DESCRIPTION_VAL)
+          .withName(IMAGE_NAME)
           .withData("")
       ))
       .withOutputFormat(MediaType.TEXT_HTML);
@@ -339,6 +367,6 @@ public class SendingEmailTest {
       .header(new Header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN))
       .body(JsonObject.mapFrom(emailEntity).toString())
       .when()
-      .post(REST_PATH);
+      .post(REST_SEND_EMAIL);
   }
 }
