@@ -1,6 +1,6 @@
 #%RAML 1.0
 
-title: Email API
+title: Batch Emails API
 version: v0.1
 protocols: [ HTTP, HTTPS ]
 baseUri: http://localhost
@@ -21,7 +21,7 @@ traits:
   searchable: !include raml-util/traits/searchable.raml
 
 resourceTypes:
-    collection-item-get: !include raml-util/rtypes/item-collection-get.raml
+  collection-item-get: !include raml-util/rtypes/item-collection-get.raml
 
 /batchEmails:
   type:
@@ -31,7 +31,7 @@ resourceTypes:
       exampleCollection: !include examples/batch_emails.sample
       exampleItem: !include examples/email.sample
   post:
-    description: Send email notifications
+    description: "Send email notifications"
     is: [validate]
     body:
       application/json:
@@ -50,7 +50,7 @@ resourceTypes:
           text/plain:
             example: "Internal server error"
   get:
-    description: Get emails
+    description: "Get emails"
     is: [
       searchable: {description: "searchable using CQL", example: "status==OPEN"},
       pageable
