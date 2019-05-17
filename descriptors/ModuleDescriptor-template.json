@@ -3,8 +3,8 @@
   "name": "email",
   "requires": [
     {
-    "id": "configuration",
-    "version": "2.0"
+      "id": "configuration",
+      "version": "2.0"
     }
   ],
   "provides": [
@@ -23,6 +23,42 @@
           "modulePermissions": [
             "configuration.entries.collection.get"
           ]
+        }
+      ]
+    },
+    {
+      "id": "trigger",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/delayedTask/sendBatchEmails"
+        }
+      ]
+    },
+    {
+      "id": "batchEmails",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": [
+            "POST"
+          ],
+          "pathPattern": "/batchEmails",
+          "permissionsRequired": [
+            "email.message.post"
+          ],
+          "modulePermissions": [
+            "configuration.entries.collection.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/batchEmails"
         }
       ]
     },
@@ -51,7 +87,9 @@
       "interfaceType": "system",
       "handlers": [
         {
-          "methods": [ "GET" ],
+          "methods": [
+            "GET"
+          ],
           "pathPattern": "/delayedTask/sendBatchEmails",
           "unit": "minute",
           "delay": "1"
