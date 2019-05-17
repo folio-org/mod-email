@@ -50,8 +50,8 @@ resourceTypes:
           text/plain:
             example: "Internal server error"
   get:
+    description: Get emails
     is: [
       searchable: {description: "searchable using CQL", example: "status==OPEN"},
       pageable
     ]
-    description: Get emails

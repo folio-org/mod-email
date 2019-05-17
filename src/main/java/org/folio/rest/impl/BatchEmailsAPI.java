@@ -13,7 +13,6 @@ import org.folio.enums.SmtpEmail;
 import org.folio.rest.impl.base.AbstractEmail;
 import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
-import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntries;
 import org.folio.rest.jaxrs.resource.BatchEmails;
 import org.folio.services.email.MailService;
@@ -23,10 +22,8 @@ import javax.ws.rs.core.Response;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static org.folio.util.EmailUtils.*;
 
@@ -109,19 +106,16 @@ public class BatchEmailsAPI extends AbstractEmail implements BatchEmails {
   private JsonObject fillEntriesAndConvertToJson(EmailEntries entries, Configurations configurations) {
     String senderAddress = getSenderFromConfigurations(configurations);
     Timestamp now = Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC));
-    List<EmailEntity> emailEntityList = entries.getEmailEntity().stream()
-      .peek(entity ->
-        {
-          entity.setId(UUID.randomUUID().toString());
-          entity.setDate(now);
-          if (StringUtils.isBlank(entity.getFrom())) {
-            entity.setFrom(senderAddress);
-          }
-        }
-      ).collect(Collectors.toList());
+    entries.getEmailEntity().forEach(entity ->
+    {
+      entity.setId(UUID.randomUUID().toString());
+      entity.setDate(now);
+      if (StringUtils.isBlank(entity.getFrom())) {
+        entity.setFrom(senderAddress);
+      }
+    });
     return JsonObject.mapFrom(entries
-      .withEmailEntity(emailEntityList)
-      .withTotalRecords(emailEntityList.size()));
+      .withTotalRecords(entries.getEmailEntity().size()));
   }
 
   private String getSenderFromConfigurations(Configurations configurations) {
