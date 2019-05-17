@@ -51,7 +51,7 @@
       "interfaceType": "system",
       "handlers": [
         {
-          "methods": [ "POST" ],
+          "methods": [ "GET" ],
           "pathPattern": "/delayedTask/sendBatchEmails",
           "unit": "minute",
           "delay": "1"
