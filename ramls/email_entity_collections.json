@@ -6,6 +6,7 @@
     "emailEntity": {
       "id": "email",
       "type": "array",
+      "description":"Email Entity",
       "items": {
         "type": "object",
         "$ref": "email_entity.json"
