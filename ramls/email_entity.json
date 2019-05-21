@@ -37,7 +37,7 @@
       "type": "string",
       "default": "NEW"
     },
-    "date ": {
+    "date": {
       "type": "string",
       "format": "date-time",
       "description": "The date the message was created"

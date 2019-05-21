@@ -50,4 +50,10 @@ public interface StorageService {
    */
   void updateStatusEmailEntries(String tenantId, JsonObject emailEntriesJson, String status,
                                 Handler<AsyncResult<JsonObject>> resultHandler);
+
+  /**
+   * Delete MailMessages by expiration date
+   */
+  void deleteEmailEntriesByExpirationDate(String tenantId, String expirationDate,
+                                          Handler<AsyncResult<JsonObject>> resultHandler);
 }

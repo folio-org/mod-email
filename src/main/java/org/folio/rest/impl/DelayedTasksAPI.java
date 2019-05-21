@@ -8,6 +8,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.apache.commons.lang3.StringUtils;
 import org.folio.enums.SendingStatus;
 import org.folio.exceptions.EmptyListOfEntriesException;
 import org.folio.rest.jaxrs.model.EmailEntries;
@@ -18,6 +19,7 @@ import org.folio.services.storage.StorageService;
 import javax.ws.rs.core.Response;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
@@ -28,11 +30,13 @@ public class DelayedTasksAPI implements DelayedTask {
 
   private static final Logger logger = LoggerFactory.getLogger(DelayedTasksAPI.class);
   private static final String SUCCESS_MESSAGE = "Success";
+  private static final String ERROR_MESSAGE = "Invalid date value, the parameter must be in the format: yyyy-MM-dd";
   private static final String STATUS_TYPE = "status=%S";
   private static final int BATCH_SIZE = 50;
   private static final int OFFSET_VAL = 0;
   private static final String STATUS_VAL = "status";
   private static final String INTERNAL_SERVER_ERROR = "Internal server error";
+  private static final Pattern DATE_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
 
   private final String tenantId;
   private final MailService mailService;
@@ -64,15 +68,45 @@ public class DelayedTasksAPI implements DelayedTask {
   }
 
   @Override
-  public void deleteDelayedTaskExpiredMessages(Map<String, String> okapiHeaders,
-                                               Handler<AsyncResult<Response>> asyncResultHandler, Context context) {
+  public void deleteDelayedTaskExpiredMessages(String expirationDate, Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     try {
-      // not implemented
+      checkExpirationDate(expirationDate)
+        .compose(v -> deleteMessagesByExpirationDate(expirationDate))
+        .map(v -> DeleteDelayedTaskExpiredMessagesResponse.respond200WithTextPlain(SUCCESS_MESSAGE))
+        .map(Response.class::cast)
+        .otherwise(this::mapExceptionToResponse)
+        .setHandler(asyncResultHandler);
     } catch (Exception ex) {
       logger.error(ex.getMessage(), ex);
       asyncResultHandler.handle(Future.succeededFuture(
         DeleteDelayedTaskExpiredMessagesResponse.respond500WithTextPlain(ex)));
     }
+  }
+
+  private Future<Void> checkExpirationDate(String expirationDate) {
+    Future<Void> future = Future.future();
+    if (StringUtils.isBlank(expirationDate) || isCorrectDateFormat(expirationDate)) {
+      future.complete();
+    } else {
+      future.fail(new IllegalArgumentException(ERROR_MESSAGE));
+    }
+    return future;
+  }
+
+  private boolean isCorrectDateFormat(String expirationDate) {
+    return DATE_PATTERN.matcher(expirationDate).matches();
+  }
+
+  private Future<Void> deleteMessagesByExpirationDate(String expirationDate) {
+    Future<Void> future = Future.future();
+    storageService.deleteEmailEntriesByExpirationDate(tenantId, expirationDate, result -> {
+      if (result.failed()) {
+        future.fail(result.cause());
+        return;
+      }
+      future.complete();
+    });
+    return future;
   }
 
   private Future<JsonObject> findBatchEmailEntries() {
@@ -126,6 +160,14 @@ public class DelayedTasksAPI implements DelayedTask {
         .entity(t.getMessage())
         .build();
     }
+
+    if (t.getClass() == IllegalArgumentException.class) {
+      return Response.status(400)
+        .header(CONTENT_TYPE, TEXT_PLAIN)
+        .entity(t.getMessage())
+        .build();
+    }
+
     logger.error(t.getMessage(), t);
     return Response.status(500)
       .header(CONTENT_TYPE, TEXT_PLAIN)

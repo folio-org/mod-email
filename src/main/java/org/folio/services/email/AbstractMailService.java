@@ -40,6 +40,7 @@ public class AbstractMailService {
   private static final String ERROR_ATTACHMENT_DATA = "Error attaching the `%s` file to email!";
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
+  private static final String ERROR_MESSAGE = "Missing SMTP server configuration";
 
   private final Vertx vertx;
 
@@ -141,6 +142,10 @@ public class AbstractMailService {
 
   protected Future sendMessage(MailClient mailClient, MailMessage mailMessage) {
     Future future = Future.future();
+    if (Objects.isNull(mailClient)) {
+      future.fail(ERROR_MESSAGE);
+      return future;
+    }
     mailClient.sendMail(mailMessage, mailHandler -> {
       if (mailHandler.failed()) {
         logger.error(String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage()));

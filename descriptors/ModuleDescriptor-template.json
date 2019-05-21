@@ -27,14 +27,26 @@
       ]
     },
     {
-      "id": "trigger",
+      "id": "delayedTasks",
       "version": "1.0",
       "handlers": [
         {
           "methods": [
             "GET"
           ],
-          "pathPattern": "/delayedTask/sendBatchEmails"
+          "pathPattern": "/delayedTask/sendBatchEmails",
+          "modulePermissions": [
+            "email.message.post"
+          ]
+        },
+        {
+          "methods": [
+            "DELETE"
+          ],
+          "pathPattern": "/delayedTask/expiredMessages",
+          "modulePermissions": [
+            "email.message.delete"
+          ]
         }
       ]
     },
@@ -58,7 +70,10 @@
           "methods": [
             "GET"
           ],
-          "pathPattern": "/batchEmails"
+          "pathPattern": "/batchEmails",
+          "permissionsRequired": [
+            "email.message.collection.get"
+          ]
         }
       ]
     },
@@ -93,6 +108,14 @@
           "pathPattern": "/delayedTask/sendBatchEmails",
           "unit": "minute",
           "delay": "1"
+        },
+        {
+          "methods": [
+            "DELETE"
+          ],
+          "pathPattern": "/delayedTask/expiredMessages",
+          "unit": "day",
+          "delay": "1"
         }
       ]
     }
@@ -102,6 +125,27 @@
       "permissionName": "email.message.post",
       "displayName": "message - send email notifications",
       "description": "send email notifications"
+    },
+    {
+      "permissionName": "email.message.collection.get",
+      "displayName": "get email messages ",
+      "description": "get all email messages by query"
+    },
+    {
+      "permissionName": "email.message.delete",
+      "displayName": "delete email message",
+      "description": "delete email messages by expiration date"
+    },
+    {
+      "permissionName": "email.message.all",
+      "displayName": "email entries - all permissions",
+      "description": "Entire set of permissions needed to use the email module",
+      "subPermissions": [
+        "email.message.post",
+        "email.message.collection.get",
+        "email.message.delete"
+      ],
+      "visible": false
     }
   ],
   "launchDescriptor": {

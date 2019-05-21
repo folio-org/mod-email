@@ -18,3 +18,7 @@
  | METHOD |  URL                          | DESCRIPTION                                                       |
  |--------|-------------------------------|-------------------------------------------------------------------|
  | POST   | /email                        | Push email to mod-email for sending message to recipient          |
+ | POST   | /batchEmails                  | Send emails to mod-email to persist messages before sending       |
+ | GET    | /batchEmails                  | Get all emails using the filter                                   |
+ | GET    | /delayedTask/sendBatchEmails  | The deferred task to send emails in a batch to the SMTP server    |
+ | DELETE | /delayedTask/expiredMessages  | The deferred task for deleting emails by the expiration date      |  
