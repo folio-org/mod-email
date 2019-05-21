@@ -41,23 +41,20 @@ public class StorageServiceImpl implements StorageService {
 
   @Override
   public void saveEmailEntries(String tenantId, JsonObject emailEntriesJson,
-                               Handler<AsyncResult<JsonObject>> resultHandler) {
+                               Handler<AsyncResult<JsonObject>> asyncResultHandler) {
     try {
       EmailEntries emailEntries = emailEntriesJson.mapTo(EmailEntries.class);
       List<Object> objectList = entriesToListObjects(emailEntries);
       PostgresClient.getInstance(vertx, tenantId).saveBatch(EMAIL_MESSAGES_TABLE_NAME, objectList,
         postReply -> {
           if (postReply.failed()) {
-            logger.error(postReply.cause().getMessage());
-            resultHandler.handle(Future.failedFuture(postReply.cause()));
+            errorHandler(postReply.cause(), asyncResultHandler);
             return;
           }
-          resultHandler.handle(Future.succeededFuture());
+          asyncResultHandler.handle(Future.succeededFuture());
         });
     } catch (Exception ex) {
-      String errorMessage = ex.getMessage();
-      logger.error(errorMessage, ex);
-      resultHandler.handle(Future.failedFuture(errorMessage));
+      errorHandler(ex, asyncResultHandler);
     }
   }
 
@@ -71,8 +68,7 @@ public class StorageServiceImpl implements StorageService {
       pgClient.get(EMAIL_MESSAGES_TABLE_NAME, EmailEntity.class, fieldList, cql, true, false,
         getReply -> {
           if (getReply.failed()) {
-            logger.error(getReply.cause().getMessage());
-            asyncResultHandler.handle(Future.failedFuture(getReply.cause()));
+            errorHandler(getReply.cause(), asyncResultHandler);
             return;
           }
 
@@ -86,9 +82,7 @@ public class StorageServiceImpl implements StorageService {
           asyncResultHandler.handle(Future.succeededFuture(entries));
         });
     } catch (Exception ex) {
-      String errorMessage = ex.getMessage();
-      logger.error(errorMessage, ex);
-      asyncResultHandler.handle(Future.failedFuture(errorMessage));
+      errorHandler(ex, asyncResultHandler);
     }
   }
 
@@ -102,16 +96,13 @@ public class StorageServiceImpl implements StorageService {
       String query = String.format(UPDATE_QUERY, fullTableName, status, ids);
       PostgresClient.getInstance(vertx, tenantId).execute(query, result -> {
         if (result.failed()) {
-          logger.error(result.cause().getMessage());
-          asyncResultHandler.handle(Future.failedFuture(result.cause()));
+          errorHandler(result.cause(), asyncResultHandler);
           return;
         }
         asyncResultHandler.handle(Future.succeededFuture());
       });
     } catch (Exception ex) {
-      String errorMessage = ex.getMessage();
-      logger.error(errorMessage, ex);
-      asyncResultHandler.handle(Future.failedFuture(errorMessage));
+      errorHandler(ex, asyncResultHandler);
     }
   }
 
@@ -126,17 +117,19 @@ public class StorageServiceImpl implements StorageService {
 
       PostgresClient.getInstance(vertx, tenantId).execute(query, result -> {
         if (result.failed()) {
-          logger.error(result.cause().getMessage());
-          asyncResultHandler.handle(Future.failedFuture(result.cause()));
+          errorHandler(result.cause(), asyncResultHandler);
           return;
         }
         asyncResultHandler.handle(Future.succeededFuture());
       });
     } catch (Exception ex) {
-      String errorMessage = ex.getMessage();
-      logger.error(errorMessage, ex);
-      asyncResultHandler.handle(Future.failedFuture(errorMessage));
+      errorHandler(ex, asyncResultHandler);
     }
+  }
+
+  private void errorHandler(Throwable ex, Handler<AsyncResult<JsonObject>> asyncResultHandler) {
+    logger.error(ex.getMessage(), ex);
+    asyncResultHandler.handle(Future.failedFuture(ex));
   }
 
   private String getEntriesIds(EmailEntries emailEntries) {
