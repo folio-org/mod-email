@@ -145,3 +145,9 @@ curl -w '\n' -X POST -D -   \
 
 See project [MODEMAIL](https://issues.folio.org/browse/MODEMAIL)
 at the [FOLIO issue tracker](https://dev.folio.org/guidelines/issue-tracker/).
+
+### ModuleDescriptor
+
+See the built `target/ModuleDescriptor.json` for the interfaces that this module
+requires and provides, the permissions, and the additional module metadata.
+
