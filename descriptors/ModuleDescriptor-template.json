@@ -34,6 +34,10 @@
       "description": "send email notifications"
     }
   ],
+  "metadata": {
+    "containerMemory": "256",
+    "databaseConnection": "false"
+  },
   "launchDescriptor": {
     "dockerImage": "${artifactId}:${version}",
     "dockerArgs": {
