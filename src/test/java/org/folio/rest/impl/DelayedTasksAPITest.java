@@ -2,7 +2,6 @@ package org.folio.rest.impl;
 
 import io.restassured.response.Response;
 import org.apache.http.HttpStatus;
-import org.folio.enums.SendingStatus;
 import org.folio.rest.impl.base.AbstractBatchAPITest;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.junit.Test;
@@ -13,6 +12,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
+import static org.folio.rest.jaxrs.model.EmailEntity.*;
 import static org.folio.util.StubUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -22,7 +22,7 @@ public class DelayedTasksAPITest extends AbstractBatchAPITest {
   @Test
   public void deleteDelayedTaskExpiredMessagesWithDate() {
     int batchSize = 200;
-    String messageStatus = SendingStatus.getStatus(SendingStatus.NEW);
+    String messageStatus = getStatus(Status.NEW);
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getFullWiserMockConfigurations());
 
@@ -55,7 +55,7 @@ public class DelayedTasksAPITest extends AbstractBatchAPITest {
   @Test
   public void deleteDelayedTaskExpiredMessagesWithoutDate() {
     int batchSize = 200;
-    String messageStatus = SendingStatus.getStatus(SendingStatus.NEW);
+    String messageStatus = getStatus(Status.NEW);
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getFullWiserMockConfigurations());
 
@@ -116,7 +116,7 @@ public class DelayedTasksAPITest extends AbstractBatchAPITest {
   }
 
   @Test
-  public void sendEmailDelayedTasks(){
+  public void sendEmailDelayedTasks() {
     int mockServerPort = userMockServer.port();
 
     // run trigger send emails

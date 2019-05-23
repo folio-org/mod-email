@@ -6,9 +6,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.folio.enums.SmtpEmail;
 import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
+import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.resource.Email.PostEmailResponse;
 
 import javax.ws.rs.core.Response.Status;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -93,5 +95,20 @@ public class EmailUtils {
       .map(Config::getValue)
       .findFirst()
       .orElse(StringUtils.EMPTY);
+  }
+
+  public static EmailEntity.Status findStatusByName(String name) {
+    return Arrays.stream(EmailEntity.Status.values())
+      .filter(status -> status.name().equalsIgnoreCase(name))
+      .findFirst()
+      .orElse(EmailEntity.Status.NEW);
+  }
+
+  public static String getStatus(EmailEntity.Status sendingStatus) {
+    return Arrays.stream(EmailEntity.Status.values())
+      .filter(status -> status == sendingStatus)
+      .map(Enum::name)
+      .findFirst()
+      .orElse(EmailEntity.Status.NEW.name());
   }
 }

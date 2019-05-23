@@ -2,9 +2,9 @@ package org.folio.rest.impl;
 
 import io.restassured.response.Response;
 import org.apache.http.HttpStatus;
-import org.folio.enums.SendingStatus;
 import org.folio.rest.impl.base.AbstractBatchAPITest;
 import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.rest.jaxrs.model.EmailEntity.Status;
 import org.folio.rest.jaxrs.model.EmailEntries;
 import org.junit.Test;
 
@@ -21,7 +21,7 @@ public class BatchEmailsAPITest extends AbstractBatchAPITest {
   @Test
   public void saveBatchAndGetAllEmailsMessagesFullConfig() {
     int batchSize = 500;
-    String messageStatus = SendingStatus.getStatus(SendingStatus.NEW);
+    String messageStatus = getStatus(Status.NEW);
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getFullWiserMockConfigurations());
 
@@ -48,7 +48,7 @@ public class BatchEmailsAPITest extends AbstractBatchAPITest {
   @Test
   public void saveBatchAndGetAllEmailsMessages() {
     int batchSize = 500;
-    String messageStatus = SendingStatus.getStatus(SendingStatus.NEW);
+    String messageStatus = getStatus(Status.NEW);
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
 
@@ -75,7 +75,7 @@ public class BatchEmailsAPITest extends AbstractBatchAPITest {
   @Test
   public void testFailureStatusEmailsMessages() {
     int batchSize = 50;
-    String messageStatus = SendingStatus.getStatus(SendingStatus.FAILURE);
+    String messageStatus = getStatus(Status.FAILURE);
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
 
@@ -104,7 +104,7 @@ public class BatchEmailsAPITest extends AbstractBatchAPITest {
   @Test
   public void getAllEmailsMessages() {
     int mockServerPort = userMockServer.port();
-    String messageStatus = SendingStatus.getStatus(SendingStatus.NEW);
+    String messageStatus = getStatus(Status.NEW);
     Response response = getEmailsMessages(String.format(OKAPI_URL_TEMPLATE, mockServerPort), messageStatus, 10)
       .then()
       .statusCode(HttpStatus.SC_OK)
@@ -135,7 +135,7 @@ public class BatchEmailsAPITest extends AbstractBatchAPITest {
       .statusCode(HttpStatus.SC_OK);
 
     // find all emails with FAILURE status
-    String failureStatus = SendingStatus.getStatus(SendingStatus.FAILURE);
+    String failureStatus = getStatus(Status.FAILURE);
     Response response = getEmailsMessages(String.format(OKAPI_URL_TEMPLATE, mockServerPort), failureStatus, batchSize)
       .then()
       .statusCode(HttpStatus.SC_OK)

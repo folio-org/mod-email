@@ -17,7 +17,6 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import junit.framework.AssertionFailedError;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.HttpStatus;
-import org.folio.enums.SendingStatus;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.EmailEntity;
@@ -25,6 +24,7 @@ import org.folio.rest.jaxrs.model.EmailEntries;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.util.EmailUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -149,7 +149,7 @@ public abstract class AbstractBatchAPITest {
       .statusCode(HttpStatus.SC_OK);
 
     // find all emails with DELIVERED status
-    String deliveredStatus = SendingStatus.getStatus(SendingStatus.DELIVERED);
+    String deliveredStatus = EmailUtils.getStatus(EmailEntity.Status.DELIVERED);
     Response response = getEmailsMessages(String.format(OKAPI_URL_TEMPLATE, mockServerPort), deliveredStatus, batchSize)
       .then()
       .statusCode(HttpStatus.SC_OK)

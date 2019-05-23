@@ -128,7 +128,7 @@
     },
     {
       "permissionName": "email.message.collection.get",
-      "displayName": "get email messages ",
+      "displayName": "get email messages",
       "description": "get all email messages by query"
     },
     {

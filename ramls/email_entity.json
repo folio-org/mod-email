@@ -35,6 +35,12 @@
     "status": {
       "description":"status of email",
       "type": "string",
+      "enum": [
+        "NEW",
+        "PROCESSING",
+        "DELIVERED",
+        "FAILURE"
+      ],
       "default": "NEW"
     },
     "date": {

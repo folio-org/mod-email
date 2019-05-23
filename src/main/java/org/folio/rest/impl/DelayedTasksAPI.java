@@ -9,12 +9,13 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.apache.commons.lang3.StringUtils;
-import org.folio.enums.SendingStatus;
 import org.folio.exceptions.EmptyListOfEntriesException;
+import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntries;
 import org.folio.rest.jaxrs.resource.DelayedTask;
 import org.folio.services.email.MailService;
 import org.folio.services.storage.StorageService;
+import org.folio.util.EmailUtils;
 
 import javax.ws.rs.core.Response;
 import java.util.Map;
@@ -53,9 +54,9 @@ public class DelayedTasksAPI implements DelayedTask {
                                             Handler<AsyncResult<Response>> asyncResultHandler, Context context) {
     try {
       findBatchEmailEntries()
-        .compose(jsonObj -> changeStatusEntries(jsonObj, SendingStatus.IN_PROCESS))
+        .compose(jsonObj -> changeStatusEntries(jsonObj, EmailEntity.Status.PROCESSING))
         .compose(this::sendBatchEmails)
-        .compose(jsonObj -> changeStatusEntries(jsonObj, SendingStatus.findStatusByName(jsonObj.getString(STATUS_VAL))))
+        .compose(jsonObj -> changeStatusEntries(jsonObj, EmailUtils.findStatusByName(jsonObj.getString(STATUS_VAL))))
         .map(jsonObj -> GetDelayedTaskSendBatchEmailsResponse.respond200WithTextPlain(SUCCESS_MESSAGE))
         .map(Response.class::cast)
         .otherwise(this::mapExceptionToResponse)
@@ -110,7 +111,7 @@ public class DelayedTasksAPI implements DelayedTask {
   }
 
   private Future<JsonObject> findBatchEmailEntries() {
-    String query = String.format(STATUS_TYPE, SendingStatus.NEW);
+    String query = String.format(STATUS_TYPE, EmailEntity.Status.NEW);
     Future<JsonObject> future = Future.future();
     storageService.findAllEmailEntries(tenantId, BATCH_SIZE, OFFSET_VAL, query, result -> {
       if (result.failed()) {
@@ -128,7 +129,7 @@ public class DelayedTasksAPI implements DelayedTask {
     return future;
   }
 
-  private Future<JsonObject> changeStatusEntries(JsonObject emailEntriesJson, SendingStatus status) {
+  private Future<JsonObject> changeStatusEntries(JsonObject emailEntriesJson, EmailEntity.Status status) {
     Future<JsonObject> future = Future.future();
     storageService.updateStatusEmailEntries(tenantId, emailEntriesJson, status.name(), result -> {
       if (result.failed()) {
@@ -144,9 +145,9 @@ public class DelayedTasksAPI implements DelayedTask {
     Future<JsonObject> future = Future.future();
     mailService.sendBatchEmails(tenantId, emailEntriesJson, result -> {
       if (result.failed()) {
-        emailEntriesJson.put(STATUS_VAL, SendingStatus.FAILURE);
+        emailEntriesJson.put(STATUS_VAL, EmailEntity.Status.FAILURE);
       } else {
-        emailEntriesJson.put(STATUS_VAL, SendingStatus.DELIVERED);
+        emailEntriesJson.put(STATUS_VAL, EmailEntity.Status.DELIVERED);
       }
       future.complete(emailEntriesJson);
     });

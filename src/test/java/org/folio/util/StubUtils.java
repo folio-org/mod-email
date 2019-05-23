@@ -7,7 +7,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.folio.enums.SmtpEmail;
 import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
+import org.folio.rest.jaxrs.model.EmailEntity;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -104,5 +106,13 @@ public class StubUtils {
     config.setCode(smtpEmail.name());
     config.setValue(value);
     return config;
+  }
+
+  public static String getStatus(EmailEntity.Status sendingStatus) {
+    return Arrays.stream(EmailEntity.Status.values())
+      .filter(status -> status == sendingStatus)
+      .map(Enum::name)
+      .findFirst()
+      .orElse(EmailEntity.Status.NEW.name());
   }
 }

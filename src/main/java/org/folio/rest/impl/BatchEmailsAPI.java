@@ -105,11 +105,14 @@ public class BatchEmailsAPI extends AbstractEmail implements BatchEmails {
 
   private JsonObject fillEntriesAndConvertToJson(EmailEntries entries, Configurations configurations) {
     String senderAddress = getSenderFromConfigurations(configurations);
-    Timestamp now = Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC));
     entries.getEmailEntity().forEach(entity ->
     {
-      entity.setId(UUID.randomUUID().toString());
+      String id = UUID.randomUUID().toString();
+      entity.setId(id);
+
+      Timestamp now = Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC));
       entity.setDate(now);
+
       if (StringUtils.isBlank(entity.getFrom())) {
         entity.setFrom(senderAddress);
       }
