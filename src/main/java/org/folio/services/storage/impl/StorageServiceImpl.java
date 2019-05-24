@@ -29,7 +29,7 @@ public class StorageServiceImpl implements StorageService {
   private static final String COLUMN_EXTENSION = ".jsonb";
   private static final String UPDATE_QUERY = "UPDATE %1$s SET jsonb = jsonb || '{\"status\":\"%2$s\"}'::jsonb WHERE jsonb->>'id' IN (%3$s)";
   private static final String DELETE_QUERY_BY_DATE = "DELETE FROM %1$s WHERE (jsonb->>'date')::date <= ('%2$s')::date";
-  private static final String DELETE_QUERY_INTERVAL_7_DAYS = "DELETE FROM %1$s WHERE (jsonb->>'date')::date < CURRENT_DATE - INTERVAL '7' DAY";
+  private static final String DELETE_QUERY_INTERVAL_7_DAYS = "DELETE FROM %1$s WHERE (jsonb->>'date')::date < CURRENT_DATE - INTERVAL '7' DAY AND jsonb->>'status' = 'FAILURE'";
   private static final String ESCAPE_TEMPLATE = "'%s'";
   private static final String DELIMITER_VAL = ",";
 
