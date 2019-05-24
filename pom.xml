@@ -16,6 +16,7 @@
   <properties>
     <raml-module-builder.version>24.0.0</raml-module-builder.version>
     <vertx.version>3.5.4</vertx.version>
+    <jackson.version>2.9.9</jackson.version>
     <junit.version>4.12</junit.version>
     <subethasmtp.version>3.1.7</subethasmtp.version>
     <rest-assured.version>3.1.1</rest-assured.version>
@@ -77,27 +78,27 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>2.9.9</version>
+      <version>${jackson.version}</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>2.9.9</version>
+      <version>${jackson.version}</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>2.9.9</version>
+      <version>${jackson.version}</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.jaxrs</groupId>
       <artifactId>jackson-jaxrs-json-provider</artifactId>
-      <version>2.9.9</version>
+      <version>${jackson.version}</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
-      <version>2.9.9</version>
+      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>
