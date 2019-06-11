@@ -1,3 +1,8 @@
+## 2019-06-11 v1.3.0
+ * Fix security vulnerabilities reported in jackson-databind
+ * Add links to README additional info (FOLIO-473)
+ * Initial module metadata (FOLIO-2003)
+
 ## 2019-05-10 v1.2.0
  * Module descriptor - remove _tenant interface (MODEMAIL-13)
  * Increase test coverage for mod-email (MODEMAIL-12)
