@@ -25,7 +25,7 @@ public class EmailAPI implements Email {
   private static final String HTTP_HEADER_ACCEPT = HttpHeaders.ACCEPT.toString();
   private static final String HTTP_HEADER_CONTENT_TYPE = HttpHeaders.CONTENT_TYPE.toString();
   private static final String OKAPI_URL_HEADER = "x-okapi-url";
-  private static final String MODULE_EMAIL_SMPT_SERVER = "SMPT_SERVER";
+  private static final String MODULE_EMAIL_SMTP_SERVER = "SMTP_SERVER";
   private static final String LOOKUP_TIMEOUT = "lookup.timeout";
   private static final String LOOKUP_TIMEOUT_VAL = "1000";
 
@@ -101,7 +101,7 @@ public class EmailAPI implements Email {
     Future<JsonObject> future = Future.future();
     String okapiUrl = headers.get(OKAPI_URL_HEADER);
     String okapiToken = headers.get(OKAPI_HEADER_TOKEN);
-    String requestUrl = String.format(REQUEST_URL_TEMPLATE, okapiUrl, REQUEST_URI_PATH, MODULE_EMAIL_SMPT_SERVER);
+    String requestUrl = String.format(REQUEST_URL_TEMPLATE, okapiUrl, REQUEST_URI_PATH, MODULE_EMAIL_SMTP_SERVER);
     HttpClientRequest request = httpClient.getAbs(requestUrl);
     request
       .putHeader(OKAPI_HEADER_TOKEN, okapiToken)

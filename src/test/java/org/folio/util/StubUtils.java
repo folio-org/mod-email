@@ -14,7 +14,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 public class StubUtils {
 
-  private static final String URL_CONFIGURATIONS_TO_SMPT_SERVER = "/configurations/entries?query=module==SMPT_SERVER";
+  private static final String URL_CONFIGURATIONS_TO_SMTP_SERVER = "/configurations/entries?query=module==SMTP_SERVER";
 
   private StubUtils() {
     //not called
@@ -74,7 +74,7 @@ public class StubUtils {
   }
 
   private static MappingBuilder createMappingBuilder() {
-    return get(urlEqualTo(URL_CONFIGURATIONS_TO_SMPT_SERVER));
+    return get(urlEqualTo(URL_CONFIGURATIONS_TO_SMTP_SERVER));
   }
 
   private static Configurations createConfigurations(String user, String password, String host, String port) {
