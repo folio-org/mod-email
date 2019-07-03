@@ -1,5 +1,5 @@
 {
-  "module": "SMPT_SERVER",
+  "module": "SMTP_SERVER",
   "configName": "locale",
   "code": "EMAIL_SMTP_HOST",
   "description": "server smtp host",

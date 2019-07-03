@@ -41,7 +41,7 @@ The module supports the following configuration for SMTP server:
   * EMAIL_FROM
   * EMAIL_SMTP_SSL
 
- The main name of the module : "SMPT_SERVER"
+ The main name of the module : "SMTP_SERVER"
 
  Module configuration example:
 
@@ -53,7 +53,7 @@ curl -X POST \
   -H 'x-okapi-token: <token>' \
   -d
     '{
-      "module": "SMPT_SERVER",
+      "module": "SMTP_SERVER",
       "configName": "smtp",
       "code": "EMAIL_SMTP_HOST",
       "description": "server smtp host",
