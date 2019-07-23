@@ -1,3 +1,7 @@
+## 2019-07-23 v1.4.0
+ * Fix security vulnerabilities reported in jackson-databind
+ * Typo on variable name: "SMPT" instead of "SMTP" (MODEMAIL-19)
+
 ## 2019-06-11 v1.3.0
  * Fix security vulnerabilities reported in jackson-databind
  * Add links to README additional info (FOLIO-473)
