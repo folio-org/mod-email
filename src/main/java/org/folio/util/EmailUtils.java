@@ -1,27 +1,35 @@
 package org.folio.util;
 
-import io.vertx.ext.mail.LoginOption;
-import io.vertx.ext.mail.StartTLSOptions;
-import org.apache.commons.lang3.StringUtils;
-import org.folio.enums.SmtpEmail;
-import org.folio.rest.jaxrs.model.Config;
-import org.folio.rest.jaxrs.model.Configurations;
-import org.folio.rest.jaxrs.resource.Email.PostEmailResponse;
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toSet;
+import static org.folio.enums.SmtpEmail.EMAIL_PASSWORD;
+import static org.folio.enums.SmtpEmail.EMAIL_SMTP_HOST;
+import static org.folio.enums.SmtpEmail.EMAIL_SMTP_PORT;
+import static org.folio.enums.SmtpEmail.EMAIL_USERNAME;
 
-import javax.ws.rs.core.Response.Status;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.collectingAndThen;
-import static java.util.stream.Collectors.toSet;
-import static org.folio.enums.SmtpEmail.*;
+import javax.ws.rs.core.Response.Status;
+
+import org.apache.commons.lang3.StringUtils;
+import org.folio.enums.SmtpEmail;
+import org.folio.rest.jaxrs.model.Config;
+import org.folio.rest.jaxrs.model.Configurations;
+import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.rest.jaxrs.resource.Email.PostEmailResponse;
+
+import io.vertx.ext.mail.LoginOption;
+import io.vertx.ext.mail.StartTLSOptions;
 
 public class EmailUtils {
 
   public static final String MAIL_SERVICE_ADDRESS = "mail-service.queue";
-  public static final String MESSAGE_RESULT = "result";
+  public static final String STORAGE_SERVICE_ADDRESS = "storage-service.queue";
+  public static final String EMAIL_STATISTICS_TABLE_NAME = "email_statistics";
 
   private EmailUtils() {
     //not called
@@ -39,7 +47,7 @@ public class EmailUtils {
    *
    * @return true if the configuration doesn't satisfy the minimum SMTP configs for sending the email
    */
-  public static boolean checkMinConfigSmtpServer(Configurations configurations) {
+  public static boolean isIncorrectSmtpServerConfig(Configurations configurations) {
     Set<String> configSet = configurations.getConfigs().stream()
       .map(val -> val.getCode().toUpperCase())
       .collect(Collectors.toSet());
@@ -92,5 +100,13 @@ public class EmailUtils {
       .map(Config::getValue)
       .findFirst()
       .orElse(StringUtils.EMPTY);
+  }
+
+  public static String findStatusByName(String name) {
+    return Arrays.stream(EmailEntity.Status.values())
+      .filter(status -> status.name().equalsIgnoreCase(name))
+      .map(EmailEntity.Status::value)
+      .findFirst()
+      .orElse(EmailEntity.Status.DELIVERED.value());
   }
 }

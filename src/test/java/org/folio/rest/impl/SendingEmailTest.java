@@ -1,103 +1,29 @@
 package org.folio.rest.impl;
 
-import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import io.restassured.RestAssured;
-import io.restassured.http.Header;
-import io.restassured.response.Response;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
-import junit.framework.AssertionFailedError;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.http.HttpStatus;
-import org.folio.rest.RestVerticle;
-import org.folio.rest.jaxrs.model.Attachment;
-import org.folio.rest.jaxrs.model.EmailEntity;
-import org.folio.rest.tools.utils.NetworkUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.subethamail.wiser.Wiser;
-import org.subethamail.wiser.WiserMessage;
-
-import javax.mail.Address;
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
-import javax.ws.rs.core.MediaType;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.UUID;
-
 import static junit.framework.TestCase.fail;
-import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
-import static org.folio.rest.RestVerticle.OKAPI_HEADER_TOKEN;
+import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
 import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
 import static org.folio.util.StubUtils.getWiserMockConfigurations;
 import static org.folio.util.StubUtils.initModConfigStub;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(VertxUnitRunner.class)
-public class SendingEmailTest {
+import java.util.Collections;
+import java.util.UUID;
 
-  private final Logger logger = LoggerFactory.getLogger(SendingEmailTest.class);
+import javax.ws.rs.core.MediaType;
 
-  private static final String OKAPI_URL = "x-okapi-url";
-  private static final String HTTP_PORT = "http.port";
-  private static final String REST_PATH = "/email";
-  private static final String OKAPI_TENANT = "test_tenant";
-  private static final String OKAPI_TOKEN = "test_token";
-  private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.http.HttpStatus;
+import org.folio.rest.impl.base.AbstractAPITest;
+import org.folio.rest.jaxrs.model.Attachment;
+import org.folio.rest.jaxrs.model.EmailEntity;
+import org.junit.Test;
+import org.subethamail.wiser.WiserMessage;
 
-  private static final String ADDRESS_TEMPLATE = "%s@localhost";
-  private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
-  private static final String MESSAGE_NOT_FOUND = "The message for the sender: `%s` was not found on the SMTP server";
+import io.restassured.response.Response;
+import junit.framework.AssertionFailedError;
 
-  private static Vertx vertx;
-  private static int port;
-  private static Wiser wiser;
-
-  @Rule
-  public WireMockRule userMockServer = new WireMockRule(
-    WireMockConfiguration.wireMockConfig()
-      .dynamicPort()
-      .notifier(new ConsoleNotifier(true)));
-
-  @BeforeClass
-  public static void setUpClass(final TestContext context) {
-    Async async = context.async();
-    vertx = Vertx.vertx();
-    port = NetworkUtils.nextFreePort();
-
-    wiser = new Wiser();
-    wiser.setPort(2500);
-
-    DeploymentOptions restDeploymentOptions = new DeploymentOptions().setConfig(new JsonObject().put(HTTP_PORT, port));
-    vertx.deployVerticle(RestVerticle.class.getName(), restDeploymentOptions, res ->
-      {
-        wiser.start();
-        async.complete();
-      }
-    );
-  }
-
-  @AfterClass
-  public static void tearDownClass(final TestContext context) {
-    Async async = context.async();
-    vertx.close(context.asyncAssertSuccess(res -> {
-      wiser.stop();
-      async.complete();
-    }));
-  }
+public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void sendTextEmail() throws Exception {
@@ -115,15 +41,19 @@ public class SendingEmailTest {
       .withBody(msg)
       .withOutputFormat(MediaType.TEXT_PLAIN);
 
-    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), emailEntity)
+    Response response = sendEmail(emailEntity)
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()
       .response();
-    checkResponse(response, recipient);
+    checkResponseMessage(response, recipient);
 
+    // check email on SMTP server
     WiserMessage wiserMessage = findMessageOnWiserServer(sender);
     checkMessagesOnWiserServer(wiserMessage, emailEntity);
+
+    // check email on DB
+    checkStoredEmailsInDb(emailEntity, DELIVERED);
   }
 
   @Test
@@ -141,15 +71,19 @@ public class SendingEmailTest {
       .withBody("<b>Test</b> text for <br> the message")
       .withOutputFormat(MediaType.TEXT_HTML);
 
-    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), emailEntity)
+    Response response = sendEmail(emailEntity)
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()
       .response();
-    checkResponse(response, recipient);
+    checkResponseMessage(response, recipient);
 
+    // check email on SMTP server
     WiserMessage wiserMessage = findMessageOnWiserServer(sender);
     checkMessagesOnWiserServer(wiserMessage, emailEntity);
+
+    // check email on DB
+    checkStoredEmailsInDb(emailEntity, DELIVERED);
   }
 
   @Test
@@ -175,13 +109,14 @@ public class SendingEmailTest {
       ))
       .withOutputFormat(MediaType.TEXT_HTML);
 
-    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), emailEntity)
+    Response response = sendEmail(emailEntity)
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()
       .response();
-    checkResponse(response, recipient);
+    checkResponseMessage(response, recipient);
 
+    // check email on SMTP server
     WiserMessage wiserMessage = findMessageOnWiserServer(sender);
     checkMessagesOnWiserServer(wiserMessage, emailEntity);
 
@@ -192,6 +127,9 @@ public class SendingEmailTest {
     assertTrue(fullMessageInfo.contains(attachment.getContentType()));
     assertTrue(fullMessageInfo.contains(attachment.getDescription()));
     assertTrue(fullMessageInfo.contains(attachment.getName()));
+
+    // check email on DB
+    checkStoredEmailsInDb(emailEntity, DELIVERED);
   }
 
   @Test
@@ -217,15 +155,19 @@ public class SendingEmailTest {
       ))
       .withOutputFormat(MediaType.TEXT_HTML);
 
-    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), emailEntity)
+    Response response = sendEmail(emailEntity)
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()
       .response();
-    checkResponse(response, recipient);
+    checkResponseMessage(response, recipient);
 
+    // check email on SMTP server
     WiserMessage wiserMessage = findMessageOnWiserServer(sender);
     checkMessagesOnWiserServer(wiserMessage, emailEntity);
+
+    // check email on DB
+    checkStoredEmailsInDb(emailEntity, DELIVERED);
   }
 
   @Test
@@ -253,12 +195,12 @@ public class SendingEmailTest {
       ))
       .withOutputFormat(MediaType.TEXT_HTML);
 
-    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), emailEntity)
+    Response response = sendEmail(emailEntity)
       .then()
-      .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+      .statusCode(HttpStatus.SC_OK)
       .extract()
       .response();
-    assertEquals("Internal Server Error", response.getBody().asString());
+    assertTrue(response.getBody().asString().contains(FAIL_SENDING_EMAIL));
 
     try {
       findMessageOnWiserServer(sender);
@@ -270,75 +212,19 @@ public class SendingEmailTest {
     // init correct SMTP mock configuration
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
 
-    response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), emailEntity)
+    response = sendEmail(emailEntity)
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()
       .response();
 
-    checkResponse(response, recipient);
+    checkResponseMessage(response, recipient);
 
+    // check email on SMTP server
     WiserMessage wiserMessage = findMessageOnWiserServer(sender);
     checkMessagesOnWiserServer(wiserMessage, emailEntity);
-  }
 
-  private void checkResponse(Response response, String recipient) {
-    String responseMessage = response.getBody().asString();
-    assertEquals(String.format(SUCCESS_SEND_EMAIL, recipient), responseMessage);
-  }
-
-  private void checkMessagesOnWiserServer(WiserMessage wiserMessage,
-                                          EmailEntity emailEntity) throws MessagingException {
-
-    assertTrue(wiserMessage.toString().contains(emailEntity.getBody()));
-
-    MimeMessage message = wiserMessage.getMimeMessage();
-    assertEquals(emailEntity.getHeader(), message.getSubject());
-
-    Address[] from = message.getFrom();
-    checkAddress(emailEntity.getFrom(), from);
-
-    Address[] recipients = message.getAllRecipients();
-    checkAddress(emailEntity.getTo(), recipients);
-  }
-
-  private void checkAddress(String expectedAddress, Address[] address) {
-    assertTrue(isContainsSenderAddress(expectedAddress, address));
-  }
-
-  private WiserMessage findMessageOnWiserServer(String sender) {
-    return wiser.getMessages().stream()
-      .filter(msg -> {
-        try {
-          return isContainsSenderAddress(sender, msg.getMimeMessage().getFrom());
-        } catch (MessagingException ex) {
-          logger.debug(ex);
-          throw throwAssertionFailedError(sender);
-        }
-      })
-      .findFirst()
-      .orElseThrow(() -> throwAssertionFailedError(sender));
-  }
-
-  private AssertionFailedError throwAssertionFailedError(String sender) {
-    return new AssertionFailedError(String.format(MESSAGE_NOT_FOUND, sender));
-  }
-
-  private boolean isContainsSenderAddress(String sender, Address[] address) {
-    return Arrays.stream(address)
-      .map(Address::toString).
-        anyMatch(ad -> ad.equals(sender));
-  }
-
-  private Response getResponse(String okapiUrl, EmailEntity emailEntity) {
-    return RestAssured.given()
-      .port(port)
-      .contentType(MediaType.APPLICATION_JSON)
-      .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
-      .header(new Header(OKAPI_URL, okapiUrl))
-      .header(new Header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN))
-      .body(JsonObject.mapFrom(emailEntity).toString())
-      .when()
-      .post(REST_PATH);
+    // check email on DB
+    checkStoredEmailsInDb(emailEntity, DELIVERED);
   }
 }

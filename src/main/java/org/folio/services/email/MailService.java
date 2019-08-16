@@ -1,11 +1,12 @@
-package org.folio.services;
+package org.folio.services.email;
+
+import org.folio.services.email.impl.MailServiceImpl;
 
 import io.vertx.codegen.annotations.ProxyGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import org.folio.services.impl.MailServiceImpl;
 
 /**
  * The service provides the ability to send email using the SMTP server

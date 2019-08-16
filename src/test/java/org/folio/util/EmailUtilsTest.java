@@ -1,19 +1,20 @@
 package org.folio.util;
 
-import org.folio.enums.SmtpEmail;
-import org.folio.rest.jaxrs.model.Config;
-import org.folio.rest.jaxrs.model.Configurations;
-import org.folio.rest.jaxrs.resource.Email;
-import org.folio.services.MailService;
-import org.junit.Test;
-
-import javax.ws.rs.core.Response.Status;
-import java.util.Collections;
-
 import static junit.framework.TestCase.fail;
 import static org.folio.util.EmailUtils.getEmailConfig;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import java.util.Collections;
+
+import javax.ws.rs.core.Response.Status;
+
+import org.folio.enums.SmtpEmail;
+import org.folio.rest.jaxrs.model.Config;
+import org.folio.rest.jaxrs.model.Configurations;
+import org.folio.rest.jaxrs.resource.Email;
+import org.folio.services.email.MailService;
+import org.junit.Test;
 
 public class EmailUtilsTest {
 
@@ -22,15 +23,15 @@ public class EmailUtilsTest {
     String message = "test message";
     verifyResponse(EmailUtils.createResponse(Status.OK, message), 200, message);
     verifyResponse(EmailUtils.createResponse(Status.BAD_REQUEST, message), 400, message);
-    verifyResponse(EmailUtils.createResponse(Status.INTERNAL_SERVER_ERROR, message), 500, "Internal Server Error");
+    verifyResponse(EmailUtils.createResponse(Status.INTERNAL_SERVER_ERROR, message), 500, Status.INTERNAL_SERVER_ERROR.getReasonPhrase());
   }
 
   @Test
   public void testMethodCheckMinConfigSmtpServer() {
     Configurations conf = new Configurations();
 
-    boolean isFullMinConfigForServer = EmailUtils.checkMinConfigSmtpServer(conf);
-    assertTrue(isFullMinConfigForServer);
+    boolean isIncorrectOrEmpty = EmailUtils.isIncorrectSmtpServerConfig(conf);
+    assertTrue(isIncorrectOrEmpty);
   }
 
   private void verifyResponse(Email.PostEmailResponse response, int expectedStatusCode, String expectedMsg) {

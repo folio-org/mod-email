@@ -1,0 +1,57 @@
+#%RAML 1.0
+
+title: Trigger API
+version: v1.0
+protocols: [ HTTP, HTTPS ]
+baseUri: http://localhost
+
+documentation:
+  - title: mod-email API
+    content: The module should provide the ability to delete emails by status and date through the REST API
+
+types:
+  errors: !include raml-util/schemas/errors.schema
+
+traits:
+  validate: !include raml-util/traits/validation.raml
+  language: !include raml-util/traits/language.raml
+  pageable:  !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+
+resourceTypes:
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item-get: !include raml-util/rtypes/item-collection-get.raml
+
+/delayedTask:
+  /expiredMessages:
+    delete:
+      queryParameters:
+        expirationDate:
+          displayName: date
+          description: "Expiration Date"
+          example: "2019-01-31"
+          type: string
+          required: false
+        emailStatus:
+          displayName: status
+          description: "Email status"
+          example: "DELIVERED"
+          type: string
+          required: false
+      description: "delete expired email messages"
+      responses:
+        204:
+          description: "success"
+          body:
+            text/plain:
+              example: "No Content"
+        400:
+          description: "Bad Request"
+          body:
+            text/plain:
+              example: "Error message"
+        500:
+          description: "Internal server error"
+          body:
+            text/plain:
+              example: "Internal server error"

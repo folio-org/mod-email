@@ -1,4 +1,27 @@
-package org.folio.services.impl;
+package org.folio.services.email.impl;
+
+import static org.folio.enums.SmtpEmail.EMAIL_SMTP_HOST;
+import static org.folio.enums.SmtpEmail.EMAIL_SMTP_PORT;
+import static org.folio.util.EmailUtils.getEmailConfig;
+import static org.folio.util.EmailUtils.getMessageConfig;
+
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Base64;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import javax.ws.rs.core.MediaType;
+
+import org.apache.commons.lang3.StringUtils;
+import org.folio.enums.SmtpEmail;
+import org.folio.rest.jaxrs.model.Attachment;
+import org.folio.rest.jaxrs.model.Configurations;
+import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.rest.jaxrs.model.EmailEntity.Status;
+import org.folio.services.email.MailService;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -15,22 +38,6 @@ import io.vertx.ext.mail.MailConfig;
 import io.vertx.ext.mail.MailMessage;
 import io.vertx.ext.mail.MailResult;
 import io.vertx.ext.mail.StartTLSOptions;
-import org.apache.commons.lang3.StringUtils;
-import org.folio.enums.SmtpEmail;
-import org.folio.rest.jaxrs.model.Attachment;
-import org.folio.rest.jaxrs.model.Configurations;
-import org.folio.rest.jaxrs.model.EmailEntity;
-import org.folio.services.MailService;
-
-import javax.ws.rs.core.MediaType;
-import java.util.Base64;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
-import static org.folio.enums.SmtpEmail.EMAIL_SMTP_HOST;
-import static org.folio.enums.SmtpEmail.EMAIL_SMTP_PORT;
-import static org.folio.util.EmailUtils.*;
 
 public class MailServiceImpl implements MailService {
 
@@ -52,26 +59,36 @@ public class MailServiceImpl implements MailService {
   @Override
   public void sendEmail(JsonObject configJson, JsonObject emailEntityJson, Handler<AsyncResult<JsonObject>> resultHandler) {
     try {
-      EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
       Configurations configurations = configJson.mapTo(Configurations.class);
+      EmailEntity emailEntity = fillEmailEntity(emailEntityJson, configurations);
       MailConfig mailConfig = getMailConfig(configurations);
-      MailMessage mailMessage = getMailMessage(emailEntity, configurations);
+      MailMessage mailMessage = getMailMessage(emailEntity);
 
       defineMailClient(mailConfig)
         .sendMail(mailMessage, mailHandler -> {
           if (mailHandler.failed()) {
-            logger.error(String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage()));
-            resultHandler.handle(Future.failedFuture(mailHandler.cause()));
+            String errorMsg = String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage());
+            resultHandler.handle(fillResultHandler(emailEntity, Status.FAILURE, errorMsg));
             return;
           }
           // the logic of sending the result of sending email to `mod-notify`
-          JsonObject message = createMessage(mailHandler);
-          resultHandler.handle(Future.succeededFuture(message));
+          String message = createResponseMessage(mailHandler);
+          resultHandler.handle(fillResultHandler(emailEntity, Status.DELIVERED, message));
         });
     } catch (Exception ex) {
       logger.error(String.format(ERROR_SENDING_EMAIL, ex.getMessage()));
       resultHandler.handle(Future.failedFuture(ex.getMessage()));
     }
+  }
+
+  private EmailEntity fillEmailEntity(JsonObject emailEntityJson, Configurations configurations) {
+    Timestamp date = Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC));
+    EmailEntity emailEntity = emailEntityJson
+      .mapTo(EmailEntity.class)
+      .withDate(date);
+    return StringUtils.isBlank(emailEntity.getFrom())
+      ? emailEntity.withFrom(getEmailConfig(configurations, SmtpEmail.EMAIL_FROM, String.class))
+      : emailEntity;
   }
 
   private MailClient defineMailClient(MailConfig mailConfig) {
@@ -94,13 +111,9 @@ public class MailServiceImpl implements MailService {
       .setPassword(getEmailConfig(configurations, SmtpEmail.EMAIL_PASSWORD, String.class));
   }
 
-  private MailMessage getMailMessage(EmailEntity emailEntity, Configurations configurations) {
-    String from = emailEntity.getFrom();
-    if (StringUtils.isBlank(from)) {
-      from = getEmailConfig(configurations, SmtpEmail.EMAIL_FROM, String.class);
-    }
+  private MailMessage getMailMessage(EmailEntity emailEntity) {
     MailMessage mailMessage = new MailMessage()
-      .setFrom(from)
+      .setFrom(getMessageConfig(emailEntity.getFrom()))
       .setTo(getMessageConfig(emailEntity.getTo()))
       .setSubject(getMessageConfig(emailEntity.getHeader()))
       .setAttachment(getMailAttachments(emailEntity.getAttachments()));
@@ -145,8 +158,12 @@ public class MailServiceImpl implements MailService {
     return Buffer.buffer(decode);
   }
 
-  private JsonObject createMessage(AsyncResult<MailResult> mailHandler) {
-    String message = String.format(SUCCESS_SEND_EMAIL, String.join(",", mailHandler.result().getRecipients()));
-    return new JsonObject().put(MESSAGE_RESULT, message);
+  private Future<JsonObject> fillResultHandler(EmailEntity emailEntity, Status status, String message) {
+    JsonObject emailEntityJson = JsonObject.mapFrom(emailEntity.withStatus(status).withMessage(message));
+    return Future.succeededFuture(emailEntityJson);
+  }
+
+  private String createResponseMessage(AsyncResult<MailResult> mailHandler) {
+    return String.format(SUCCESS_SEND_EMAIL, String.join(",", mailHandler.result().getRecipients()));
   }
 }

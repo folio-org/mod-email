@@ -3,14 +3,14 @@
   "name": "email",
   "requires": [
     {
-    "id": "configuration",
-    "version": "2.0"
+      "id": "configuration",
+      "version": "2.0"
     }
   ],
   "provides": [
     {
       "id": "email",
-      "version": "1.0",
+      "version": "2.0",
       "handlers": [
         {
           "methods": [
@@ -23,6 +23,64 @@
           "modulePermissions": [
             "configuration.entries.collection.get"
           ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/email",
+          "permissionsRequired": [
+            "email.message.collection.get"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "delayedTasks",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": [
+            "DELETE"
+          ],
+          "pathPattern": "/delayedTask/expiredMessages",
+          "modulePermissions": [
+            "email.message.delete"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "_tenant",
+      "version": "1.0",
+      "interfaceType": "system",
+      "handlers": [
+        {
+          "methods": [
+            "POST"
+          ],
+          "pathPattern": "/_/tenant"
+        },
+        {
+          "methods": [
+            "DELETE"
+          ],
+          "pathPattern": "/_/tenant"
+        }
+      ]
+    },
+    {
+      "id": "_timer",
+      "version": "1.0",
+      "interfaceType": "system",
+      "handlers": [
+        {
+          "methods": [
+            "DELETE"
+          ],
+          "pathPattern": "/delayedTask/expiredMessages",
+          "unit": "minute",
+          "delay": "30"
         }
       ]
     }
@@ -32,11 +90,32 @@
       "permissionName": "email.message.post",
       "displayName": "message - send email notifications",
       "description": "send email notifications"
+    },
+    {
+      "permissionName": "email.message.collection.get",
+      "displayName": "get email messages",
+      "description": "get all email messages by query"
+    },
+    {
+      "permissionName": "email.message.delete",
+      "displayName": "delete email message",
+      "description": "delete email messages by expiration date or status"
+    },
+    {
+      "permissionName": "email.message.all",
+      "displayName": "email entries - all permissions",
+      "description": "Entire set of permissions needed to use the email module",
+      "subPermissions": [
+        "email.message.post",
+        "email.message.collection.get",
+        "email.message.delete"
+      ],
+      "visible": false
     }
   ],
   "metadata": {
     "containerMemory": "256",
-    "databaseConnection": "false"
+    "databaseConnection": "true"
   },
   "launchDescriptor": {
     "dockerImage": "${artifactId}:${version}",

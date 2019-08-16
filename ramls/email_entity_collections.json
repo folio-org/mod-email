@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description":"List of mail entries",
+  "properties": {
+    "emailEntity": {
+      "id": "email",
+      "type": "array",
+      "description":"Email Entity",
+      "items": {
+        "type": "object",
+        "$ref": "email_entity.json"
+      }
+    },
+    "totalRecords": {
+      "description": "total records",
+      "type": "integer"
+    }
+  },
+  "additionalProperties": true
+}
