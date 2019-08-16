@@ -22,6 +22,7 @@ import javax.mail.internet.MimeMessage;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
@@ -265,6 +266,8 @@ public abstract class AbstractAPITest {
     assertEquals(emailEntity.getOutputFormat(), entity.getOutputFormat());
     assertEquals(emailEntity.getBody(), entity.getBody());
 
+    assertTrue(StringUtils.isNoneBlank(entity.getMessage()));
+    assertTrue(StringUtils.isNoneBlank(entity.getStatus().value()));
   }
 
   /**
