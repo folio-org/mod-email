@@ -106,7 +106,7 @@ public class EmailAPITest {
 
     getResponse(okapiUrl, okapiEmailEntity)
       .then()
-      .statusCode(HttpStatus.SC_BAD_REQUEST)
+      .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
       .header(OKAPI_HEADER_TENANT, OKAPI_TENANT)
       .header(OKAPI_URL, okapiUrl)
       .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN);

@@ -2,6 +2,7 @@ package org.folio.rest.impl;
 
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.FAILURE;
+import static org.folio.util.StubUtils.getIncorrectConfigurations;
 import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
 import static org.folio.util.StubUtils.getWiserMockConfigurations;
 import static org.folio.util.StubUtils.initModConfigStub;
@@ -90,9 +91,10 @@ public class GettingMetricsTest extends AbstractAPITest {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
 
-    EmailEntity emailOne = sendEmails();
-    EmailEntity emailTwo = sendEmails();
-    EmailEntity emailThree = sendEmails();
+    int statusCode = 200;
+    EmailEntity emailOne = sendEmails(statusCode);
+    EmailEntity emailTwo = sendEmails(statusCode);
+    EmailEntity emailThree = sendEmails(statusCode);
 
     // check email on DB
     checkStoredEmailsInDb(emailOne, DELIVERED);
@@ -122,14 +124,44 @@ public class GettingMetricsTest extends AbstractAPITest {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
 
-    EmailEntity emailOne = sendEmails();
-    EmailEntity emailTwo = sendEmails();
-    EmailEntity emailThree = sendEmails();
+    int statusCode = 200;
+    EmailEntity emailOne = sendEmails(statusCode);
+    EmailEntity emailTwo = sendEmails(statusCode);
+    EmailEntity emailThree = sendEmails(statusCode);
 
     // check email on DB
     checkStoredEmailsInDb(emailOne, FAILURE);
     checkStoredEmailsInDb(emailTwo, FAILURE);
     checkStoredEmailsInDb(emailThree, FAILURE);
+
+    // delete all failure email
+    deleteEmailByDateAndStatus(generateExpirationDate(), FAILURE.value())
+      .then()
+      .statusCode(HttpStatus.SC_NO_CONTENT)
+      .extract()
+      .response();
+
+    // find all failure email
+    Response response = getEmails(FAILURE.value())
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+
+    List<EmailEntity> actualEntries = convertEntriesToJson(response).getEmailEntity();
+    assertEquals(0, actualEntries.size());
+  }
+
+  @Test
+  public void testSendEmailWithIncorrectConfigurations() {
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getIncorrectConfigurations());
+
+    // send email
+    EmailEntity email = sendEmails(500);
+
+    // check email on DB
+    checkStoredEmailsInDb(email, FAILURE);
 
     // delete all failure email
     deleteEmailByDateAndStatus(generateExpirationDate(), FAILURE.value())

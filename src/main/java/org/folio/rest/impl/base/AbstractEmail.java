@@ -6,9 +6,14 @@ import static org.folio.rest.RestVerticle.MODULE_SPECIFIC_ARGS;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TOKEN;
 import static org.folio.util.EmailUtils.MAIL_SERVICE_ADDRESS;
+import static org.folio.util.EmailUtils.REQUIREMENTS_CONFIG_SET;
 import static org.folio.util.EmailUtils.STORAGE_SERVICE_ADDRESS;
 import static org.folio.util.EmailUtils.findStatusByName;
+import static org.folio.util.EmailUtils.isIncorrectSmtpServerConfig;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.regex.Pattern;
 
 import javax.ws.rs.core.MediaType;
@@ -45,7 +50,7 @@ public abstract class AbstractEmail {
 
   private static final Pattern DATE_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
   private static final String ERROR_LOOKING_UP_MOD_CONFIG = "Error looking up config at url=%s | Expected status code 200, got %s | error message: %s";
-  protected static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SMTP server, the min config is: %s";
+  private static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SMTP server, the min config is: %s";
   private static final String ERROR_MESSAGE_INCORRECT_DATE_PARAMETER = "Invalid date value, the parameter must be in the format: yyyy-MM-dd";
 
   protected final Logger logger = LoggerFactory.getLogger(AbstractEmail.class);
@@ -112,15 +117,38 @@ public abstract class AbstractEmail {
     return future;
   }
 
-  protected Future<JsonObject> sendEmail(Configurations configurations, EmailEntity entity) {
+  protected Future<JsonObject> checkConfiguration(JsonObject conf, EmailEntity entity) {
     Future<JsonObject> future = Future.future();
-    JsonObject configJson = JsonObject.mapFrom(configurations);
+    Configurations configurations = conf.mapTo(Configurations.class);
+    if (isIncorrectSmtpServerConfig(configurations)) {
+      String errorMessage = String.format(ERROR_MIN_REQUIREMENT_MOD_CONFIG, REQUIREMENTS_CONFIG_SET);
+      JsonObject emailEntityJson = JsonObject.mapFrom(entity
+        .withStatus(EmailEntity.Status.FAILURE)
+        .withDate(Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC)))
+        .withMessage(errorMessage));
+
+      saveEmail(emailEntityJson).setHandler(result -> {
+        if (result.failed()) {
+          logger.error(result.cause());
+        }
+      });
+
+      logger.error(errorMessage);
+      future.fail(errorMessage);
+    } else {
+      future.complete(conf);
+    }
+    return future;
+  }
+
+  protected Future<JsonObject> sendEmail(JsonObject configJson, EmailEntity entity) {
+    Future<JsonObject> future = Future.future();
     JsonObject emailEntityJson = JsonObject.mapFrom(entity);
     mailService.sendEmail(configJson, emailEntityJson, future);
     return future;
   }
 
-  protected Future<String> storeEmail(JsonObject emailEntityJson) {
+  protected Future<String> saveEmail(JsonObject emailEntityJson) {
     Future<String> future = Future.future();
     storageService.saveEmailEntity(tenantId, emailEntityJson, result -> {
       if (result.failed()) {

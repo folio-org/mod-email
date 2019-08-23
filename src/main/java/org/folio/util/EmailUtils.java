@@ -13,14 +13,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.ws.rs.core.Response.Status;
-
 import org.apache.commons.lang3.StringUtils;
 import org.folio.enums.SmtpEmail;
 import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
-import org.folio.rest.jaxrs.resource.Email.PostEmailResponse;
 
 import io.vertx.ext.mail.LoginOption;
 import io.vertx.ext.mail.StartTLSOptions;
@@ -49,20 +46,10 @@ public class EmailUtils {
    */
   public static boolean isIncorrectSmtpServerConfig(Configurations configurations) {
     Set<String> configSet = configurations.getConfigs().stream()
+      .filter(conf -> StringUtils.isNotEmpty(conf.getValue()))
       .map(val -> val.getCode().toUpperCase())
       .collect(Collectors.toSet());
     return !configSet.containsAll(REQUIREMENTS_CONFIG_SET);
-  }
-
-  public static PostEmailResponse createResponse(Status status, String message) {
-    switch (status) {
-      case OK:
-        return PostEmailResponse.respond200WithTextPlain(message);
-      case BAD_REQUEST:
-        return PostEmailResponse.respond400WithTextPlain(message);
-      default:
-        return PostEmailResponse.respond500WithTextPlain("Internal Server Error");
-    }
   }
 
   /**

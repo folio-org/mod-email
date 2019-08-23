@@ -273,7 +273,7 @@ public abstract class AbstractAPITest {
   /**
    * Send random email
    */
-  protected EmailEntity sendEmails() {
+  protected EmailEntity sendEmails(int expectedStatusCode) {
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
     String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
@@ -288,7 +288,7 @@ public abstract class AbstractAPITest {
 
     sendEmail(emailEntity)
       .then()
-      .statusCode(HttpStatus.SC_OK)
+      .statusCode(expectedStatusCode)
       .extract()
       .response();
 
