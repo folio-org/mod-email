@@ -14,6 +14,7 @@ import static org.folio.util.EmailUtils.isIncorrectSmtpServerConfig;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import javax.ws.rs.core.MediaType;
@@ -29,6 +30,7 @@ import org.folio.services.storage.StorageService;
 import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.CaseInsensitiveHeaders;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
@@ -41,8 +43,6 @@ public abstract class AbstractEmail {
 
   private static final String REQUEST_URL_TEMPLATE = "%s/%s?query=module==%s";
   private static final String REQUEST_URI_PATH = "configurations/entries";
-  private static final String HTTP_HEADER_ACCEPT = HttpHeaders.ACCEPT.toString();
-  private static final String HTTP_HEADER_CONTENT_TYPE = HttpHeaders.CONTENT_TYPE.toString();
   private static final String OKAPI_URL_HEADER = "x-okapi-url";
   private static final String MODULE_EMAIL_SMTP_SERVER = "SMTP_SERVER";
   private static final String LOOKUP_TIMEOUT = "lookup.timeout";
@@ -53,7 +53,7 @@ public abstract class AbstractEmail {
   private static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SMTP server, the min config is: %s";
   private static final String ERROR_MESSAGE_INCORRECT_DATE_PARAMETER = "Invalid date value, the parameter must be in the format: yyyy-MM-dd";
 
-  protected final Logger logger = LoggerFactory.getLogger(AbstractEmail.class);
+  private final Logger logger = LoggerFactory.getLogger(AbstractEmail.class);
   protected final Vertx vertx;
   private String tenantId;
 
@@ -91,8 +91,9 @@ public abstract class AbstractEmail {
     this.httpClient = vertx.createHttpClient(options);
   }
 
-  protected Future<JsonObject> lookupConfig(MultiMap headers) {
+  protected Future<JsonObject> lookupConfig(Map<String, String> requestHeaders) {
     Future<JsonObject> future = Future.future();
+    MultiMap headers = new CaseInsensitiveHeaders().addAll(requestHeaders);
     String okapiUrl = headers.get(OKAPI_URL_HEADER);
     String okapiToken = headers.get(OKAPI_HEADER_TOKEN);
     String requestUrl = String.format(REQUEST_URL_TEMPLATE, okapiUrl, REQUEST_URI_PATH, MODULE_EMAIL_SMTP_SERVER);
@@ -100,8 +101,8 @@ public abstract class AbstractEmail {
     request
       .putHeader(OKAPI_HEADER_TOKEN, okapiToken)
       .putHeader(OKAPI_HEADER_TENANT, tenantId)
-      .putHeader(HTTP_HEADER_CONTENT_TYPE, MediaType.APPLICATION_JSON)
-      .putHeader(HTTP_HEADER_ACCEPT, MediaType.APPLICATION_JSON)
+      .putHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+      .putHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON)
       .handler(response -> {
         if (response.statusCode() != 200) {
           response.bodyHandler(bufHandler ->

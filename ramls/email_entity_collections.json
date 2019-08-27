@@ -17,5 +17,9 @@
       "type": "integer"
     }
   },
+  "required": [
+    "emailEntity",
+    "totalRecords"
+  ],
   "additionalProperties": true
 }

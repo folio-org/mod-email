@@ -24,18 +24,13 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   @Override
   public void deleteDelayedTaskExpiredMessages(String expirationDate, String status, Map<String, String> headers,
                                                Handler<AsyncResult<Response>> resultHandler, Context context) {
-    try {
-      checkExpirationDate(expirationDate)
-        .compose(v -> determinateEmailStatus(status))
-        .compose(emailStatus -> deleteEmailsByExpirationDate(expirationDate, emailStatus))
-        .map(v -> DeleteDelayedTaskExpiredMessagesResponse.respond204WithTextPlain(Status.NO_CONTENT))
-        .map(Response.class::cast)
-        .otherwise(this::mapExceptionToResponse)
-        .setHandler(resultHandler);
-    } catch (Exception ex) {
-      logger.error(ex.getMessage(), ex);
-      resultHandler.handle(Future.succeededFuture(
-        DeleteDelayedTaskExpiredMessagesResponse.respond500WithTextPlain(ex)));
-    }
+    Future.succeededFuture()
+      .compose(v -> checkExpirationDate(expirationDate))
+      .compose(v -> determinateEmailStatus(status))
+      .compose(emailStatus -> deleteEmailsByExpirationDate(expirationDate, emailStatus))
+      .map(v -> DeleteDelayedTaskExpiredMessagesResponse.respond204WithTextPlain(Status.NO_CONTENT))
+      .map(Response.class::cast)
+      .otherwise(this::mapExceptionToResponse)
+      .setHandler(resultHandler);
   }
 }

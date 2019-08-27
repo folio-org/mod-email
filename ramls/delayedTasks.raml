@@ -18,10 +18,6 @@ traits:
   pageable:  !include raml-util/traits/pageable.raml
   searchable: !include raml-util/traits/searchable.raml
 
-resourceTypes:
-  collection: !include raml-util/rtypes/collection.raml
-  collection-item-get: !include raml-util/rtypes/item-collection-get.raml
-
 /delayedTask:
   /expiredMessages:
     delete:
@@ -45,11 +41,6 @@ resourceTypes:
           body:
             text/plain:
               example: "No Content"
-        400:
-          description: "Bad Request"
-          body:
-            text/plain:
-              example: "Error message"
         500:
           description: "Internal server error"
           body:
