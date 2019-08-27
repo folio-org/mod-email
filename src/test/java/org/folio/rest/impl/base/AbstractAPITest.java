@@ -213,7 +213,7 @@ public abstract class AbstractAPITest {
           return isContainsSenderAddress(sender, msg.getMimeMessage().getFrom());
         } catch (MessagingException ex) {
           logger.debug(ex);
-          throw throwAssertionFailedError(sender);
+          return false;
         }
       })
       .findFirst()
@@ -221,7 +221,7 @@ public abstract class AbstractAPITest {
   }
 
   private AssertionFailedError throwAssertionFailedError(String sender) {
-    return new AssertionFailedError(String.format(MESSAGE_NOT_FOUND, sender));
+    throw new AssertionFailedError(String.format(MESSAGE_NOT_FOUND, sender));
   }
 
   /**
