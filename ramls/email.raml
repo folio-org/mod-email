@@ -1,7 +1,7 @@
 #%RAML 1.0
 
 title: Email API
-version: v0.1
+version: v2.0
 protocols: [ HTTP, HTTPS ]
 baseUri: http://localhost
 
@@ -12,6 +12,7 @@ documentation:
 types:
   errors: !include raml-util/schemas/errors.schema
   emailEntity: !include email_entity.json
+  emailEntries: !include email_entity_collections.json
   configurations: !include configurations.json
 
 traits:
@@ -23,8 +24,13 @@ traits:
 resourceTypes:
   collection: !include raml-util/rtypes/collection.raml
   collection-item: !include raml-util/rtypes/item-collection.raml
+  collection-item-get: !include raml-util/rtypes/item-collection-get.raml
 
 /email:
+  type:
+    collection-item-get:
+      schema: emailEntries
+      exampleItem: !include examples/email.sample
   post:
     description: Send email notifications
     body:
@@ -46,3 +52,9 @@ resourceTypes:
         body:
           text/plain:
             example: "Internal server error"
+  get:
+    description: "Get emails"
+    is: [
+      searchable: {description: "searchable using CQL", example: "status==FAILURE"},
+      pageable
+    ]

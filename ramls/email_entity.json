@@ -36,6 +36,30 @@
         "type": "object",
         "$ref": "attachment.json"
       }
+    },
+    "status": {
+      "description": "status of email",
+      "type": "string",
+      "enum": [
+        "DELIVERED",
+        "FAILURE",
+        "PROCESSING"
+      ],
+      "default": "DELIVERED"
+    },
+    "message": {
+      "description": "Server error message or other cause of the error",
+      "type": "string"
+    },
+    "date": {
+      "description": "The date the email was sent to the SMTP server",
+      "type": "string",
+      "format": "date-time"
+    },
+    "metadata": {
+      "description": "Metadata about creation and changes to email, provided by the server (client should not provide)",
+      "type" : "object",
+      "$ref" : "raml-util/schemas/metadata.schema"
     }
   },
   "required": [
