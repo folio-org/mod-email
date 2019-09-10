@@ -1,3 +1,7 @@
+## 2019-09-10 v1.5.0
+ * Fix security vulnerabilities reported in jackson-databind (MODEMAIL-22)
+ * Implement an endpoint for getting all emails for metrics (MODEMAIL-21)
+
 ## 2019-07-23 v1.4.0
  * Fix security vulnerabilities reported in jackson-databind
  * Typo on variable name: "SMPT" instead of "SMTP" (MODEMAIL-19)
