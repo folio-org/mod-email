@@ -56,10 +56,6 @@ public class StubUtils {
     return new Configurations().withTotalRecords(new Random().nextInt(5));
   }
 
-  public static Configurations getConfigurations() {
-    return createConfigurations("user", "password", "smtp_host", "500");
-  }
-
   public static Configurations getIncorrectConfigurations() {
     return createConfigurations("", "", "", "");
   }
