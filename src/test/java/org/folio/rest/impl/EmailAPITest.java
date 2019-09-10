@@ -132,12 +132,12 @@ public class EmailAPITest {
   @Test
   public void shouldReturnFailedResultIncorrectSmtpConfig() {
     int mockServerPort = userMockServer.port();
-    initModConfigStub(mockServerPort, getConfigurations());
+    initModConfigStub(mockServerPort, getIncorrectConfigurations());
 
     String expectedResponse = "Internal Server Error";
     String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", "text/html");
 
-    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), okapiEmailEntity)
+    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, userMockServer.port()), okapiEmailEntity)
       .then()
       .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
       .extract()
