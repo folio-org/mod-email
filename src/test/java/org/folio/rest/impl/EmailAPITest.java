@@ -1,8 +1,30 @@
 package org.folio.rest.impl;
 
+import static junit.framework.TestCase.assertTrue;
+import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
+import static org.folio.rest.RestVerticle.OKAPI_HEADER_TOKEN;
+import static org.folio.util.StubUtils.getEmailEntity;
+import static org.folio.util.StubUtils.getIncorrectConfigurations;
+import static org.folio.util.StubUtils.initFailModConfigStub;
+import static org.folio.util.StubUtils.initIncorrectConfigurations;
+import static org.folio.util.StubUtils.initModConfigStub;
+import static org.hamcrest.core.StringContains.containsString;
+
+import javax.ws.rs.core.MediaType;
+
+import org.apache.http.HttpStatus;
+import org.folio.rest.RestVerticle;
+import org.folio.rest.tools.utils.NetworkUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+
 import io.restassured.RestAssured;
 import io.restassured.http.Header;
 import io.restassured.response.Response;
@@ -13,21 +35,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.apache.http.HttpStatus;
-import org.folio.rest.RestVerticle;
-import org.folio.rest.tools.utils.NetworkUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import javax.ws.rs.core.MediaType;
-
-import static junit.framework.TestCase.assertTrue;
-import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
-import static org.folio.rest.RestVerticle.OKAPI_HEADER_TOKEN;
-import static org.folio.util.StubUtils.*;
 
 @RunWith(VertxUnitRunner.class)
 public class EmailAPITest {
@@ -74,26 +81,26 @@ public class EmailAPITest {
 
     getResponse(okapiUrl, okapiEmailEntity)
       .then()
-      .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-      .header(OKAPI_HEADER_TENANT, OKAPI_TENANT)
+      .statusCode(HttpStatus.SC_OK)
       .header(OKAPI_URL, okapiUrl)
       .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN);
   }
 
   @Test
-  public void checkIncorrectConfigurationFromConfigModule() {
+  public void checkIncorrectSmtpConfiguration() {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getIncorrectConfigurations());
 
     String okapiUrl = String.format(OKAPI_URL_TEMPLATE, mockServerPort);
     String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", null);
+    String expectedErrMsg = "The 'mod-config' module doesn't have a minimum config for SMTP server";
 
     getResponse(okapiUrl, okapiEmailEntity)
       .then()
-      .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-      .header(OKAPI_HEADER_TENANT, OKAPI_TENANT)
+      .statusCode(HttpStatus.SC_OK)
       .header(OKAPI_URL, okapiUrl)
-      .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN);
+      .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN)
+      .body(containsString(expectedErrMsg));
   }
 
   @Test
@@ -103,60 +110,25 @@ public class EmailAPITest {
 
     String okapiUrl = String.format(OKAPI_URL_TEMPLATE, mockServerPort);
     String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", null);
+    String expectedErrMsg = "Error looking up config at url";
 
     getResponse(okapiUrl, okapiEmailEntity)
       .then()
-      .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+      .statusCode(HttpStatus.SC_BAD_REQUEST)
       .header(OKAPI_HEADER_TENANT, OKAPI_TENANT)
       .header(OKAPI_URL, okapiUrl)
-      .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN);
-  }
-
-  @Test
-  public void shouldReturnFailedResultWithMessageWhenConfigNotFound() {
-    int mockServerPort = userMockServer.port();
-    initModConfigStub(mockServerPort, initIncorrectConfigurations());
-
-    String expectedResponse = "Internal Server Error";
-    String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", "text");
-
-    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, mockServerPort), okapiEmailEntity)
-      .then()
-      .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-      .extract()
-      .response();
-
-    assertTrue(response.asString().contains(expectedResponse));
-  }
-
-  @Test
-  public void shouldReturnFailedResultIncorrectSmtpConfig() {
-    int mockServerPort = userMockServer.port();
-    initModConfigStub(mockServerPort, getIncorrectConfigurations());
-
-    String expectedResponse = "Internal Server Error";
-    String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", "text/html");
-
-    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, userMockServer.port()), okapiEmailEntity)
-      .then()
-      .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-      .extract()
-      .response();
-
-    assertTrue(response.asString().contains(expectedResponse));
+      .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN)
+      .body(containsString(expectedErrMsg));
   }
 
   @Test
   public void shouldReturnFailedResultWhenRequestWithoutJson() {
     String expectedResponse = "The object to be validated must not be null";
 
-    Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, userMockServer.port()))
+    getResponse(String.format(OKAPI_URL_TEMPLATE, userMockServer.port()))
       .then()
       .statusCode(HttpStatus.SC_BAD_REQUEST)
-      .extract()
-      .response();
-
-    assertTrue(response.asString().contains(expectedResponse));
+      .body(containsString(expectedResponse));
   }
 
   @Test
