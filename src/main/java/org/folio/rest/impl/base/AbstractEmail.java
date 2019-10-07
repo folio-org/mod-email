@@ -1,6 +1,7 @@
 package org.folio.rest.impl.base;
 
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static org.folio.rest.RestVerticle.MODULE_SPECIFIC_ARGS;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
@@ -17,10 +18,11 @@ import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
+import org.folio.exceptions.ConfigurationException;
+import org.folio.exceptions.SmtpConfigurationException;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntries;
@@ -101,12 +103,16 @@ public abstract class AbstractEmail {
     request
       .putHeader(OKAPI_HEADER_TOKEN, okapiToken)
       .putHeader(OKAPI_HEADER_TENANT, tenantId)
-      .putHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-      .putHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON)
+      .putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON)
+      .putHeader(HttpHeaders.ACCEPT, APPLICATION_JSON)
       .handler(response -> {
         if (response.statusCode() != 200) {
-          response.bodyHandler(bufHandler ->
-            future.fail(String.format(ERROR_LOOKING_UP_MOD_CONFIG, requestUrl, response.statusCode(), bufHandler.toString())));
+          response.bodyHandler(bufHandler -> {
+              String errMsg = String.format(ERROR_LOOKING_UP_MOD_CONFIG, requestUrl, response.statusCode(), bufHandler.toString());
+              logger.error(errMsg);
+              future.fail(new ConfigurationException(errMsg));
+            }
+          );
         } else {
           response.bodyHandler(bufHandler -> {
             JsonObject resultObject = bufHandler.toJsonObject();
@@ -135,7 +141,7 @@ public abstract class AbstractEmail {
       });
 
       logger.error(errorMessage);
-      future.fail(errorMessage);
+      future.fail(new SmtpConfigurationException(errorMessage));
     } else {
       future.complete(conf);
     }
@@ -205,7 +211,23 @@ public abstract class AbstractEmail {
   }
 
   protected Response mapExceptionToResponse(Throwable t) {
-    logger.error(t.getMessage(), t);
+    String errMsg = t.getMessage();
+    logger.error(errMsg, t);
+
+    if (t.getClass() == ConfigurationException.class) {
+      return Response.status(400)
+        .header(CONTENT_TYPE, TEXT_PLAIN)
+        .entity(errMsg)
+        .build();
+    }
+
+    if (t.getClass() == SmtpConfigurationException.class) {
+      return Response.status(200)
+        .header(CONTENT_TYPE, TEXT_PLAIN)
+        .entity(errMsg)
+        .build();
+    }
+
     return Response.status(500)
       .header(CONTENT_TYPE, TEXT_PLAIN)
       .entity(Response.Status.INTERNAL_SERVER_ERROR.getReasonPhrase())
