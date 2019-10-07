@@ -158,7 +158,7 @@ public class GettingMetricsTest extends AbstractAPITest {
     initModConfigStub(mockServerPort, getIncorrectConfigurations());
 
     // send email
-    EmailEntity email = sendEmails(500);
+    EmailEntity email = sendEmails(200);
 
     // check email on DB
     checkStoredEmailsInDb(email, FAILURE);
