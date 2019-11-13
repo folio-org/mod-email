@@ -16,7 +16,7 @@
   <properties>
     <raml-module-builder.version>24.0.0</raml-module-builder.version>
     <vertx.version>3.5.4</vertx.version>
-    <jackson.version>2.9.10</jackson.version>
+    <jackson.version>2.10.1</jackson.version>
     <junit.version>4.12</junit.version>
     <subethasmtp.version>3.1.7</subethasmtp.version>
     <rest-assured.version>3.1.1</rest-assured.version>
