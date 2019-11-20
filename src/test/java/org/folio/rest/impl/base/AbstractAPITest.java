@@ -68,7 +68,6 @@ public abstract class AbstractAPITest {
   private static final String TENANT_CLIENT_HOST = " http://%s:%s";
 
   private static final String OKAPI_TENANT = "test_tenant";
-  private static final String OKAPI_TOKEN = "test_token";
   private static final String OKAPI_URL_HEADER = "x-okapi-url";
   private static final String OKAPI_HOST = "localhost";
   private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
@@ -161,7 +160,6 @@ public abstract class AbstractAPITest {
       .contentType(MediaType.APPLICATION_JSON)
       .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
       .header(new Header(OKAPI_URL_HEADER, okapiUrl))
-      .header(new Header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN))
       .when()
       .get(String.format(REST_PATH_WITH_QUERY, REST_PATH_GET_EMAILS, status, DEFAULT_LIMIT));
   }
@@ -176,7 +174,6 @@ public abstract class AbstractAPITest {
       .contentType(MediaType.APPLICATION_JSON)
       .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
       .header(new Header(OKAPI_URL_HEADER, okapiUrl))
-      .header(new Header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN))
       .body(JsonObject.mapFrom(emailEntity).toString())
       .when()
       .post(REST_PATH_GET_EMAILS);
@@ -191,7 +188,6 @@ public abstract class AbstractAPITest {
       .port(port)
       .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
       .header(new Header(OKAPI_URL_HEADER, okapiUrl))
-      .header(new Header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN))
       .when()
       .delete(String.format(REST_PATH_DELETE_BATCH_EMAILS, REST_DELETE_BATCH_EMAILS, expirationDate, status));
   }

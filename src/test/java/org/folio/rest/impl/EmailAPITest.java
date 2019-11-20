@@ -43,7 +43,6 @@ public class EmailAPITest {
   private static final String HTTP_PORT = "http.port";
   private static final String REST_PATH = "/email";
   private static final String OKAPI_TENANT = "test_tenant";
-  private static final String OKAPI_TOKEN = "test_token";
   private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
 
   private static Vertx vertx;
@@ -156,8 +155,7 @@ public class EmailAPITest {
       .port(port)
       .contentType(MediaType.APPLICATION_JSON)
       .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
-      .header(new Header(OKAPI_URL, okapiUrl))
-      .header(new Header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN));
+      .header(new Header(OKAPI_URL, okapiUrl));
   }
 
 }
