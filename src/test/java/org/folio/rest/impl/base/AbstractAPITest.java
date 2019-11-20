@@ -28,6 +28,7 @@ import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntries;
+import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
@@ -107,14 +108,15 @@ public abstract class AbstractAPITest {
 
     PostgresClient.getInstance(vertx).startEmbeddedPostgres();
 
-    TenantClient tenantClient = new TenantClient(String.format(TENANT_CLIENT_HOST, OKAPI_HOST, port), OKAPI_TENANT, OKAPI_TOKEN);
+    TenantClient tenantClient = new TenantClient(String.format(TENANT_CLIENT_HOST, OKAPI_HOST, port), OKAPI_TENANT, null);
     DeploymentOptions restDeploymentOptions = new DeploymentOptions()
       .setConfig(new JsonObject().put(HTTP_PORT, port));
 
     vertx.deployVerticle(RestVerticle.class.getName(), restDeploymentOptions,
       res -> {
         try {
-          tenantClient.postTenant(null, res2 -> {
+          TenantAttributes t = new TenantAttributes().withModuleTo("mod-email-1.0.0");
+          tenantClient.postTenant(t, res2 -> {
               wiser.start();
               async.complete();
             }
