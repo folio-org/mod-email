@@ -81,9 +81,7 @@ public class EmailAPITest {
 
     getResponse(okapiUrl, okapiEmailEntity)
       .then()
-      .statusCode(HttpStatus.SC_OK)
-      .header(OKAPI_URL, okapiUrl)
-      .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN);
+      .statusCode(HttpStatus.SC_OK);
   }
 
   @Test
@@ -98,8 +96,6 @@ public class EmailAPITest {
     getResponse(okapiUrl, okapiEmailEntity)
       .then()
       .statusCode(HttpStatus.SC_OK)
-      .header(OKAPI_URL, okapiUrl)
-      .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN)
       .body(containsString(expectedErrMsg));
   }
 
@@ -115,9 +111,6 @@ public class EmailAPITest {
     getResponse(okapiUrl, okapiEmailEntity)
       .then()
       .statusCode(HttpStatus.SC_BAD_REQUEST)
-      .header(OKAPI_HEADER_TENANT, OKAPI_TENANT)
-      .header(OKAPI_URL, okapiUrl)
-      .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN)
       .body(containsString(expectedErrMsg));
   }
 

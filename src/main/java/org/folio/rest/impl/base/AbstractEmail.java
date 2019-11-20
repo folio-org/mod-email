@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.core.Promise;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.exceptions.ConfigurationException;
 import org.folio.exceptions.SmtpConfigurationException;
@@ -94,7 +95,7 @@ public abstract class AbstractEmail {
   }
 
   protected Future<JsonObject> lookupConfig(Map<String, String> requestHeaders) {
-    Future<JsonObject> future = Future.future();
+    Promise<JsonObject> promise = Promise.promise();
     MultiMap headers = new CaseInsensitiveHeaders().addAll(requestHeaders);
     String okapiUrl = headers.get(OKAPI_URL_HEADER);
     String okapiToken = headers.get(OKAPI_HEADER_TOKEN);
@@ -110,22 +111,22 @@ public abstract class AbstractEmail {
           response.bodyHandler(bufHandler -> {
               String errMsg = String.format(ERROR_LOOKING_UP_MOD_CONFIG, requestUrl, response.statusCode(), bufHandler.toString());
               logger.error(errMsg);
-              future.fail(new ConfigurationException(errMsg));
+              promise.fail(new ConfigurationException(errMsg));
             }
           );
         } else {
           response.bodyHandler(bufHandler -> {
             JsonObject resultObject = bufHandler.toJsonObject();
-            future.complete(resultObject);
+            promise.complete(resultObject);
           });
         }
       });
     request.end();
-    return future;
+    return promise.future();
   }
 
   protected Future<JsonObject> checkConfiguration(JsonObject conf, EmailEntity entity) {
-    Future<JsonObject> future = Future.future();
+    Promise<JsonObject> promise = Promise.promise();
     Configurations configurations = conf.mapTo(Configurations.class);
     if (isIncorrectSmtpServerConfig(configurations)) {
       String errorMessage = String.format(ERROR_MIN_REQUIREMENT_MOD_CONFIG, REQUIREMENTS_CONFIG_SET);
@@ -141,37 +142,37 @@ public abstract class AbstractEmail {
       });
 
       logger.error(errorMessage);
-      future.fail(new SmtpConfigurationException(errorMessage));
+      promise.fail(new SmtpConfigurationException(errorMessage));
     } else {
-      future.complete(conf);
+      promise.complete(conf);
     }
-    return future;
+    return promise.future();
   }
 
   protected Future<JsonObject> sendEmail(JsonObject configJson, EmailEntity entity) {
-    Future<JsonObject> future = Future.future();
+    Promise<JsonObject> promise = Promise.promise();
     JsonObject emailEntityJson = JsonObject.mapFrom(entity);
-    mailService.sendEmail(configJson, emailEntityJson, future);
-    return future;
+    mailService.sendEmail(configJson, emailEntityJson, promise);
+    return promise.future();
   }
 
   protected Future<String> saveEmail(JsonObject emailEntityJson) {
-    Future<String> future = Future.future();
+    Promise<String> promise = Promise.promise();
     storageService.saveEmailEntity(tenantId, emailEntityJson, result -> {
       if (result.failed()) {
-        future.fail(result.cause());
+        promise.fail(result.cause());
         return;
       }
       EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
-      future.complete(emailEntity.getMessage());
+      promise.complete(emailEntity.getMessage());
     });
-    return future;
+    return promise.future();
   }
 
   protected Future<JsonObject> findEmailEntries(int limit, int offset, String query) {
-    Future<JsonObject> future = Future.future();
-    storageService.findEmailEntries(tenantId, limit, offset, query, future);
-    return future;
+    Promise<JsonObject> promise = Promise.promise();
+    storageService.findEmailEntries(tenantId, limit, offset, query, promise);
+    return promise.future();
   }
 
   protected Future<EmailEntries> mapJsonObjectToEmailEntries(JsonObject emailEntriesJson) {
@@ -179,35 +180,35 @@ public abstract class AbstractEmail {
   }
 
   protected Future<Void> deleteEmailsByExpirationDate(String expirationDate, String emailStatus) {
-    Future<Void> future = Future.future();
+    Promise<Void> promise = Promise.promise();
     storageService.deleteEmailEntriesByExpirationDateAndStatus(tenantId, expirationDate, emailStatus,
       result -> {
         if (result.failed()) {
-          future.fail(result.cause());
+          promise.fail(result.cause());
           return;
         }
-        future.complete();
+        promise.complete();
       });
-    return future;
+    return promise.future();
   }
 
   protected Future<String> determinateEmailStatus(String emailStatus) {
-    Future<String> future = Future.future();
+    Promise<String> promise = Promise.promise();
     String status = StringUtils.isBlank(emailStatus)
       ? EmailEntity.Status.DELIVERED.value()
       : findStatusByName(emailStatus);
-    future.complete(status);
-    return future;
+    promise.complete(status);
+    return promise.future();
   }
 
   protected Future<Void> checkExpirationDate(String expirationDate) {
-    Future<Void> future = Future.future();
+    Promise<Void> promise = Promise.promise();
     if (StringUtils.isBlank(expirationDate) || isCorrectDateFormat(expirationDate)) {
-      future.complete();
+      promise.complete();
     } else {
-      future.fail(new IllegalArgumentException(ERROR_MESSAGE_INCORRECT_DATE_PARAMETER));
+      promise.fail(new IllegalArgumentException(ERROR_MESSAGE_INCORRECT_DATE_PARAMETER));
     }
-    return future;
+    return promise.future();
   }
 
   protected Response mapExceptionToResponse(Throwable t) {

@@ -3,16 +3,8 @@
   "tables": [
     {
       "tableName": "email_statistics",
-      "generateId": true,
       "fromModuleVersion": "1.0",
-      "withMetadata": true,
-      "pkColumnName": "_id",
-      "index": [
-        {
-          "fieldName": "id",
-          "tOps": "ADD"
-        }
-      ]
+      "withMetadata": true
     }
   ]
 }
