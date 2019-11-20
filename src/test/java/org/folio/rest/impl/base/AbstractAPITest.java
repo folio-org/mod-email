@@ -105,7 +105,6 @@ public abstract class AbstractAPITest {
     wiser = new Wiser();
     wiser.setPort(2500);
 
-    PostgresClient.setIsEmbedded(true);
     PostgresClient.getInstance(vertx).startEmbeddedPostgres();
 
     TenantClient tenantClient = new TenantClient(String.format(TENANT_CLIENT_HOST, OKAPI_HOST, port), OKAPI_TENANT, OKAPI_TOKEN);
