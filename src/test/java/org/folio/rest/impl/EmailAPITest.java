@@ -35,6 +35,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.folio.rest.persist.PostgresClient;
 
 @RunWith(VertxUnitRunner.class)
 public class EmailAPITest {
@@ -67,6 +68,7 @@ public class EmailAPITest {
   @AfterClass
   public static void tearDownClass(final TestContext context) {
     Async async = context.async();
+    PostgresClient.stopEmbeddedPostgres();
     vertx.close(context.asyncAssertSuccess(res -> async.complete()));
   }
 
