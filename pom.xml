@@ -14,10 +14,8 @@
   </licenses>
 
   <properties>
-    <raml-module-builder.version>24.0.0</raml-module-builder.version>
-    <vertx.version>3.5.4</vertx.version>
-    <jackson.version>2.10.1</jackson.version>
-    <junit.version>4.12</junit.version>
+    <raml-module-builder.version>29.0.1</raml-module-builder.version>
+    <vertx.version>3.8.1</vertx.version>
     <subethasmtp.version>3.1.7</subethasmtp.version>
     <rest-assured.version>3.1.1</rest-assured.version>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
@@ -29,16 +27,6 @@
       <groupId>org.folio</groupId>
       <artifactId>domain-models-runtime</artifactId>
       <version>${raml-module-builder.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-core</artifactId>
-      <version>${vertx.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-web</artifactId>
-      <version>${vertx.version}</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -60,12 +48,6 @@
       <groupId>io.vertx</groupId>
       <artifactId>vertx-unit</artifactId>
       <version>${vertx.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -94,19 +76,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <!-- Overriding versions coming from RMB -->
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>com.fasterxml.jackson</groupId>
-        <artifactId>jackson-bom</artifactId>
-        <version>${jackson.version}</version>
-        <scope>import</scope>
-        <type>pom</type>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <build>
     <resources>
@@ -253,12 +222,12 @@
           <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjrt</artifactId>
-            <version>1.8.9</version>
+            <version>1.9.4</version>
           </dependency>
           <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjtools</artifactId>
-            <version>1.8.9</version>
+            <version>1.9.4</version>
           </dependency>
         </dependencies>
       </plugin>

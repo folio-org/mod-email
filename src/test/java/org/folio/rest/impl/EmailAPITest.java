@@ -35,6 +35,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.folio.rest.persist.PostgresClient;
 
 @RunWith(VertxUnitRunner.class)
 public class EmailAPITest {
@@ -43,7 +44,6 @@ public class EmailAPITest {
   private static final String HTTP_PORT = "http.port";
   private static final String REST_PATH = "/email";
   private static final String OKAPI_TENANT = "test_tenant";
-  private static final String OKAPI_TOKEN = "test_token";
   private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
 
   private static Vertx vertx;
@@ -68,6 +68,7 @@ public class EmailAPITest {
   @AfterClass
   public static void tearDownClass(final TestContext context) {
     Async async = context.async();
+    PostgresClient.stopEmbeddedPostgres();
     vertx.close(context.asyncAssertSuccess(res -> async.complete()));
   }
 
@@ -81,9 +82,7 @@ public class EmailAPITest {
 
     getResponse(okapiUrl, okapiEmailEntity)
       .then()
-      .statusCode(HttpStatus.SC_OK)
-      .header(OKAPI_URL, okapiUrl)
-      .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN);
+      .statusCode(HttpStatus.SC_OK);
   }
 
   @Test
@@ -98,8 +97,6 @@ public class EmailAPITest {
     getResponse(okapiUrl, okapiEmailEntity)
       .then()
       .statusCode(HttpStatus.SC_OK)
-      .header(OKAPI_URL, okapiUrl)
-      .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN)
       .body(containsString(expectedErrMsg));
   }
 
@@ -115,9 +112,6 @@ public class EmailAPITest {
     getResponse(okapiUrl, okapiEmailEntity)
       .then()
       .statusCode(HttpStatus.SC_BAD_REQUEST)
-      .header(OKAPI_HEADER_TENANT, OKAPI_TENANT)
-      .header(OKAPI_URL, okapiUrl)
-      .header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN)
       .body(containsString(expectedErrMsg));
   }
 
@@ -163,8 +157,7 @@ public class EmailAPITest {
       .port(port)
       .contentType(MediaType.APPLICATION_JSON)
       .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
-      .header(new Header(OKAPI_URL, okapiUrl))
-      .header(new Header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN));
+      .header(new Header(OKAPI_URL, okapiUrl));
   }
 
 }

@@ -28,6 +28,7 @@ import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntries;
+import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
@@ -67,7 +68,6 @@ public abstract class AbstractAPITest {
   private static final String TENANT_CLIENT_HOST = " http://%s:%s";
 
   private static final String OKAPI_TENANT = "test_tenant";
-  private static final String OKAPI_TOKEN = "test_token";
   private static final String OKAPI_URL_HEADER = "x-okapi-url";
   private static final String OKAPI_HOST = "localhost";
   private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
@@ -105,17 +105,17 @@ public abstract class AbstractAPITest {
     wiser = new Wiser();
     wiser.setPort(2500);
 
-    PostgresClient.setIsEmbedded(true);
     PostgresClient.getInstance(vertx).startEmbeddedPostgres();
 
-    TenantClient tenantClient = new TenantClient(String.format(TENANT_CLIENT_HOST, OKAPI_HOST, port), OKAPI_TENANT, OKAPI_TOKEN);
+    TenantClient tenantClient = new TenantClient(String.format(TENANT_CLIENT_HOST, OKAPI_HOST, port), OKAPI_TENANT, null);
     DeploymentOptions restDeploymentOptions = new DeploymentOptions()
       .setConfig(new JsonObject().put(HTTP_PORT, port));
 
     vertx.deployVerticle(RestVerticle.class.getName(), restDeploymentOptions,
       res -> {
         try {
-          tenantClient.postTenant(null, res2 -> {
+          TenantAttributes t = new TenantAttributes().withModuleTo("mod-email-1.0.0");
+          tenantClient.postTenant(t, res2 -> {
               wiser.start();
               async.complete();
             }
@@ -160,7 +160,6 @@ public abstract class AbstractAPITest {
       .contentType(MediaType.APPLICATION_JSON)
       .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
       .header(new Header(OKAPI_URL_HEADER, okapiUrl))
-      .header(new Header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN))
       .when()
       .get(String.format(REST_PATH_WITH_QUERY, REST_PATH_GET_EMAILS, status, DEFAULT_LIMIT));
   }
@@ -175,7 +174,6 @@ public abstract class AbstractAPITest {
       .contentType(MediaType.APPLICATION_JSON)
       .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
       .header(new Header(OKAPI_URL_HEADER, okapiUrl))
-      .header(new Header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN))
       .body(JsonObject.mapFrom(emailEntity).toString())
       .when()
       .post(REST_PATH_GET_EMAILS);
@@ -190,7 +188,6 @@ public abstract class AbstractAPITest {
       .port(port)
       .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
       .header(new Header(OKAPI_URL_HEADER, okapiUrl))
-      .header(new Header(OKAPI_HEADER_TOKEN, OKAPI_TOKEN))
       .when()
       .delete(String.format(REST_PATH_DELETE_BATCH_EMAILS, REST_DELETE_BATCH_EMAILS, expirationDate, status));
   }
