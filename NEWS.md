@@ -1,3 +1,9 @@
+## 2019-12-03 v1.6.0
+ * Fix incorrect response status when SMTP configuration is missing in `mod-configuration` (MODEMAIL-24)
+ * Protect endpoint with required permissions (MODEMAIL-25)
+ * Fix security vulnerabilities reported in jackson-databind (MODEMAIL-28)
+ * Use JVM features to manage container memory (MODEMAIL-30)
+
 ## 2019-09-10 v1.5.0
  * Fix security vulnerabilities reported in jackson-databind (MODEMAIL-22)
  * Implement an endpoint for getting all emails for metrics (MODEMAIL-21)
