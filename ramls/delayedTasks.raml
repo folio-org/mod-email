@@ -1,7 +1,7 @@
 #%RAML 1.0
 
 title: Trigger API
-version: v1.0
+version: v2.0
 protocols: [ HTTP, HTTPS ]
 baseUri: http://localhost
 
@@ -38,9 +38,6 @@ traits:
       responses:
         204:
           description: "success"
-          body:
-            text/plain:
-              example: "No Content"
         500:
           description: "Internal server error"
           body:
