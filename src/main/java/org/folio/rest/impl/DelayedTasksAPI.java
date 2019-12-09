@@ -28,7 +28,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
       .compose(v -> checkExpirationDate(expirationDate))
       .compose(v -> determinateEmailStatus(status))
       .compose(emailStatus -> deleteEmailsByExpirationDate(expirationDate, emailStatus))
-      .map(v -> DeleteDelayedTaskExpiredMessagesResponse.respond204WithTextPlain(Status.NO_CONTENT))
+      .map(v -> DeleteDelayedTaskExpiredMessagesResponse.respond204())
       .map(Response.class::cast)
       .otherwise(this::mapExceptionToResponse)
       .setHandler(resultHandler);
