@@ -1,3 +1,6 @@
+## 2020-03-12 v1.7.0
+ * Fix expired message deletion response to return status 204 with no content (MODEMAIL-33).
+
 ## 2019-12-03 v1.6.0
  * Fix incorrect response status when SMTP configuration is missing in `mod-configuration` (MODEMAIL-24)
  * Protect endpoint with required permissions (MODEMAIL-25)
