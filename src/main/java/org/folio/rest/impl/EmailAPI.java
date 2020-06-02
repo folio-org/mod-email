@@ -31,7 +31,7 @@ public class EmailAPI extends AbstractEmail implements Email {
       .map(PostEmailResponse::respond200WithTextPlain)
       .map(Response.class::cast)
       .otherwise(this::mapExceptionToResponse)
-      .setHandler(resultHandler);
+      .onComplete(resultHandler);
   }
 
   @Override
@@ -43,6 +43,6 @@ public class EmailAPI extends AbstractEmail implements Email {
       .map(GetEmailResponse::respond200WithApplicationJson)
       .map(Response.class::cast)
       .otherwise(this::mapExceptionToResponse)
-      .setHandler(resultHandler);
+      .onComplete(resultHandler);
   }
 }

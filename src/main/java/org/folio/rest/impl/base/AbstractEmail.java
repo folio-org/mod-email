@@ -20,7 +20,6 @@ import java.util.regex.Pattern;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.Promise;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.exceptions.ConfigurationException;
 import org.folio.exceptions.SmtpConfigurationException;
@@ -32,6 +31,7 @@ import org.folio.services.storage.StorageService;
 
 import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.CaseInsensitiveHeaders;
 import io.vertx.core.http.HttpClient;
@@ -135,7 +135,7 @@ public abstract class AbstractEmail {
         .withDate(Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC)))
         .withMessage(errorMessage));
 
-      saveEmail(emailEntityJson).setHandler(result -> {
+      saveEmail(emailEntityJson).onComplete(result -> {
         if (result.failed()) {
           logger.error(result.cause());
         }
