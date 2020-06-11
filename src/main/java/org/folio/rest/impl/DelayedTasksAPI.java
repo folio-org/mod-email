@@ -1,7 +1,5 @@
 package org.folio.rest.impl;
 
-import static javax.ws.rs.core.Response.Status;
-
 import java.util.Map;
 
 import javax.ws.rs.core.Response;
@@ -31,6 +29,6 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
       .map(v -> DeleteDelayedTaskExpiredMessagesResponse.respond204())
       .map(Response.class::cast)
       .otherwise(this::mapExceptionToResponse)
-      .setHandler(resultHandler);
+      .onComplete(resultHandler);
   }
 }

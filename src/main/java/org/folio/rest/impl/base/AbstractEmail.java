@@ -20,7 +20,6 @@ import java.util.regex.Pattern;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.Promise;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.exceptions.ConfigurationException;
 import org.folio.exceptions.SmtpConfigurationException;
@@ -32,8 +31,8 @@ import org.folio.services.storage.StorageService;
 
 import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.CaseInsensitiveHeaders;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
@@ -96,7 +95,7 @@ public abstract class AbstractEmail {
 
   protected Future<JsonObject> lookupConfig(Map<String, String> requestHeaders) {
     Promise<JsonObject> promise = Promise.promise();
-    MultiMap headers = new CaseInsensitiveHeaders().addAll(requestHeaders);
+    MultiMap headers = MultiMap.caseInsensitiveMultiMap().addAll(requestHeaders);
     String okapiUrl = headers.get(OKAPI_URL_HEADER);
     String okapiToken = headers.get(OKAPI_HEADER_TOKEN);
     String requestUrl = String.format(REQUEST_URL_TEMPLATE, okapiUrl, REQUEST_URI_PATH, MODULE_EMAIL_SMTP_SERVER);
@@ -135,7 +134,7 @@ public abstract class AbstractEmail {
         .withDate(Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC)))
         .withMessage(errorMessage));
 
-      saveEmail(emailEntityJson).setHandler(result -> {
+      saveEmail(emailEntityJson).onComplete(result -> {
         if (result.failed()) {
           logger.error(result.cause());
         }
