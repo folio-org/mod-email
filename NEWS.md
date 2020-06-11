@@ -1,3 +1,6 @@
+## 2020-06-11 v1.8.0
+ * Update RMB version to 30.0.1 and Vertx to 3.9.1 (MODEMAIL-36)
+
 ## 2020-03-12 v1.7.0
  * Fix expired message deletion response to return status 204 with no content (MODEMAIL-33).
 
