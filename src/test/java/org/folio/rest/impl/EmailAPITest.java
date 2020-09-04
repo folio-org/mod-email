@@ -127,7 +127,7 @@ public class EmailAPITest {
 
   @Test
   public void shouldReturnFailedResultWhenRequestWithIncorrectEmailEntity() {
-    String expectedResponse = "\"message\":\"may not be null\"";
+    String expectedResponse = "\"message\":\"must not be null\"";
     String okapiEmailEntity = getEmailEntity(null, "admin@admin.com", null);
 
     Response response = getResponse(String.format(OKAPI_URL_TEMPLATE, userMockServer.port()), okapiEmailEntity)
