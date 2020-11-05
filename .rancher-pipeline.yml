@@ -1,0 +1,26 @@
+stages:
+  - name: Build
+    steps:
+      - runScriptConfig:
+          image: maven:3-adoptopenjdk-11
+          shellScript: mvn package -DskipTests
+  - name: Build Docker with DIND
+    steps:
+      - publishImageConfig:
+          dockerfilePath: ./Dockerfile
+          buildContext: .
+          tag: docker.dev.folio.org/mod-email:vega-latest
+          pushRemote: true
+          registry: docker.dev.folio.org
+  - name: Deploy
+    steps:
+      - applyAppConfig:
+          catalogTemplate: p-wntj9:vega-helmcharts-mod-email
+          version: 0.1.32
+          answers:
+            image.repository: docker.dev.folio.org/mod-email
+            image.tag: vega-latest
+          targetNamespace: vega
+          name: mod-email
+timeout: 60
+notification: {}
