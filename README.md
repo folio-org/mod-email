@@ -80,6 +80,15 @@ Module provides next API:
 
 See that it says "BUILD SUCCESS" near the end.
 
+## Port
+
+When running the jar file the module looks for the `http.port` and `port`
+system property variables in this order, and uses the default 8081 as fallback. Example:
+
+`java -Dhttp.port=8008 -jar target/mod-email-fat.jar`
+
+The Docker container exposes port 8081.
+
 ## Docker
 Build the docker container with:
 
