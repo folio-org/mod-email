@@ -1,3 +1,6 @@
+## 2020-11-11 v1.9.1
+ * Update RMB to 31.1.5 and Vert.x to 3.9.4
+
 ## 2020-10-08 v1.9.0
  * Update RMB to v31, upgrade to JDK11 (MODEMAIL-39)
 
