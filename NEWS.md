@@ -1,3 +1,6 @@
+## 2020-01-20 v1.9.2
+ * Fix MODUIMP-44 Logging
+
 ## 2020-11-11 v1.9.1
  * Updated to RMB 31.1.5 and Vert.x to 3.9.4 (MODEMAIL-44)
 
