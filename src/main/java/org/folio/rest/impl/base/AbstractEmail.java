@@ -20,7 +20,14 @@ import java.util.regex.Pattern;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.core.buffer.Buffer;
+import io.vertx.ext.web.client.HttpRequest;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.client.WebClientOptions;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.folio.HttpStatus;
 import org.folio.exceptions.ConfigurationException;
 import org.folio.exceptions.SmtpConfigurationException;
 import org.folio.rest.jaxrs.model.Configurations;
@@ -33,13 +40,8 @@ import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 public abstract class AbstractEmail {
 
@@ -55,11 +57,11 @@ public abstract class AbstractEmail {
   private static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SMTP server, the min config is: %s";
   private static final String ERROR_MESSAGE_INCORRECT_DATE_PARAMETER = "Invalid date value, the parameter must be in the format: yyyy-MM-dd";
 
-  private final Logger logger = LoggerFactory.getLogger(AbstractEmail.class);
+  private final Logger logger = LogManager.getLogger(AbstractEmail.class);
   protected final Vertx vertx;
   private String tenantId;
 
-  private HttpClient httpClient;
+  private WebClient httpClient;
   private MailService mailService;
   private StorageService storageService;
 
@@ -87,10 +89,10 @@ public abstract class AbstractEmail {
    * init the http client to 'mod-config'
    */
   private void initHttpClient() {
-    HttpClientOptions options = new HttpClientOptions();
+    WebClientOptions options = new WebClientOptions();
     options.setConnectTimeout(lookupTimeout);
     options.setIdleTimeout(lookupTimeout);
-    this.httpClient = vertx.createHttpClient(options);
+    this.httpClient = WebClient.create(vertx, options);
   }
 
   protected Future<JsonObject> lookupConfig(Map<String, String> requestHeaders) {
@@ -99,28 +101,23 @@ public abstract class AbstractEmail {
     String okapiUrl = headers.get(OKAPI_URL_HEADER);
     String okapiToken = headers.get(OKAPI_HEADER_TOKEN);
     String requestUrl = String.format(REQUEST_URL_TEMPLATE, okapiUrl, REQUEST_URI_PATH, MODULE_EMAIL_SMTP_SERVER);
-    HttpClientRequest request = httpClient.getAbs(requestUrl);
+    HttpRequest<Buffer> request = httpClient.getAbs(requestUrl);
     request
       .putHeader(OKAPI_HEADER_TOKEN, okapiToken)
       .putHeader(OKAPI_HEADER_TENANT, tenantId)
-      .putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON)
-      .putHeader(HttpHeaders.ACCEPT, APPLICATION_JSON)
-      .handler(response -> {
-        if (response.statusCode() != 200) {
-          response.bodyHandler(bufHandler -> {
-              String errMsg = String.format(ERROR_LOOKING_UP_MOD_CONFIG, requestUrl, response.statusCode(), bufHandler.toString());
-              logger.error(errMsg);
-              promise.fail(new ConfigurationException(errMsg));
-            }
-          );
-        } else {
-          response.bodyHandler(bufHandler -> {
-            JsonObject resultObject = bufHandler.toJsonObject();
-            promise.complete(resultObject);
-          });
-        }
-      });
-    request.end();
+      .putHeader(HttpHeaders.CONTENT_TYPE.toString(), APPLICATION_JSON)
+      .putHeader(HttpHeaders.ACCEPT.toString(), APPLICATION_JSON);
+
+    request.send(response -> {
+      if (response.result().statusCode() != HttpStatus.HTTP_OK.toInt()) {
+        String errMsg = String.format(ERROR_LOOKING_UP_MOD_CONFIG, requestUrl, response.result().statusCode(), response.result().bodyAsString());
+        logger.error(errMsg);
+        promise.fail(new ConfigurationException(errMsg));
+      } else {
+        JsonObject resultObject = response.result().bodyAsJsonObject();
+        promise.complete(resultObject);
+      }
+    });
     return promise.future();
   }
 
