@@ -3,6 +3,8 @@ package org.folio.services.storage.impl;
 import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntries;
 import org.folio.rest.persist.Criteria.Limit;
@@ -19,12 +21,10 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 public class StorageServiceImpl implements StorageService {
 
-  private static final Logger logger = LoggerFactory.getLogger(StorageServiceImpl.class);
+  private static final Logger logger = LogManager.getLogger(StorageServiceImpl.class);
 
   private static final String DELETE_QUERY_BY_DATE = "DELETE FROM %1$s WHERE (jsonb->>'date')::date <= ('%2$s')::date AND jsonb->>'status' = '%3$s'";
   private static final String DELETE_QUERY_INTERVAL_ONE_DAY = "DELETE FROM %1$s WHERE (jsonb->>'date')::date < CURRENT_DATE - INTERVAL '1' DAY AND jsonb->>'status' = '%2$s'";

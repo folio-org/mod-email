@@ -5,6 +5,8 @@ import static org.folio.util.EmailUtils.STORAGE_SERVICE_ADDRESS;
 
 import java.lang.management.ManagementFactory;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.resource.interfaces.InitAPI;
 import org.folio.services.email.MailService;
 import org.folio.services.storage.StorageService;
@@ -14,8 +16,6 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.serviceproxy.ServiceBinder;
 
 /**
@@ -24,7 +24,7 @@ import io.vertx.serviceproxy.ServiceBinder;
  */
 public class InitAPIs implements InitAPI {
 
-  private final Logger logger = LoggerFactory.getLogger(InitAPIs.class);
+  private final Logger logger = LogManager.getLogger(InitAPIs.class);
 
   @Override
   public void init(Vertx vertx, Context context, Handler<AsyncResult<Boolean>> handler) {

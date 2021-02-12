@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.enums.SmtpEmail;
 import org.folio.rest.jaxrs.model.Attachment;
 import org.folio.rest.jaxrs.model.Configurations;
@@ -29,8 +31,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.mail.LoginOption;
 import io.vertx.ext.mail.MailAttachment;
 import io.vertx.ext.mail.MailClient;
@@ -46,7 +46,7 @@ public class MailServiceImpl implements MailService {
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
 
-  private final Logger logger = LoggerFactory.getLogger(MailServiceImpl.class);
+  private final Logger logger = LogManager.getLogger(MailServiceImpl.class);
   private final Vertx vertx;
 
   private MailClient client = null;
@@ -94,7 +94,7 @@ public class MailServiceImpl implements MailService {
   private MailClient defineMailClient(MailConfig mailConfig) {
     if (Objects.isNull(config) || !config.equals(mailConfig)) {
       config = mailConfig;
-      client = MailClient.createNonShared(vertx, mailConfig);
+      client = MailClient.create(vertx, mailConfig);
     }
     return client;
   }
@@ -136,9 +136,9 @@ public class MailServiceImpl implements MailService {
   private MailAttachment getMailAttachment(Attachment data) {
     if (Objects.isNull(data) || StringUtils.isEmpty(data.getData())) {
       logger.error(INCORRECT_ATTACHMENT_DATA);
-      return new MailAttachment().setData(Buffer.buffer());
+      return MailAttachment.create().setData(Buffer.buffer());
     }
-    return new MailAttachment()
+    return MailAttachment.create()
       .setContentType(data.getContentType())
       .setName(data.getName())
       .setDescription(data.getDescription())
