@@ -1,3 +1,9 @@
+## 2021-03-09 v1.10.0
+ * Update RMB to v32.1.0 and Vertx to v4.0.0 (MODEMAIL-48)
+ * Fix logging in Java 11
+ * Update RMB to v31.1.5 and Vertx to v3.9.4 (MODEMAIL-44)
+ * Support both 'http.port' and 'port' property variables (MODEMAIL-43)
+
 ## 2020-10-08 v1.9.0
  * Update RMB to v31, upgrade to JDK11 (MODEMAIL-39)
 
