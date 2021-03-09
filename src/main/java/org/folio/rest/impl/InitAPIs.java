@@ -28,7 +28,8 @@ public class InitAPIs implements InitAPI {
 
   @Override
   public void init(Vertx vertx, Context context, Handler<AsyncResult<Boolean>> handler) {
-    final int port = Integer.parseInt(System.getProperty("port", "8080"));
+    final int port = Integer.parseInt(
+      System.getProperty("http.port", System.getProperty("port", "8080")));
     logger.info(ManagementFactory.getRuntimeMXBean().getName() + " on port " + port);
     new ServiceBinder(vertx)
       .setAddress(MAIL_SERVICE_ADDRESS)
