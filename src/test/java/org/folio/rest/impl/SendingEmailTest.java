@@ -1,15 +1,21 @@
 package org.folio.rest.impl;
 
+import static java.util.stream.Collectors.toMap;
 import static junit.framework.TestCase.fail;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
+import static org.folio.util.StubUtils.createConfigurationsWithCustomHeaders;
 import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
 import static org.folio.util.StubUtils.getWiserMockConfigurations;
 import static org.folio.util.StubUtils.initModConfigStub;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Map;
 import java.util.UUID;
 
+import javax.mail.Header;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -227,4 +233,55 @@ public class SendingEmailTest extends AbstractAPITest {
     // check email on DB
     checkStoredEmailsInDb(emailEntity, DELIVERED);
   }
+
+  @Test
+  public void messageShouldIncludeCustomHeadersFromConfiguration() throws Exception {
+    Map<String, String> customHeaders = Map.of(
+      "X-SES-CONFIGURATION-SET", "testConfigSet",
+      "X-CUSTOM-HEADER", "customHeaderValue"
+    );
+
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, createConfigurationsWithCustomHeaders(customHeaders));
+    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
+    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
+
+    EmailEntity emailEntity = new EmailEntity()
+      .withNotificationId("1")
+      .withTo(recipient)
+      .withFrom(sender)
+      .withHeader("Reset password")
+      .withBody(msg)
+      .withOutputFormat(MediaType.TEXT_PLAIN);
+
+    Response response = sendEmail(emailEntity)
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+
+    checkResponseMessage(response, recipient);
+
+    WiserMessage wiserMessage = findMessageOnWiserServer(sender);
+    checkMessagesOnWiserServer(wiserMessage, emailEntity);
+
+    checkStoredEmailsInDb(emailEntity, DELIVERED);
+
+    assertSentMessageContainsHeaders(wiserMessage, customHeaders);
+  }
+
+  private static void assertSentMessageContainsHeaders(WiserMessage message,
+    Map<String, String> expectedHeaders) throws Exception {
+
+    Enumeration<Header> actualHeadersEnum = message.getMimeMessage().getMatchingHeaders(
+      expectedHeaders.keySet().toArray(new String[0]));
+
+    Map<String, String> actualHeaders = Collections.list(actualHeadersEnum)
+      .stream()
+      .collect(toMap(Header::getName, Header::getValue));
+
+    assertEquals(expectedHeaders, actualHeaders);
+  }
+
 }
