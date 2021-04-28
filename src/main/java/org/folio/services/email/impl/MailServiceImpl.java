@@ -1,5 +1,7 @@
 package org.folio.services.email.impl;
 
+import static java.util.stream.Collectors.toMap;
+import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 import static org.folio.enums.SmtpEmail.EMAIL_SMTP_HOST;
 import static org.folio.enums.SmtpEmail.EMAIL_SMTP_PORT;
 import static org.folio.util.EmailUtils.getEmailConfig;
@@ -10,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -20,6 +23,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.enums.SmtpEmail;
 import org.folio.rest.jaxrs.model.Attachment;
+import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntity.Status;
@@ -30,6 +34,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mail.LoginOption;
 import io.vertx.ext.mail.MailAttachment;
@@ -45,6 +50,7 @@ public class MailServiceImpl implements MailService {
   private static final String ERROR_ATTACHMENT_DATA = "Error attaching the `%s` file to email!";
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
+  private static final String EMAIL_HEADERS_CONFIG_NAME = "email.headers";
 
   private final Logger logger = LogManager.getLogger(MailServiceImpl.class);
   private final Vertx vertx;
@@ -62,7 +68,7 @@ public class MailServiceImpl implements MailService {
       Configurations configurations = configJson.mapTo(Configurations.class);
       EmailEntity emailEntity = fillEmailEntity(emailEntityJson, configurations);
       MailConfig mailConfig = getMailConfig(configurations);
-      MailMessage mailMessage = getMailMessage(emailEntity);
+      MailMessage mailMessage = getMailMessage(emailEntity, configurations);
 
       defineMailClient(mailConfig)
         .sendMail(mailMessage, mailHandler -> {
@@ -111,7 +117,7 @@ public class MailServiceImpl implements MailService {
       .setPassword(getEmailConfig(configurations, SmtpEmail.EMAIL_PASSWORD, String.class));
   }
 
-  private MailMessage getMailMessage(EmailEntity emailEntity) {
+  private MailMessage getMailMessage(EmailEntity emailEntity, Configurations configurations) {
     MailMessage mailMessage = new MailMessage()
       .setFrom(getMessageConfig(emailEntity.getFrom()))
       .setTo(getMessageConfig(emailEntity.getTo()))
@@ -124,6 +130,9 @@ public class MailServiceImpl implements MailService {
     } else {
       mailMessage.setText(getMessageConfig(emailEntity.getBody()));
     }
+
+    addHeadersFromConfiguration(mailMessage, configurations);
+
     return mailMessage;
   }
 
@@ -165,5 +174,22 @@ public class MailServiceImpl implements MailService {
 
   private String createResponseMessage(AsyncResult<MailResult> mailHandler) {
     return String.format(SUCCESS_SEND_EMAIL, String.join(",", mailHandler.result().getRecipients()));
+  }
+
+  public static void addHeadersFromConfiguration(MailMessage message, Configurations configurations) {
+    Map<String, String> headers = configurations.getConfigs().stream()
+      .filter(config -> EMAIL_HEADERS_CONFIG_NAME.equals(config.getConfigName()))
+      .filter(config -> isNoneBlank(config.getCode(), config.getValue()))
+      .collect(toMap(Config::getCode, Config::getValue));
+
+    if (headers.isEmpty()) {
+      return;
+    }
+
+    if (message.getHeaders() == null) {
+      message.setHeaders(new HeadersMultiMap());
+    }
+
+    message.getHeaders().addAll(headers);
   }
 }
