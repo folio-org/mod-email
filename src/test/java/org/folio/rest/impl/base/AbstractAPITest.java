@@ -29,6 +29,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.EmailEntity;
@@ -103,6 +104,7 @@ public abstract class AbstractAPITest {
 
   @BeforeClass
   public static void setUpClass(final TestContext context) throws Exception {
+    PostgresClient.setPostgresTester(new PostgresTesterContainer());
     Async async = context.async();
     vertx = Vertx.vertx();
     port = NetworkUtils.nextFreePort();
@@ -110,7 +112,7 @@ public abstract class AbstractAPITest {
     wiser = new Wiser();
     wiser.setPort(2500);
 
-    PostgresClient.getInstance(vertx).startEmbeddedPostgres();
+    PostgresClient.getInstance(vertx).startPostgresTester();
 
     TenantClient tenantClient = new TenantClient(String.format(TENANT_CLIENT_HOST, OKAPI_HOST, port), OKAPI_TENANT, null);
     DeploymentOptions restDeploymentOptions = new DeploymentOptions()
@@ -159,7 +161,7 @@ public abstract class AbstractAPITest {
   public static void tearDownClass(final TestContext context) {
     Async async = context.async();
     vertx.close(context.asyncAssertSuccess(res -> {
-      PostgresClient.stopEmbeddedPostgres();
+      PostgresClient.stopPostgresTester();
       wiser.stop();
       async.complete();
     }));
