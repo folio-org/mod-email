@@ -13,6 +13,7 @@ import static org.hamcrest.core.StringContains.containsString;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.http.HttpStatus;
+import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
@@ -57,6 +58,7 @@ public class EmailAPITest {
 
   @BeforeClass
   public static void setUpClass(final TestContext context) {
+    PostgresClient.setPostgresTester(new PostgresTesterContainer());
     Async async = context.async();
     vertx = Vertx.vertx();
     port = NetworkUtils.nextFreePort();
@@ -68,7 +70,7 @@ public class EmailAPITest {
   @AfterClass
   public static void tearDownClass(final TestContext context) {
     Async async = context.async();
-    PostgresClient.stopEmbeddedPostgres();
+    PostgresClient.stopPostgresTester();
     vertx.close(context.asyncAssertSuccess(res -> async.complete()));
   }
 
