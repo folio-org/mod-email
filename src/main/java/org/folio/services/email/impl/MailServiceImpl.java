@@ -101,6 +101,7 @@ public class MailServiceImpl implements MailService {
 
   private MailConfig getMailConfig(Configurations configurations) {
     return new MailConfig()
+      .setAuthMethods("CRAM-MD5 LOGIN PLAIN")
       .setHostname(getEmailConfig(configurations, EMAIL_SMTP_HOST, String.class))
       .setPort(getEmailConfig(configurations, EMAIL_SMTP_PORT, Integer.class))
       .setSsl(getEmailConfig(configurations, SmtpEmail.EMAIL_SMTP_SSL, Boolean.class))
