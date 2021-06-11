@@ -1,3 +1,7 @@
+## 2021-06-11 v1.11.0
+ * Add support for configurable custom headers (MODEMAIL-57)
+ * Upgrade to RMB 33.0.0 and Vertx 4.1.0 (MODEMAIL-58)
+
 ## 2021-03-09 v1.10.0
  * Update RMB to v32.1.0 and Vertx to v4.0.0 (MODEMAIL-48)
  * Fix logging in Java 11
