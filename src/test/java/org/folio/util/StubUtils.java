@@ -15,6 +15,7 @@ import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static java.util.stream.Collectors.toList;
+import static org.folio.enums.SmtpEmail.AUTH_METHODS;
 import static org.folio.enums.SmtpEmail.EMAIL_PASSWORD;
 import static org.folio.enums.SmtpEmail.EMAIL_SMTP_HOST;
 import static org.folio.enums.SmtpEmail.EMAIL_SMTP_PORT;
@@ -91,6 +92,18 @@ public class StubUtils {
       createSmtpConfig(EMAIL_SMTP_HOST, host),
       createSmtpConfig(EMAIL_SMTP_PORT, port)
     )).withTotalRecords(6);
+  }
+
+  public static Configurations createConfigurations(String user, String password,
+    String host, String port, String authMethods) {
+
+    return new Configurations().withConfigs(Lists.newArrayList(
+      createSmtpConfig(EMAIL_USERNAME, user),
+      createSmtpConfig(EMAIL_PASSWORD, password),
+      createSmtpConfig(EMAIL_SMTP_HOST, host),
+      createSmtpConfig(EMAIL_SMTP_PORT, port),
+      createSmtpConfig(AUTH_METHODS, authMethods)
+    )).withTotalRecords(7);
   }
 
   private static Config createSmtpConfig(SmtpEmail code, String value) {

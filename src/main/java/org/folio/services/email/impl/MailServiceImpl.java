@@ -2,8 +2,15 @@ package org.folio.services.email.impl;
 
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
+import static org.folio.enums.SmtpEmail.AUTH_METHODS;
+import static org.folio.enums.SmtpEmail.EMAIL_PASSWORD;
 import static org.folio.enums.SmtpEmail.EMAIL_SMTP_HOST;
+import static org.folio.enums.SmtpEmail.EMAIL_SMTP_LOGIN_OPTION;
 import static org.folio.enums.SmtpEmail.EMAIL_SMTP_PORT;
+import static org.folio.enums.SmtpEmail.EMAIL_SMTP_SSL;
+import static org.folio.enums.SmtpEmail.EMAIL_START_TLS_OPTIONS;
+import static org.folio.enums.SmtpEmail.EMAIL_TRUST_ALL;
+import static org.folio.enums.SmtpEmail.EMAIL_USERNAME;
 import static org.folio.util.EmailUtils.getEmailConfig;
 import static org.folio.util.EmailUtils.getMessageConfig;
 
@@ -107,14 +114,15 @@ public class MailServiceImpl implements MailService {
 
   private MailConfig getMailConfig(Configurations configurations) {
     return new MailConfig()
+      .setAuthMethods(getEmailConfig(configurations, AUTH_METHODS, String.class))
       .setHostname(getEmailConfig(configurations, EMAIL_SMTP_HOST, String.class))
       .setPort(getEmailConfig(configurations, EMAIL_SMTP_PORT, Integer.class))
-      .setSsl(getEmailConfig(configurations, SmtpEmail.EMAIL_SMTP_SSL, Boolean.class))
-      .setStarttls(getEmailConfig(configurations, SmtpEmail.EMAIL_START_TLS_OPTIONS, StartTLSOptions.class))
-      .setTrustAll(getEmailConfig(configurations, SmtpEmail.EMAIL_TRUST_ALL, Boolean.class))
-      .setLogin(getEmailConfig(configurations, SmtpEmail.EMAIL_SMTP_LOGIN_OPTION, LoginOption.class))
-      .setUsername(getEmailConfig(configurations, SmtpEmail.EMAIL_USERNAME, String.class))
-      .setPassword(getEmailConfig(configurations, SmtpEmail.EMAIL_PASSWORD, String.class));
+      .setSsl(getEmailConfig(configurations, EMAIL_SMTP_SSL, Boolean.class))
+      .setStarttls(getEmailConfig(configurations, EMAIL_START_TLS_OPTIONS, StartTLSOptions.class))
+      .setTrustAll(getEmailConfig(configurations, EMAIL_TRUST_ALL, Boolean.class))
+      .setLogin(getEmailConfig(configurations, EMAIL_SMTP_LOGIN_OPTION, LoginOption.class))
+      .setUsername(getEmailConfig(configurations, EMAIL_USERNAME, String.class))
+      .setPassword(getEmailConfig(configurations, EMAIL_PASSWORD, String.class));
   }
 
   private MailMessage getMailMessage(EmailEntity emailEntity, Configurations configurations) {
