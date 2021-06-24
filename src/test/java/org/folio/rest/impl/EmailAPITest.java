@@ -2,7 +2,6 @@ package org.folio.rest.impl;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
-import static org.folio.rest.RestVerticle.OKAPI_HEADER_TOKEN;
 import static org.folio.util.StubUtils.getEmailEntity;
 import static org.folio.util.StubUtils.getIncorrectConfigurations;
 import static org.folio.util.StubUtils.initFailModConfigStub;
@@ -15,6 +14,7 @@ import javax.ws.rs.core.MediaType;
 import org.apache.http.HttpStatus;
 import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
+import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -36,7 +36,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.folio.rest.persist.PostgresClient;
 
 @RunWith(VertxUnitRunner.class)
 public class EmailAPITest {
