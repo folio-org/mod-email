@@ -35,6 +35,7 @@ import io.vertx.ext.mail.MailConfig;
 public class MailConfigTest {
 
   private static final String ADDRESS_TEMPLATE = "%s@localhost";
+  private static final String AUTH_METHODS = "CRAM-MD5 LOGIN PLAIN";
 
   @Rule
   public WireMockRule mockServer = new WireMockRule(
@@ -45,7 +46,7 @@ public class MailConfigTest {
   @Test
   public void messageShouldIncludeAuthMethodsFromConfiguration() throws Exception {
     Configurations configurations = createConfigurations("user", "pws", "localhost",
-      "2500", "CRAM-MD5 LOGIN PLAIN");
+      "2500", AUTH_METHODS);
     initModConfigStub(mockServer.port(), configurations);
 
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
@@ -70,6 +71,6 @@ public class MailConfigTest {
       .withNoArguments();
 
     verify(mailConfigMock, Mockito.times(1))
-        .setAuthMethods("CRAM-MD5 LOGIN PLAIN");
+        .setAuthMethods(AUTH_METHODS);
   }
 }

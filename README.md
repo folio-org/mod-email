@@ -31,7 +31,7 @@ The module supports the following configuration for SMTP server:
  |  EMAIL_USERNAME          |  the username for the login            | 'login'                        |
  |  EMAIL_PASSWORD          |  the password for the login            | 'password'                     |
  |  EMAIL_FROM              |  'from' property of the email          | noreply@folio.org              |
- |  AUTH_METHODS            |  authentication methods                | CRAM-MD5 LOGIN PLAIN           |
+ |  AUTH_METHODS            |  authentication methods                | 'CRAM-MD5 LOGIN PLAIN'         |
 
 
  Required configuration options:
