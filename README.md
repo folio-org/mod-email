@@ -27,7 +27,7 @@ The module supports the following configuration for SMTP server:
  |  EMAIL_SMTP_LOGIN_OPTION |  the login mode for the connection     | DISABLED, OPTIONAL or REQUIRED |
  |  EMAIL_TRUST_ALL         |  trust all certificates on ssl connect | true or false                  |
  |  EMAIL_SMTP_SSL          |  sslOnConnect mode for the connection  | true or false                  |
- |  EMAIL_START_TLS_OPTIONS |  TLS security mode for the connection  | NONE, OPTIONAL or REQUIRED     |
+ |  EMAIL_START_TLS_OPTIONS |  TLS security mode for the connection  | DISABLED, OPTIONAL or REQUIRED |
  |  EMAIL_USERNAME          |  the username for the login            | 'login'                        |
  |  EMAIL_PASSWORD          |  the password for the login            | 'password'                     |
  |  EMAIL_FROM              |  'from' property of the email          | noreply@folio.org              |
