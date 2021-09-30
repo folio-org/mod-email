@@ -1,3 +1,7 @@
+## 2021-09-30 v1.12.0
+ * Setting EMAIL_START_TLS_OPTIONS to DISABLED (MODEMAIL-61)
+ * Add auth methods for smtp config (MODEMAIL-41)
+
 ## 2021-06-11 v1.11.0
  * Add support for configurable custom headers (MODEMAIL-57)
  * Upgrade to RMB 33.0.0 and Vertx 4.1.0 (MODEMAIL-58)
