@@ -58,6 +58,7 @@ public class MailServiceImpl implements MailService {
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
   private static final String EMAIL_HEADERS_CONFIG_NAME = "email.headers";
+  private static final String TIME_OUT_CONDITION = "Timed out";
 
   private final Logger logger = LogManager.getLogger(MailServiceImpl.class);
   private final Vertx vertx;
@@ -81,17 +82,24 @@ public class MailServiceImpl implements MailService {
         .sendMail(mailMessage, mailHandler -> {
           if (mailHandler.failed()) {
             String errorMsg = String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage());
-            resultHandler.handle(fillResultHandler(emailEntity, Status.FAILURE, errorMsg));
+            logger.error(errorMsg);
+            Status status = isTimeOut(errorMsg) ? Status.TIME_OUT : Status.FAILURE;
+            resultHandler.handle(fillResultHandler(emailEntity, status, errorMsg));
             return;
           }
           // the logic of sending the result of sending email to `mod-notify`
           String message = createResponseMessage(mailHandler);
+          logger.error(message);
           resultHandler.handle(fillResultHandler(emailEntity, Status.DELIVERED, message));
         });
     } catch (Exception ex) {
       logger.error(String.format(ERROR_SENDING_EMAIL, ex.getMessage()));
       resultHandler.handle(Future.failedFuture(ex.getMessage()));
     }
+  }
+
+  private boolean isTimeOut(String errorMessage) {
+    return errorMessage.toLowerCase().contains(TIME_OUT_CONDITION.toLowerCase());
   }
 
   private EmailEntity fillEmailEntity(JsonObject emailEntityJson, Configurations configurations) {

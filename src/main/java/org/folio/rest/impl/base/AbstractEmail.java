@@ -47,6 +47,7 @@ public abstract class AbstractEmail {
 
   private static final String REQUEST_URL_TEMPLATE = "%s/%s?query=module==%s";
   private static final String REQUEST_URI_PATH = "configurations/entries";
+  private static final String REQUEST_GET_TIMEOUT_QUERY = "status==TIME_OUT and retryCount>0";
   private static final String OKAPI_URL_HEADER = "x-okapi-url";
   private static final String MODULE_EMAIL_SMTP_SERVER = "SMTP_SERVER";
   private static final String LOOKUP_TIMEOUT = "lookup.timeout";
@@ -121,22 +122,27 @@ public abstract class AbstractEmail {
     return promise.future();
   }
 
-  protected Future<JsonObject> checkConfiguration(JsonObject conf, EmailEntity entity) {
-    Promise<JsonObject> promise = Promise.promise();
-    Configurations configurations = conf.mapTo(Configurations.class);
-    if (isIncorrectSmtpServerConfig(configurations)) {
-      String errorMessage = String.format(ERROR_MIN_REQUIREMENT_MOD_CONFIG, REQUIREMENTS_CONFIG_SET);
-      JsonObject emailEntityJson = JsonObject.mapFrom(entity
+  protected void saveEmailWithErrorMessage(Throwable exception, EmailEntity emailEntity) {
+    if (exception instanceof SmtpConfigurationException) {
+      SmtpConfigurationException smtpConfigurationException = (SmtpConfigurationException) exception;
+      JsonObject emailEntityJson = JsonObject.mapFrom(emailEntity
         .withStatus(EmailEntity.Status.FAILURE)
         .withDate(Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC)))
-        .withMessage(errorMessage));
+        .withMessage(smtpConfigurationException.getMessage()));
 
       saveEmail(emailEntityJson).onComplete(result -> {
         if (result.failed()) {
           logger.error(result.cause());
         }
       });
+    }
+  }
 
+  protected Future<JsonObject> checkConfiguration(JsonObject conf) {
+    Promise<JsonObject> promise = Promise.promise();
+    Configurations configurations = conf.mapTo(Configurations.class);
+    if (isIncorrectSmtpServerConfig(configurations)) {
+      String errorMessage = String.format(ERROR_MIN_REQUIREMENT_MOD_CONFIG, REQUIREMENTS_CONFIG_SET);
       logger.error(errorMessage);
       promise.fail(new SmtpConfigurationException(errorMessage));
     } else {
@@ -147,6 +153,14 @@ public abstract class AbstractEmail {
 
   protected Future<JsonObject> sendEmail(JsonObject configJson, EmailEntity entity) {
     Promise<JsonObject> promise = Promise.promise();
+    JsonObject emailEntityJson = JsonObject.mapFrom(entity);
+    mailService.sendEmail(configJson, emailEntityJson, promise);
+    return promise.future();
+  }
+
+  protected Future<JsonObject> retrySendEmail(JsonObject configJson, EmailEntity entity) {
+    Promise<JsonObject> promise = Promise.promise();
+    entity.setRetryCount(entity.getRetryCount() - 1);
     JsonObject emailEntityJson = JsonObject.mapFrom(entity);
     mailService.sendEmail(configJson, emailEntityJson, promise);
     return promise.future();
@@ -168,6 +182,12 @@ public abstract class AbstractEmail {
   protected Future<JsonObject> findEmailEntries(int limit, int offset, String query) {
     Promise<JsonObject> promise = Promise.promise();
     storageService.findEmailEntries(tenantId, limit, offset, query, promise);
+    return promise.future();
+  }
+
+  protected Future<JsonObject> findEmailsForRetry() {
+    Promise<JsonObject> promise = Promise.promise();
+    storageService.findEmailEntries(tenantId, Integer.MAX_VALUE, 0, REQUEST_GET_TIMEOUT_QUERY, promise);
     return promise.future();
   }
 

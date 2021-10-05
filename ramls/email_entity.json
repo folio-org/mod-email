@@ -8,6 +8,10 @@
       "description":"notification identifier",
       "type": "string"
     },
+    "retryCount" : {
+      "description": "number of retries in case of timeout",
+      "type": "integer"
+    },
     "from": {
       "description":"sender's address",
       "type": "string"
@@ -43,7 +47,8 @@
       "enum": [
         "DELIVERED",
         "FAILURE",
-        "PROCESSING"
+        "PROCESSING",
+        "TIME_OUT"
       ],
       "default": "DELIVERED"
     },

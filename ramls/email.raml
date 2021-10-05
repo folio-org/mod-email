@@ -58,3 +58,15 @@ resourceTypes:
       searchable: {description: "searchable using CQL", example: "status==FAILURE"},
       pageable
     ]
+  /retry:
+    post:
+      description: "Retry to send timed outed emails"
+      responses:
+        202:
+          description: "Retrying was started"
+        500:
+          description: "Internal server error"
+          body:
+            text/plain:
+              example: "Internal server error, please contact administrator"
+
