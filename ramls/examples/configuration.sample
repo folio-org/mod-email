@@ -1,6 +1,6 @@
 {
   "module": "SMTP_SERVER",
-  "configName": "locale",
+  "configName": "smtp",
   "code": "EMAIL_SMTP_HOST",
   "description": "server smtp host",
   "default": true,

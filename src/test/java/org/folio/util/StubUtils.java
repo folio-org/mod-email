@@ -25,7 +25,7 @@ public class StubUtils {
 
   private static final String MODULE_SMTP_SERVER = "SMTP_SERVER";
   private static final String URL_CONFIGURATIONS_TO_SMTP_SERVER = "/configurations/entries?query=module==" + MODULE_SMTP_SERVER;
-  private static final String CONFIG_NAME_EMAIL = "email";
+  private static final String CONFIG_NAME_SMTP = "smtp";
   private static final String CONFIG_NAME_EMAIL_HEADERS = "email.headers";
 
   private StubUtils() {
@@ -107,7 +107,7 @@ public class StubUtils {
   }
 
   private static Config createSmtpConfig(SmtpEmail code, String value) {
-    return createConfig(CONFIG_NAME_EMAIL, code.name(), value);
+    return createConfig(CONFIG_NAME_SMTP, code.name(), value);
   }
 
   private static Config createConfig(String configName, String code, String value) {

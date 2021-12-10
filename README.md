@@ -69,7 +69,7 @@ curl -X POST \
  ```
  {
      "module": "SMTP_SERVER",
-     "configName": "email",
+     "configName": "smtp",
      "code": "AUTH_METHODS",
      "description": "Authentication methods",
      "default": true,
