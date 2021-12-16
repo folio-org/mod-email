@@ -1,3 +1,6 @@
+## 2021-12-16 v1.12.1
+* Upgrade to RMB to v33.0.4 and Log4j 2.16.0 (MODEMAIL-66)
+
 ## 2021-09-30 v1.12.0
  * Setting EMAIL_START_TLS_OPTIONS to DISABLED (MODEMAIL-61)
  * Add auth methods for smtp config (MODEMAIL-41)
