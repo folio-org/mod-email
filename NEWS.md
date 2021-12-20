@@ -1,3 +1,6 @@
+## 2021-12-20 v1.11.1
+ * Upgrade to RMB to v33.0.4 and Log4j 2.16.0 (MODEMAIL-66)
+
 ## 2021-06-11 v1.11.0
  * Add support for configurable custom headers (MODEMAIL-57)
  * Upgrade to RMB 33.0.0 and Vertx 4.1.0 (MODEMAIL-58)
