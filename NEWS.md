@@ -1,3 +1,8 @@
+## 2022-02-22 v1.13.0
+* Upgrade to RMB v33.2.4 (MODEMAIL-69)
+* Use new api-lint and api-doc CI facilities (FOLIO-3231)
+* Upgrade to RMB v33.0.4 and Log4j v2.16.0 (MODEMAIL-66)
+
 ## 2021-09-30 v1.12.0
  * Setting EMAIL_START_TLS_OPTIONS to DISABLED (MODEMAIL-61)
  * Add auth methods for smtp config (MODEMAIL-41)
