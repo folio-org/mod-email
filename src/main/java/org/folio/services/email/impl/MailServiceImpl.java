@@ -14,6 +14,7 @@ import static org.folio.enums.SmtpEmail.EMAIL_USERNAME;
 import static org.folio.util.EmailUtils.getEmailConfig;
 import static org.folio.util.EmailUtils.getMessageConfig;
 
+import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -28,7 +29,6 @@ import javax.ws.rs.core.MediaType;
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.ext.mail.SMTPException;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,7 +63,7 @@ public class MailServiceImpl implements MailService {
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
   private static final String EMAIL_HEADERS_CONFIG_NAME = "email.headers";
   private static final int MAX_RETRY_COUNT = 2;
-  private static final long END_EXCLUSIVE = 50;
+  private static final int END_EXCLUSIVE = 50;
 
   private final Logger logger = LogManager.getLogger(MailServiceImpl.class);
   private final Vertx vertx;
@@ -77,7 +77,7 @@ public class MailServiceImpl implements MailService {
     breaker = CircuitBreaker.create("my-circuit-breaker", vertx,
       new CircuitBreakerOptions()
         .setMaxRetries(MAX_RETRY_COUNT)
-    ).retryPolicy(retryCount -> RandomUtils.nextLong(0, END_EXCLUSIVE));
+    ).retryPolicy(retryCount -> (long) new SecureRandom().nextInt(END_EXCLUSIVE));
   }
 
   @Override
