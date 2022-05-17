@@ -235,6 +235,34 @@ public class SendingEmailTest extends AbstractAPITest {
   }
 
   @Test
+  public void customTest() {
+    int maxRecipients = getWiser().getServer().getMaxRecipients();
+    // to get error with status 4xx
+    getWiser().getServer().setMaxRecipients(0);
+    initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
+
+    EmailEntity emailEntity = new EmailEntity()
+      .withNotificationId("1")
+      .withTo(String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5)))
+      .withFrom(String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7)))
+      .withHeader("Reset password")
+      .withBody("Test text for the message.")
+      .withOutputFormat(MediaType.TEXT_PLAIN);
+
+    Response response = sendEmail(emailEntity)
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+
+    // return to initial state
+    getWiser().getServer().setMaxRecipients(maxRecipients);
+    String expectedMessage = "Error in the 'mod-email' module, the module didn't send email" +
+      " | message: recipient address not accepted: 452 Error: too many recipients";
+    assertEquals(expectedMessage, response.getBody().asString());
+  }
+
+  @Test
   public void messageShouldIncludeCustomHeadersFromConfiguration() throws Exception {
     Map<String, String> customHeaders = Map.of(
       "X-SES-CONFIGURATION-SET", "testConfigSet",

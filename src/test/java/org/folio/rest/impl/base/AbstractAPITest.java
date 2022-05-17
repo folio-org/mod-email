@@ -93,6 +93,10 @@ public abstract class AbstractAPITest {
   private static Vertx vertx;
   private static int port;
 
+  protected static Wiser getWiser() {
+    return wiser;
+  }
+
   @Rule
   public Timeout rule = Timeout.seconds(100);
 
@@ -103,7 +107,7 @@ public abstract class AbstractAPITest {
       .notifier(new ConsoleNotifier(true)));
 
   @BeforeClass
-  public static void setUpClass(final TestContext context) throws Exception {
+  public static void setUpClass(final TestContext context) {
     PostgresClient.setPostgresTester(new PostgresTesterContainer());
     Async async = context.async();
     vertx = Vertx.vertx();

@@ -25,6 +25,10 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.core.MediaType;
 
+import io.vertx.circuitbreaker.CircuitBreaker;
+import io.vertx.circuitbreaker.CircuitBreakerOptions;
+import io.vertx.ext.mail.SMTPException;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,15 +62,22 @@ public class MailServiceImpl implements MailService {
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
   private static final String EMAIL_HEADERS_CONFIG_NAME = "email.headers";
+  private static final int MAX_RETRY_COUNT = 2;
+  private static final long END_EXCLUSIVE = 50;
 
   private final Logger logger = LogManager.getLogger(MailServiceImpl.class);
   private final Vertx vertx;
 
   private MailClient client = null;
   private MailConfig config = null;
+  private final CircuitBreaker breaker;
 
   public MailServiceImpl(Vertx vertx) {
     this.vertx = vertx;
+    breaker = CircuitBreaker.create("my-circuit-breaker", vertx,
+      new CircuitBreakerOptions()
+        .setMaxRetries(MAX_RETRY_COUNT)
+    ).retryPolicy(retryCount -> RandomUtils.nextLong(0, END_EXCLUSIVE));
   }
 
   @Override
@@ -77,17 +88,28 @@ public class MailServiceImpl implements MailService {
       MailConfig mailConfig = getMailConfig(configurations);
       MailMessage mailMessage = getMailMessage(emailEntity, configurations);
 
-      defineMailClient(mailConfig)
-        .sendMail(mailMessage, mailHandler -> {
-          if (mailHandler.failed()) {
-            String errorMsg = String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage());
+      breaker.<MailResult>execute(promise -> {
+        defineMailClient(mailConfig).sendMail(mailMessage).onComplete(event -> {
+          if (event.failed()) {
+            if (event.cause() instanceof SMTPException) {
+              int replyCode = ((SMTPException) event.cause()).getReplyCode();
+              if (replyCode >= 400 && replyCode < 500) {
+                promise.fail(event.cause());
+                return;
+              }
+            }
+            String errorMsg = String.format(ERROR_SENDING_EMAIL, event.cause().getMessage());
             resultHandler.handle(fillResultHandler(emailEntity, Status.FAILURE, errorMsg));
             return;
           }
           // the logic of sending the result of sending email to `mod-notify`
-          String message = createResponseMessage(mailHandler);
+          String message = createResponseMessage(event);
           resultHandler.handle(fillResultHandler(emailEntity, Status.DELIVERED, message));
         });
+      }).onFailure(event -> {
+        String errorMsg = String.format(ERROR_SENDING_EMAIL, event.getMessage());
+        resultHandler.handle(fillResultHandler(emailEntity, Status.FAILURE, errorMsg));
+      });
     } catch (Exception ex) {
       logger.error(String.format(ERROR_SENDING_EMAIL, ex.getMessage()));
       resultHandler.handle(Future.failedFuture(ex.getMessage()));
