@@ -84,6 +84,13 @@
           "delay": "30"
         }
       ]
+    }, {
+      "methods": [
+        "GET"
+      ],
+      "pathPattern": "/delayedTask/retry",
+      "unit": "minute",
+      "delay": "5"
     }
   ],
   "permissionSets": [

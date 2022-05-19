@@ -235,7 +235,7 @@ public class SendingEmailTest extends AbstractAPITest {
   }
 
   @Test
-  public void customTest() {
+  public void checkSendingEmailWhileSMPTExceptionHappend() {
     int maxRecipients = getWiser().getServer().getMaxRecipients();
     // to get error with status 4xx
     getWiser().getServer().setMaxRecipients(0);
@@ -255,11 +255,24 @@ public class SendingEmailTest extends AbstractAPITest {
       .extract()
       .response();
 
-    // return to initial state
-    getWiser().getServer().setMaxRecipients(maxRecipients);
     String expectedMessage = "Error in the 'mod-email' module, the module didn't send email" +
       " | message: recipient address not accepted: 452 Error: too many recipients";
+    getEmailsShouldBeRetried();
+
+    Response responseDb = getEmails("FAILURE")
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+
+    EmailEntity result = convertEntriesToJson(responseDb).getEmailEntity().get(0);
+
     assertEquals(expectedMessage, response.getBody().asString());
+    assertEquals(Integer.valueOf(1), result.getRetryCount());
+    assertEquals(true, result.getShouldRetry());
+
+    // return to initial state
+    getWiser().getServer().setMaxRecipients(maxRecipients);
   }
 
   @Test

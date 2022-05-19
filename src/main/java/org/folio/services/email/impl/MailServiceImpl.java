@@ -14,7 +14,6 @@ import static org.folio.enums.SmtpEmail.EMAIL_USERNAME;
 import static org.folio.util.EmailUtils.getEmailConfig;
 import static org.folio.util.EmailUtils.getMessageConfig;
 
-import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -26,10 +25,10 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.core.MediaType;
 
-import io.vertx.circuitbreaker.CircuitBreaker;
-import io.vertx.circuitbreaker.CircuitBreakerOptions;
 import io.vertx.ext.mail.SMTPException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.enums.SmtpEmail;
@@ -62,22 +61,15 @@ public class MailServiceImpl implements MailService {
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
   private static final String EMAIL_HEADERS_CONFIG_NAME = "email.headers";
-  private static final int MAX_RETRY_COUNT = 2;
-  private static final int END_EXCLUSIVE = 50;
 
   private final Logger logger = LogManager.getLogger(MailServiceImpl.class);
   private final Vertx vertx;
 
   private MailClient client = null;
   private MailConfig config = null;
-  private final CircuitBreaker breaker;
 
   public MailServiceImpl(Vertx vertx) {
     this.vertx = vertx;
-    breaker = CircuitBreaker.create("my-circuit-breaker", vertx,
-      new CircuitBreakerOptions()
-        .setMaxRetries(MAX_RETRY_COUNT)
-    ).retryPolicy(retryCount -> (long) new SecureRandom().nextInt(END_EXCLUSIVE));
   }
 
   @Override
@@ -88,32 +80,38 @@ public class MailServiceImpl implements MailService {
       MailConfig mailConfig = getMailConfig(configurations);
       MailMessage mailMessage = getMailMessage(emailEntity, configurations);
 
-      breaker.<MailResult>execute(promise -> {
-        defineMailClient(mailConfig).sendMail(mailMessage).onComplete(event -> {
-          if (event.failed()) {
-            if (event.cause() instanceof SMTPException) {
-              int replyCode = ((SMTPException) event.cause()).getReplyCode();
-              if (replyCode >= 400 && replyCode < 500) {
-                promise.fail(event.cause());
-                return;
-              }
-            }
-            String errorMsg = String.format(ERROR_SENDING_EMAIL, event.cause().getMessage());
-            resultHandler.handle(fillResultHandler(emailEntity, Status.FAILURE, errorMsg));
+      defineMailClient(mailConfig)
+        .sendMail(mailMessage, mailHandler -> {
+          boolean shouldRetry = false;
+          int retryCount = 0;
+          if (mailHandler.failed()) {
+            Pair<Boolean, Integer> values = getRetryValues(mailHandler.cause(), emailEntity);
+            shouldRetry = values.getLeft();
+            retryCount = values.getRight();
+            String errorMsg = String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage());
+            resultHandler.handle(fillResultHandler(emailEntity, Status.FAILURE, errorMsg,
+              shouldRetry, retryCount));
             return;
           }
           // the logic of sending the result of sending email to `mod-notify`
-          String message = createResponseMessage(event);
-          resultHandler.handle(fillResultHandler(emailEntity, Status.DELIVERED, message));
-        });
-      }).onFailure(event -> {
-        String errorMsg = String.format(ERROR_SENDING_EMAIL, event.getMessage());
-        resultHandler.handle(fillResultHandler(emailEntity, Status.FAILURE, errorMsg));
+          String message = createResponseMessage(mailHandler);
+          resultHandler.handle(fillResultHandler(emailEntity, Status.DELIVERED, message,
+            shouldRetry, retryCount));
       });
     } catch (Exception ex) {
       logger.error(String.format(ERROR_SENDING_EMAIL, ex.getMessage()));
       resultHandler.handle(Future.failedFuture(ex.getMessage()));
     }
+  }
+
+  private Pair<Boolean, Integer> getRetryValues(Throwable error, EmailEntity emailEntity) {
+    if (error instanceof SMTPException) {
+      int replyCode = ((SMTPException) error).getReplyCode();
+      if (replyCode >= 400 && replyCode < 500) {
+        return new ImmutablePair<>(true, emailEntity.getRetryCount() + 1);
+      }
+    }
+    return new ImmutablePair<>(false, 0);
   }
 
   private EmailEntity fillEmailEntity(JsonObject emailEntityJson, Configurations configurations) {
@@ -197,8 +195,11 @@ public class MailServiceImpl implements MailService {
     return Buffer.buffer(decode);
   }
 
-  private Future<JsonObject> fillResultHandler(EmailEntity emailEntity, Status status, String message) {
-    JsonObject emailEntityJson = JsonObject.mapFrom(emailEntity.withStatus(status).withMessage(message));
+  private Future<JsonObject> fillResultHandler(EmailEntity emailEntity, Status status,
+    String message, boolean shouldRetry, int retryCount) {
+
+    JsonObject emailEntityJson = JsonObject.mapFrom(emailEntity.withStatus(status)
+      .withMessage(message).withShouldRetry(shouldRetry).withRetryCount(retryCount));
     return Future.succeededFuture(emailEntityJson);
   }
 

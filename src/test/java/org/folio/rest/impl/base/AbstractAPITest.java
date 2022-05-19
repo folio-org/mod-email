@@ -79,8 +79,8 @@ public abstract class AbstractAPITest {
   private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
 
   private static final String REST_PATH_GET_EMAILS = "/email";
+  private static final String REST_PATH_GET_RETRY = "/delayedTask/retry";
   private static final String REST_PATH_WITH_QUERY = "%s?query=status=%s&limit=%s";
-
   protected static final String ADDRESS_TEMPLATE = "%s@localhost";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
   private static final String MESSAGE_NOT_FOUND = "The message for the sender: `%s` was not found on the SMTP server";
@@ -195,6 +195,17 @@ public abstract class AbstractAPITest {
       .header(new Header(OKAPI_URL_HEADER, okapiUrl))
       .when()
       .get(String.format(REST_PATH_WITH_QUERY, REST_PATH_GET_EMAILS, status, DEFAULT_LIMIT));
+  }
+
+  protected Response getEmailsShouldBeRetried() {
+    String okapiUrl = String.format(OKAPI_URL_TEMPLATE, userMockServer.port());
+    return RestAssured.given()
+      .port(port)
+      .contentType(MediaType.APPLICATION_JSON)
+      .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
+      .header(new Header(OKAPI_URL_HEADER, okapiUrl))
+      .when()
+      .get(REST_PATH_GET_RETRY);
   }
 
   /**

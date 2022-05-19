@@ -39,6 +39,15 @@ public interface StorageService {
                        Handler<AsyncResult<JsonObject>> resultHandler);
 
   /**
+   * Updates an emailEntityJson object to the database
+   *
+   * @param emailEntityJson the object contains an {@link org.folio.rest.jaxrs.model.EmailEntity}
+   *                        entity representation in a JSON format
+   */
+  void updateEmailEntity(String tenantId, JsonObject emailEntityJson,
+                         Handler<AsyncResult<JsonObject>> resultHandler);
+
+  /**
    * Find all EmailEntries by query
    * The query parameter may contain email status, expiration date or other parameters
    */

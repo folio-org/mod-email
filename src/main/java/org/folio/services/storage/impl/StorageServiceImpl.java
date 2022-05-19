@@ -56,6 +56,25 @@ public class StorageServiceImpl implements StorageService {
   }
 
   @Override
+  public void updateEmailEntity(String tenantId, JsonObject emailEntityJson,
+                                Handler<AsyncResult<JsonObject>> resultHandler) {
+    try {
+      EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
+      PostgresClient pgClient = PostgresClient.getInstance(vertx, tenantId);
+      pgClient.update(EMAIL_STATISTICS_TABLE_NAME, emailEntity, emailEntity.getId(),
+        updateReply -> {
+          if (updateReply.failed()) {
+            errorHandler(updateReply.cause(), resultHandler);
+            return;
+          }
+          resultHandler.handle(Future.succeededFuture());
+        });
+    } catch (Exception ex) {
+      errorHandler(ex, resultHandler);
+    }
+  }
+
+  @Override
   public void findEmailEntries(String tenantId, int limit, int offset, String query,
                                Handler<AsyncResult<JsonObject>> resultHandler) {
     try {

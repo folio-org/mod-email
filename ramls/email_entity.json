@@ -4,6 +4,10 @@
   "title": "Email Entity Schema",
   "type": "object",
   "properties": {
+    "id": {
+      "description":"id",
+      "type": "string"
+    },
     "notificationId": {
       "description":"notification identifier",
       "type": "string"
@@ -46,6 +50,16 @@
         "PROCESSING"
       ],
       "default": "DELIVERED"
+    },
+    "shouldRetry" : {
+      "description":"should do retry",
+      "type": "boolean",
+      "default": false
+    },
+    "retryCount" : {
+      "description": "the number of retries have been sent",
+      "type": "integer",
+      "default": -1
     },
     "message": {
       "description": "Server error message or other cause of the error",
