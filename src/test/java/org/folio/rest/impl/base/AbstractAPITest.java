@@ -89,13 +89,9 @@ public abstract class AbstractAPITest {
   private static final String REST_DELETE_BATCH_EMAILS = "/delayedTask/expiredMessages";
   private static final String REST_PATH_DELETE_BATCH_EMAILS = "%s?expirationDate=%s&emailStatus=%s";
 
-  private static Wiser wiser;
+  protected static Wiser wiser;
   private static Vertx vertx;
   private static int port;
-
-  protected static Wiser getWiser() {
-    return wiser;
-  }
 
   @Rule
   public Timeout rule = Timeout.seconds(100);

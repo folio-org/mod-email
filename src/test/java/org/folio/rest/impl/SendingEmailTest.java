@@ -235,10 +235,10 @@ public class SendingEmailTest extends AbstractAPITest {
   }
 
   @Test
-  public void checkSendingEmailWhileSMPTExceptionHappend() {
-    int maxRecipients = getWiser().getServer().getMaxRecipients();
+  public void checkStoredEmailsInDbWithShouldRetryTrueWhileSMPTExceptionHappend() {
+    int maxRecipients = wiser.getServer().getMaxRecipients();
     // to get error with status 4xx
-    getWiser().getServer().setMaxRecipients(0);
+    wiser.getServer().setMaxRecipients(0);
     initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
 
     EmailEntity emailEntity = new EmailEntity()
@@ -272,7 +272,38 @@ public class SendingEmailTest extends AbstractAPITest {
     assertEquals(true, result.getShouldRetry());
 
     // return to initial state
-    getWiser().getServer().setMaxRecipients(maxRecipients);
+    wiser.getServer().setMaxRecipients(maxRecipients);
+  }
+
+  @Test
+  public void checkStoredEmailsInDbWithShouldRetryFalse() {
+    initModConfigStub(userMockServer.port(), getIncorrectWiserMockConfigurations());
+
+    EmailEntity emailEntity = new EmailEntity()
+      .withNotificationId("1")
+      .withTo(String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5)))
+      .withFrom(String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7)))
+      .withHeader("Reset password")
+      .withBody("Test text for the message.")
+      .withOutputFormat(MediaType.TEXT_PLAIN);
+
+    sendEmail(emailEntity)
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+
+    getEmailsShouldBeRetried();
+
+    Response responseDb = getEmails("FAILURE")
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+    EmailEntity result = convertEntriesToJson(responseDb).getEmailEntity().get(0);
+
+    assertEquals(Integer.valueOf(0), result.getRetryCount());
+    assertEquals(false, result.getShouldRetry());
   }
 
   @Test
