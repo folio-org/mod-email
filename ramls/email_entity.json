@@ -52,14 +52,14 @@
       "default": "DELIVERED"
     },
     "shouldRetry" : {
-      "description":"should do retry",
+      "description":"Should attempt retry",
       "type": "boolean",
       "default": false
     },
     "retryCount" : {
-      "description": "the number of retries have been sent",
+      "description": "Retry attempts count",
       "type": "integer",
-      "default": -1
+      "default": 0
     },
     "message": {
       "description": "Server error message or other cause of the error",
