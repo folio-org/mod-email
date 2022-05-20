@@ -60,15 +60,10 @@ public class StorageServiceImpl implements StorageService {
                                 Handler<AsyncResult<JsonObject>> resultHandler) {
     try {
       EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
-      PostgresClient pgClient = PostgresClient.getInstance(vertx, tenantId);
-      pgClient.update(EMAIL_STATISTICS_TABLE_NAME, emailEntity, emailEntity.getId(),
-        updateReply -> {
-          if (updateReply.failed()) {
-            errorHandler(updateReply.cause(), resultHandler);
-            return;
-          }
-          resultHandler.handle(Future.succeededFuture());
-        });
+      PostgresClient.getInstance(vertx, tenantId)
+        .update(EMAIL_STATISTICS_TABLE_NAME, emailEntity, emailEntity.getId())
+        .onSuccess(event -> resultHandler.handle(Future.succeededFuture()))
+        .onFailure(event -> errorHandler(event.getCause(), resultHandler));
     } catch (Exception ex) {
       errorHandler(ex, resultHandler);
     }
