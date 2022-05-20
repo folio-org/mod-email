@@ -1,5 +1,7 @@
 package org.folio.services.email.impl;
 
+import static io.vertx.core.Future.failedFuture;
+import static io.vertx.core.Future.succeededFuture;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 import static org.folio.enums.SmtpEmail.AUTH_METHODS;
@@ -40,7 +42,6 @@ import org.folio.rest.jaxrs.model.EmailEntity.Status;
 import org.folio.services.email.MailService;
 
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -53,6 +54,7 @@ import io.vertx.ext.mail.MailConfig;
 import io.vertx.ext.mail.MailMessage;
 import io.vertx.ext.mail.MailResult;
 import io.vertx.ext.mail.StartTLSOptions;
+import org.jetbrains.annotations.NotNull;
 
 public class MailServiceImpl implements MailService {
 
@@ -61,6 +63,7 @@ public class MailServiceImpl implements MailService {
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
   private static final String EMAIL_HEADERS_CONFIG_NAME = "email.headers";
+  private static final int MAX_RETRY_COUNT = 5;
 
   private final Logger logger = LogManager.getLogger(MailServiceImpl.class);
   private final Vertx vertx;
@@ -82,36 +85,46 @@ public class MailServiceImpl implements MailService {
 
       defineMailClient(mailConfig)
         .sendMail(mailMessage, mailHandler -> {
-          boolean shouldRetry = false;
-          int retryCount = 0;
           if (mailHandler.failed()) {
             Pair<Boolean, Integer> values = getRetryValues(mailHandler.cause(), emailEntity);
-            shouldRetry = values.getLeft();
-            retryCount = values.getRight();
+            boolean shouldRetry = values.getLeft();
+            int retryCount = values.getRight();
             String errorMsg = String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage());
-            resultHandler.handle(fillResultHandler(emailEntity, Status.FAILURE, errorMsg,
-              shouldRetry, retryCount));
+            resultHandler.handle(succeededFuture(fillResultHandler(emailEntity, Status.FAILURE,
+              errorMsg, shouldRetry, retryCount)));
             return;
           }
           // the logic of sending the result of sending email to `mod-notify`
           String message = createResponseMessage(mailHandler);
-          resultHandler.handle(fillResultHandler(emailEntity, Status.DELIVERED, message,
-            shouldRetry, retryCount));
+          resultHandler.handle(succeededFuture(fillResultHandler(emailEntity, Status.DELIVERED,
+            message, false, 0)));
       });
     } catch (Exception ex) {
       logger.error(String.format(ERROR_SENDING_EMAIL, ex.getMessage()));
-      resultHandler.handle(Future.failedFuture(ex.getMessage()));
+      resultHandler.handle(failedFuture(ex.getMessage()));
     }
   }
 
   private Pair<Boolean, Integer> getRetryValues(Throwable error, EmailEntity emailEntity) {
     if (error instanceof SMTPException) {
       int replyCode = ((SMTPException) error).getReplyCode();
+      int retryCount = emailEntity.getRetryCount();
       if (replyCode >= 400 && replyCode < 500) {
-        return new ImmutablePair<>(true, emailEntity.getRetryCount() + 1);
+        return getRetryValues(emailEntity, retryCount);
       }
     }
     return new ImmutablePair<>(false, 0);
+  }
+
+  @NotNull
+  private ImmutablePair<Boolean, Integer> getRetryValues(EmailEntity emailEntity, int retryCount) {
+    if (retryCount == MAX_RETRY_COUNT) {
+      return new ImmutablePair<>(false, 0);
+    }
+    if (retryCount == 0 && !emailEntity.getShouldRetry()) {
+      return new ImmutablePair<>(true, retryCount);
+    }
+    return new ImmutablePair<>(true, retryCount + 1);
   }
 
   private EmailEntity fillEmailEntity(JsonObject emailEntityJson, Configurations configurations) {
@@ -195,12 +208,14 @@ public class MailServiceImpl implements MailService {
     return Buffer.buffer(decode);
   }
 
-  private Future<JsonObject> fillResultHandler(EmailEntity emailEntity, Status status,
+  private JsonObject fillResultHandler(EmailEntity emailEntity, Status status,
     String message, boolean shouldRetry, int retryCount) {
 
-    JsonObject emailEntityJson = JsonObject.mapFrom(emailEntity.withStatus(status)
-      .withMessage(message).withShouldRetry(shouldRetry).withRetryCount(retryCount));
-    return Future.succeededFuture(emailEntityJson);
+    return JsonObject.mapFrom(emailEntity
+      .withStatus(status)
+      .withMessage(message)
+      .withShouldRetry(shouldRetry)
+      .withRetryCount(retryCount));
   }
 
   private String createResponseMessage(AsyncResult<MailResult> mailHandler) {

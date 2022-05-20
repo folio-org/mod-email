@@ -16,9 +16,11 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import org.folio.rest.jaxrs.resource.Email;
 
 public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
+
+  private static final String REQUEST_QUERY_SHOULD_RETRY = "shouldRetry=true";
+  private static final int DEFAULT_LIMIT = 1000;
 
   public DelayedTasksAPI(Vertx vertx, String tenantId) {
     super(vertx, tenantId);
@@ -38,29 +40,31 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   }
 
   @Override
-  public void getDelayedTaskRetry(Map<String, String> okapiHeaders,
+  public void postDelayedTaskRetry(Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
 
     RetryEmailsContext retryEmailsContext = new RetryEmailsContext();
-
     Future.succeededFuture()
       .compose(v -> lookupConfig(okapiHeaders))
-      .compose(this::checkConfiguration)
       .map(retryEmailsContext::setConfiguration)
-      .compose(v -> findEmailsForRetry())
+      .compose(v -> findEmailEntries(DEFAULT_LIMIT, 0, REQUEST_QUERY_SHOULD_RETRY))
       .compose(this::mapJsonObjectToEmailEntries)
       .map(retryEmailsContext::setEmailEntries)
-      .compose(context -> CompositeFuture.all(context
-        .getEmailEntries()
-        .getEmailEntity()
-        .stream()
-        .map(email -> sendEmail(context.getConfiguration(), email)
-          .compose(this::updateEmail))
-        .collect(Collectors.toList())))
-      .map(Email.PostEmailResponse::respond200WithTextPlain)
+      .compose(this::resendFailedEmails)
+      .map(DelayedTask.PostDelayedTaskRetryResponse::respond204WithTextPlain)
       .map(Response.class::cast)
       .otherwise(this::mapExceptionToResponse)
       .onComplete(asyncResultHandler);
+  }
+
+  private CompositeFuture resendFailedEmails(RetryEmailsContext context) {
+    return CompositeFuture.all(context
+      .getEmailEntries()
+      .getEmailEntity()
+      .stream()
+      .map(email -> sendEmail(context.getConfiguration(), email)
+        .compose(this::updateEmail))
+      .collect(Collectors.toList()));
   }
 
   private static class RetryEmailsContext {

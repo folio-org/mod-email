@@ -51,13 +51,11 @@ public abstract class AbstractEmail {
   private static final String MODULE_EMAIL_SMTP_SERVER = "SMTP_SERVER";
   private static final String LOOKUP_TIMEOUT = "lookup.timeout";
   private static final String LOOKUP_TIMEOUT_VAL = "1000";
-  private static final int MAX_RETRY_COUNT = 5;
 
   private static final Pattern DATE_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
   private static final String ERROR_LOOKING_UP_MOD_CONFIG = "Error looking up config at url=%s | Expected status code 200, got %s | error message: %s";
   private static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SMTP server, the min config is: %s";
   private static final String ERROR_MESSAGE_INCORRECT_DATE_PARAMETER = "Invalid date value, the parameter must be in the format: yyyy-MM-dd";
-  private static final String REQUEST_QUERY_STATUS_FAILURE_AND_RETRY_COUNT = "status=FAILURE and retryCount<" + MAX_RETRY_COUNT;
 
   private final Logger logger = LogManager.getLogger(AbstractEmail.class);
   protected final Vertx vertx;
@@ -147,19 +145,6 @@ public abstract class AbstractEmail {
     return promise.future();
   }
 
-  protected Future<JsonObject> checkConfiguration(JsonObject conf) {
-    Promise<JsonObject> promise = Promise.promise();
-    Configurations configurations = conf.mapTo(Configurations.class);
-    if (isIncorrectSmtpServerConfig(configurations)) {
-      String errorMessage = String.format(ERROR_MIN_REQUIREMENT_MOD_CONFIG, REQUIREMENTS_CONFIG_SET);
-      logger.error(errorMessage);
-      promise.fail(new SmtpConfigurationException(errorMessage));
-    } else {
-      promise.complete(conf);
-    }
-    return promise.future();
-  }
-
   protected Future<JsonObject> sendEmail(JsonObject configJson, EmailEntity entity) {
     Promise<JsonObject> promise = Promise.promise();
     JsonObject emailEntityJson = JsonObject.mapFrom(entity);
@@ -180,15 +165,15 @@ public abstract class AbstractEmail {
     return promise.future();
   }
 
-  protected Future<String> updateEmail(JsonObject emailEntityJson) {
-    Promise<String> promise = Promise.promise();
+  protected Future<EmailEntity> updateEmail(JsonObject emailEntityJson) {
+    Promise<EmailEntity> promise = Promise.promise();
     storageService.updateEmailEntity(tenantId, emailEntityJson, result -> {
       if (result.failed()) {
         promise.fail(result.cause());
         return;
       }
       EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
-      promise.complete(emailEntity.getMessage());
+      promise.complete(emailEntity);
     });
     return promise.future();
   }
@@ -196,13 +181,6 @@ public abstract class AbstractEmail {
   protected Future<JsonObject> findEmailEntries(int limit, int offset, String query) {
     Promise<JsonObject> promise = Promise.promise();
     storageService.findEmailEntries(tenantId, limit, offset, query, promise);
-    return promise.future();
-  }
-
-  protected Future<JsonObject> findEmailsForRetry() {
-    Promise<JsonObject> promise = Promise.promise();
-    storageService.findEmailEntries(tenantId, 1000, 0,
-      REQUEST_QUERY_STATUS_FAILURE_AND_RETRY_COUNT, promise);
     return promise.future();
   }
 

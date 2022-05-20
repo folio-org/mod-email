@@ -193,7 +193,7 @@ public abstract class AbstractAPITest {
       .get(String.format(REST_PATH_WITH_QUERY, REST_PATH_GET_EMAILS, status, DEFAULT_LIMIT));
   }
 
-  protected Response getEmailsShouldBeRetried() {
+  protected Response postEmailsShouldBeRetried() {
     String okapiUrl = String.format(OKAPI_URL_TEMPLATE, userMockServer.port());
     return RestAssured.given()
       .port(port)
@@ -201,7 +201,7 @@ public abstract class AbstractAPITest {
       .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
       .header(new Header(OKAPI_URL_HEADER, okapiUrl))
       .when()
-      .get(REST_PATH_GET_RETRY);
+      .post(REST_PATH_GET_RETRY);
   }
 
   /**

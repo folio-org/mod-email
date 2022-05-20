@@ -86,7 +86,7 @@
       ]
     }, {
       "methods": [
-        "GET"
+        "POST"
       ],
       "pathPattern": "/delayedTask/retry",
       "unit": "minute",

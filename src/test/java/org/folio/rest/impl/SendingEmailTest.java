@@ -257,7 +257,7 @@ public class SendingEmailTest extends AbstractAPITest {
 
     String expectedMessage = "Error in the 'mod-email' module, the module didn't send email" +
       " | message: recipient address not accepted: 452 Error: too many recipients";
-    getEmailsShouldBeRetried();
+    postEmailsShouldBeRetried();
 
     Response responseDb = getEmails("FAILURE")
       .then()
@@ -293,7 +293,7 @@ public class SendingEmailTest extends AbstractAPITest {
       .extract()
       .response();
 
-    getEmailsShouldBeRetried();
+    postEmailsShouldBeRetried();
 
     Response responseDb = getEmails("FAILURE")
       .then()
