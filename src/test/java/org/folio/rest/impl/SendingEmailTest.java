@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import javax.mail.Header;
 import javax.ws.rs.core.MediaType;
@@ -28,6 +29,7 @@ import org.subethamail.wiser.WiserMessage;
 
 import io.restassured.response.Response;
 import junit.framework.AssertionFailedError;
+import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 public class SendingEmailTest extends AbstractAPITest {
 
@@ -267,6 +269,7 @@ public class SendingEmailTest extends AbstractAPITest {
 
     EmailEntity result = convertEntriesToJson(responseDb).getEmailEntity().get(0);
 
+    Awaitility.await().atMost(5, TimeUnit.SECONDS);
     assertEquals(expectedMessage, response.getBody().asString());
     assertEquals(Integer.valueOf(2), result.getAttemptCount());
     assertEquals(true, result.getShouldRetry());
@@ -302,6 +305,7 @@ public class SendingEmailTest extends AbstractAPITest {
       .response();
     EmailEntity result = convertEntriesToJson(responseDb).getEmailEntity().get(0);
 
+    Awaitility.await().atMost(5, TimeUnit.SECONDS);
     assertEquals(Integer.valueOf(0), result.getAttemptCount());
     assertEquals(false, result.getShouldRetry());
   }
