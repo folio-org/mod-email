@@ -272,7 +272,6 @@ public class SendingEmailTest extends AbstractAPITest {
     // return to initial state
     wiser.getServer().setMaxRecipients(maxRecipients);
 
-    Awaitility.await().atMost(5, TimeUnit.SECONDS);
     assertEquals(expectedMessage, response.getBody().asString());
     assertEquals(Integer.valueOf(2), result.getAttemptCount());
     assertEquals(true, result.getShouldRetry());
@@ -305,8 +304,6 @@ public class SendingEmailTest extends AbstractAPITest {
       .response();
     EmailEntity result = convertEntriesToJson(responseDb).getEmailEntity().get(0);
 
-//    Awaitility.await().atMost(5, TimeUnit.SECONDS);
-//    TimeUnit.of(ChronoUnit.SECONDS).sleep(5);
     assertEquals(Integer.valueOf(0), result.getAttemptCount());
     assertEquals(false, result.getShouldRetry());
   }
