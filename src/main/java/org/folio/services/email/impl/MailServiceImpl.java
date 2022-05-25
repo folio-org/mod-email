@@ -3,6 +3,7 @@ package org.folio.services.email.impl;
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.commons.lang3.BooleanUtils.toInteger;
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 import static org.folio.enums.SmtpEmail.AUTH_METHODS;
 import static org.folio.enums.SmtpEmail.EMAIL_PASSWORD;
@@ -29,8 +30,6 @@ import javax.ws.rs.core.MediaType;
 
 import io.vertx.ext.mail.SMTPException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.enums.SmtpEmail;
@@ -54,7 +53,6 @@ import io.vertx.ext.mail.MailConfig;
 import io.vertx.ext.mail.MailMessage;
 import io.vertx.ext.mail.MailResult;
 import io.vertx.ext.mail.StartTLSOptions;
-import org.jetbrains.annotations.NotNull;
 
 public class MailServiceImpl implements MailService {
 
@@ -63,7 +61,7 @@ public class MailServiceImpl implements MailService {
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
   private static final String EMAIL_HEADERS_CONFIG_NAME = "email.headers";
-  private static final int MAX_RETRY_COUNT = 5;
+  private static final int DEFAULT_MAX_RETRY_COUNT = 5;
 
   private final Logger logger = LogManager.getLogger(MailServiceImpl.class);
   private final Vertx vertx;
@@ -82,16 +80,17 @@ public class MailServiceImpl implements MailService {
       EmailEntity emailEntity = fillEmailEntity(emailEntityJson, configurations);
       MailConfig mailConfig = getMailConfig(configurations);
       MailMessage mailMessage = getMailMessage(emailEntity, configurations);
+      int maxAttemptCount = getMaxAttemptCount(configurations);
 
       defineMailClient(mailConfig)
         .sendMail(mailMessage, mailHandler -> {
           if (mailHandler.failed()) {
-            Pair<Boolean, Integer> values = getRetryValues(mailHandler.cause(), emailEntity);
-            boolean shouldRetry = values.getLeft();
-            int retryCount = values.getRight();
+            Integer attemptCount = emailEntity.getAttemptCount();
+            boolean shouldRetry = shouldRetry(mailHandler.cause(), attemptCount, maxAttemptCount);
+            int updatedAttemptCount = toInteger(shouldRetry, attemptCount + 1, attemptCount);
             String errorMsg = String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage());
             resultHandler.handle(succeededFuture(fillResultHandler(emailEntity, Status.FAILURE,
-              errorMsg, shouldRetry, retryCount)));
+              errorMsg, shouldRetry, updatedAttemptCount)));
             return;
           }
           // the logic of sending the result of sending email to `mod-notify`
@@ -105,26 +104,12 @@ public class MailServiceImpl implements MailService {
     }
   }
 
-  private Pair<Boolean, Integer> getRetryValues(Throwable error, EmailEntity emailEntity) {
+  private boolean shouldRetry(Throwable error, int attemptCount, int maxAttemptCount) {
     if (error instanceof SMTPException) {
       int replyCode = ((SMTPException) error).getReplyCode();
-      int retryCount = emailEntity.getRetryCount();
-      if (replyCode >= 400 && replyCode < 500) {
-        return getRetryValues(emailEntity, retryCount);
-      }
+      return replyCode >= 400 && replyCode < 500 && attemptCount < maxAttemptCount;
     }
-    return new ImmutablePair<>(false, 0);
-  }
-
-  @NotNull
-  private ImmutablePair<Boolean, Integer> getRetryValues(EmailEntity emailEntity, int retryCount) {
-    if (retryCount == MAX_RETRY_COUNT) {
-      return new ImmutablePair<>(false, 0);
-    }
-    if (retryCount == 0 && !emailEntity.getShouldRetry()) {
-      return new ImmutablePair<>(true, retryCount);
-    }
-    return new ImmutablePair<>(true, retryCount + 1);
+    return false;
   }
 
   private EmailEntity fillEmailEntity(JsonObject emailEntityJson, Configurations configurations) {
@@ -208,14 +193,23 @@ public class MailServiceImpl implements MailService {
     return Buffer.buffer(decode);
   }
 
+  private int getMaxAttemptCount(Configurations configurations) {
+    return configurations.getConfigs().stream()
+      .filter(Objects::nonNull)
+      .map(Config::getMaxAttemptCount)
+      .filter(maxAttemptCount -> maxAttemptCount > 0)
+      .findFirst()
+      .orElse(DEFAULT_MAX_RETRY_COUNT);
+  }
+
   private JsonObject fillResultHandler(EmailEntity emailEntity, Status status,
-    String message, boolean shouldRetry, int retryCount) {
+    String message, boolean shouldRetry, int attemptCount) {
 
     return JsonObject.mapFrom(emailEntity
       .withStatus(status)
       .withMessage(message)
       .withShouldRetry(shouldRetry)
-      .withRetryCount(retryCount));
+      .withAttemptCount(attemptCount));
   }
 
   private String createResponseMessage(AsyncResult<MailResult> mailHandler) {

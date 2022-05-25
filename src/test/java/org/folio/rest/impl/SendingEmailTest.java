@@ -268,7 +268,7 @@ public class SendingEmailTest extends AbstractAPITest {
     EmailEntity result = convertEntriesToJson(responseDb).getEmailEntity().get(0);
 
     assertEquals(expectedMessage, response.getBody().asString());
-    assertEquals(Integer.valueOf(1), result.getRetryCount());
+    assertEquals(Integer.valueOf(2), result.getAttemptCount());
     assertEquals(true, result.getShouldRetry());
 
     // return to initial state
@@ -302,7 +302,7 @@ public class SendingEmailTest extends AbstractAPITest {
       .response();
     EmailEntity result = convertEntriesToJson(responseDb).getEmailEntity().get(0);
 
-    assertEquals(Integer.valueOf(0), result.getRetryCount());
+    assertEquals(Integer.valueOf(0), result.getAttemptCount());
     assertEquals(false, result.getShouldRetry());
   }
 

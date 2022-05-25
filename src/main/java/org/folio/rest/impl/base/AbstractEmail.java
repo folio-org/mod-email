@@ -1,5 +1,6 @@
 package org.folio.rest.impl.base;
 
+import static io.vertx.core.Future.succeededFuture;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
@@ -176,6 +177,15 @@ public abstract class AbstractEmail {
       promise.complete(emailEntity);
     });
     return promise.future();
+  }
+
+  protected Future<Void> processEmail(JsonObject configuration, EmailEntity emailEntity) {
+
+    return succeededFuture(emailEntity)
+      .compose(unused -> checkConfiguration(configuration, emailEntity))
+      .compose(unused -> sendEmail(configuration, emailEntity))
+      .compose(this::updateEmail)
+      .mapEmpty();
   }
 
   protected Future<JsonObject> findEmailEntries(int limit, int offset, String query) {

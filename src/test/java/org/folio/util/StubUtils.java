@@ -113,6 +113,7 @@ public class StubUtils {
   private static Config createConfig(String configName, String code, String value) {
     return new Config()
       .withId(UUID.randomUUID().toString())
+      .withMaxAttemptCount(10)
       .withModule(MODULE_SMTP_SERVER)
       .withConfigName(configName)
       .withCode(code)

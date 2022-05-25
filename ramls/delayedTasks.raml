@@ -43,17 +43,9 @@ traits:
           body:
             text/plain:
               example: "Internal server error"
-  /retry:
+  /retryFailedEmails:
     post:
       description: "Retry failed emails"
       responses:
         204:
-          description: "success"
-          body:
-            text/plain:
-              example: "204 Ok"
-        500:
-          description: "Internal server error"
-          body:
-            text/plain:
-              example: "Internal server error"
+          description: "Unsuccessful emails have been resent"
