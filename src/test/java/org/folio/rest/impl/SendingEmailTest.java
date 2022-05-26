@@ -14,8 +14,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 import javax.mail.Header;
 import javax.ws.rs.core.MediaType;
@@ -30,7 +28,6 @@ import org.subethamail.wiser.WiserMessage;
 
 import io.restassured.response.Response;
 import junit.framework.AssertionFailedError;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 public class SendingEmailTest extends AbstractAPITest {
 
@@ -261,22 +258,21 @@ public class SendingEmailTest extends AbstractAPITest {
     String expectedMessage = "Error in the 'mod-email' module, the module didn't send email" +
       " | message: recipient address not accepted: 452 Error: too many recipients";
     postEmailsShouldBeRetried();
-    Awaitility.await()
-      .atMost(5, TimeUnit.SECONDS)
-      .until(() -> {
-        Response responseDb = getEmails("FAILURE")
-          .then()
-          .statusCode(HttpStatus.SC_OK)
-          .extract()
-          .response();
-        EmailEntity result = convertEntriesToJson(responseDb).getEmailEntity().get(0);
-        return result.getAttemptCount();
-      }, Predicate.isEqual(2));
+
+    Response responseDb = getEmails("FAILURE")
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+
+    EmailEntity result = convertEntriesToJson(responseDb).getEmailEntity().get(0);
 
     // return to initial state
     wiser.getServer().setMaxRecipients(maxRecipients);
 
     assertEquals(expectedMessage, response.getBody().asString());
+    assertEquals(Integer.valueOf(2), result.getAttemptCount());
+    assertEquals(true, result.getShouldRetry());
   }
 
   @Test
