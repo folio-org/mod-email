@@ -49,9 +49,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
     Future.succeededFuture(new RetryEmailsContext(okapiHeaders))
       .compose(this::lookupConfiguration)
       .compose(this::findEmailsForRetry)
-      .compose(this::resendFailedEmails)
-      .onComplete(v -> asyncResultHandler.handle(Future.succeededFuture(
-        DeleteDelayedTaskExpiredMessagesResponse.respond204())));
+      .compose(this::resendFailedEmails);
   }
 
   private Future<RetryEmailsContext> lookupConfiguration(RetryEmailsContext retryEmailsContext) {
