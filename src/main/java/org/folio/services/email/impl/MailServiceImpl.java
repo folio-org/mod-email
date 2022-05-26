@@ -3,7 +3,6 @@ package org.folio.services.email.impl;
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
 import static java.util.stream.Collectors.toMap;
-import static org.apache.commons.lang3.BooleanUtils.toInteger;
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 import static org.folio.enums.SmtpEmail.AUTH_METHODS;
 import static org.folio.enums.SmtpEmail.EMAIL_PASSWORD;
