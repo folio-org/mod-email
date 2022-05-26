@@ -180,7 +180,6 @@ public abstract class AbstractEmail {
   }
 
   protected Future<Void> processEmail(JsonObject configuration, EmailEntity emailEntity) {
-
     return succeededFuture(emailEntity)
       .compose(unused -> checkConfiguration(configuration, emailEntity))
       .compose(unused -> sendEmail(configuration, emailEntity))

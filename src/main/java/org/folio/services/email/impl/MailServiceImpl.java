@@ -84,13 +84,12 @@ public class MailServiceImpl implements MailService {
 
       defineMailClient(mailConfig)
         .sendMail(mailMessage, mailHandler -> {
+          int attemptCount = emailEntity.getAttemptCount() + 1;
           if (mailHandler.failed()) {
-            Integer attemptCount = emailEntity.getAttemptCount();
             boolean shouldRetry = shouldRetry(mailHandler.cause(), attemptCount, maxAttemptCount);
-            int updatedAttemptCount = toInteger(shouldRetry, attemptCount + 1, attemptCount);
             String errorMsg = String.format(ERROR_SENDING_EMAIL, mailHandler.cause().getMessage());
             resultHandler.handle(succeededFuture(fillResultHandler(emailEntity, Status.FAILURE,
-              errorMsg, shouldRetry, updatedAttemptCount)));
+              errorMsg, shouldRetry, attemptCount)));
             return;
           }
           // the logic of sending the result of sending email to `mod-notify`
