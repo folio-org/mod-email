@@ -39,10 +39,6 @@
       "description":"user id",
       "type": "string"
     },
-    "maxAttemptCount": {
-      "description": "maximum allowable limit for resending email",
-      "type": "integer"
-    },
     "metadata": {
       "description":"metadata",
       "readonly": true

@@ -52,12 +52,12 @@
       "default": "DELIVERED"
     },
     "shouldRetry" : {
-      "description":"Should attempt retry",
+      "description":"Should retry sending email",
       "type": "boolean",
       "default": false
     },
-    "attemptCount" : {
-      "description": "Number of failed email submissions",
+    "attemptsCount" : {
+      "description": "Number of email sending attempts",
       "type": "integer",
       "default": 0
     },

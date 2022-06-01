@@ -1,5 +1,6 @@
 package org.folio.services.storage.impl;
 
+import static io.vertx.core.Future.succeededFuture;
 import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
 
 import org.apache.commons.lang3.StringUtils;
@@ -37,33 +38,16 @@ public class StorageServiceImpl implements StorageService {
   }
 
   @Override
-  public void saveEmailEntity(String tenantId, JsonObject emailEntityJson,
-                              Handler<AsyncResult<JsonObject>> resultHandler) {
-    try {
-      EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
-      PostgresClient pgClient = PostgresClient.getInstance(vertx, tenantId);
-      pgClient.save(EMAIL_STATISTICS_TABLE_NAME, emailEntity,
-        postReply -> {
-          if (postReply.failed()) {
-            errorHandler(postReply.cause(), resultHandler);
-            return;
-          }
-          resultHandler.handle(Future.succeededFuture());
-        });
-    } catch (Exception ex) {
-      errorHandler(ex, resultHandler);
-    }
-  }
+  public void saveEmailEntity(String tenantId, JsonObject emailJson,
+    Handler<AsyncResult<JsonObject>> resultHandler) {
 
-  @Override
-  public void updateEmailEntity(String tenantId, JsonObject emailEntityJson,
-                                Handler<AsyncResult<JsonObject>> resultHandler) {
     try {
-      EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
+      EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
       PostgresClient.getInstance(vertx, tenantId)
-        .update(EMAIL_STATISTICS_TABLE_NAME, emailEntity, emailEntity.getId())
-        .onSuccess(event -> resultHandler.handle(Future.succeededFuture()))
-        .onFailure(event -> errorHandler(event.getCause(), resultHandler));
+        .save(EMAIL_STATISTICS_TABLE_NAME, emailEntity.getId(), emailEntity, true, true)
+        .onFailure(logger::error)
+        .map(emailJson)
+        .onComplete(resultHandler);
     } catch (Exception ex) {
       errorHandler(ex, resultHandler);
     }
@@ -90,7 +74,7 @@ public class StorageServiceImpl implements StorageService {
             .withTotalRecords(totalRecords);
 
           JsonObject entries = JsonObject.mapFrom(emailEntries);
-          resultHandler.handle(Future.succeededFuture(entries));
+          resultHandler.handle(succeededFuture(entries));
         });
     } catch (Exception ex) {
       errorHandler(ex, resultHandler);
@@ -111,7 +95,7 @@ public class StorageServiceImpl implements StorageService {
           errorHandler(result.cause(), resultHandler);
           return;
         }
-        resultHandler.handle(Future.succeededFuture());
+        resultHandler.handle(succeededFuture());
       });
     } catch (Exception ex) {
       errorHandler(ex, resultHandler);

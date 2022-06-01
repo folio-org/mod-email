@@ -1,5 +1,7 @@
 package org.folio.rest.impl;
 
+import static io.vertx.core.Future.succeededFuture;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
@@ -7,29 +9,32 @@ import java.util.function.Function;
 import javax.ws.rs.core.Response;
 
 import org.folio.rest.impl.base.AbstractEmail;
+import org.folio.rest.jaxrs.model.Configurations;
+import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.resource.DelayedTask;
+import org.folio.support.RetryEmailsContext;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import org.folio.support.RetryEmailsContext;
-
-import static io.vertx.core.Future.succeededFuture;
+import io.vertx.core.json.JsonObject;
 
 public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
 
-  private static final int DEFAULT_LIMIT = 100;
+  private static final String FIND_EMAILS_FOR_RETRY_QUERY = "shouldRetry==true";
+  private static final int DEFAULT_RETRY_BATCH_SIZE = 100;
 
   public DelayedTasksAPI(Vertx vertx, String tenantId) {
     super(vertx, tenantId);
   }
 
   @Override
-  public void deleteDelayedTaskExpiredMessages(String expirationDate, String status, Map<String, String> headers,
-                                               Handler<AsyncResult<Response>> resultHandler, Context context) {
-    Future.succeededFuture()
+  public void deleteDelayedTaskExpiredMessages(String expirationDate, String status,
+    Map<String, String> headers, Handler<AsyncResult<Response>> resultHandler, Context context) {
+
+    succeededFuture()
       .compose(v -> checkExpirationDate(expirationDate))
       .compose(v -> determinateEmailStatus(status))
       .compose(emailStatus -> deleteEmailsByExpirationDate(expirationDate, emailStatus))
@@ -43,37 +48,51 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   public void postDelayedTaskRetryFailedEmails(Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
 
-    asyncResultHandler.handle(Future.succeededFuture(
-      DeleteDelayedTaskExpiredMessagesResponse.respond204()));
+    logger.info("Starting email retry job...");
 
-    Future.succeededFuture(new RetryEmailsContext(okapiHeaders))
+    asyncResultHandler.handle(succeededFuture(
+      PostDelayedTaskRetryFailedEmailsResponse.respond202()));
+
+    succeededFuture(new RetryEmailsContext(okapiHeaders))
       .compose(this::lookupConfiguration)
       .compose(this::findEmailsForRetry)
-      .compose(this::resendFailedEmails);
+      .compose(this::retryEmails)
+      .onSuccess(r -> logger.info("Email retry job finished successfully"))
+      .onFailure(t -> logger.error("Email retry job failed", t));
   }
 
-  private Future<RetryEmailsContext> lookupConfiguration(RetryEmailsContext retryEmailsContext) {
-    return Future.succeededFuture(retryEmailsContext)
-      .compose(entry -> lookupConfig(entry.getOkapiHeaders())
-      .map(entry::setConfiguration));
+  private Future<RetryEmailsContext> lookupConfiguration(RetryEmailsContext context) {
+    return lookupConfig(context.getOkapiHeaders())
+      .map(context::withConfigurations);
   }
 
-  private Future<RetryEmailsContext> findEmailsForRetry(RetryEmailsContext retryEmailsContext){
-    return Future.succeededFuture(retryEmailsContext)
-      .compose(entry -> findEmailEntries(DEFAULT_LIMIT, 0, "shouldRetry=true")
-      .compose(this::mapJsonObjectToEmailEntries)
-      .map(retryEmailsContext::setEmailEntries));
+  private Future<RetryEmailsContext> findEmailsForRetry(RetryEmailsContext context){
+    return findEmailEntries(DEFAULT_RETRY_BATCH_SIZE, 0, FIND_EMAILS_FOR_RETRY_QUERY)
+      .map(this::mapJsonObjectToEmails)
+      .onSuccess(emails -> logger.info("Found {} emails for retry", emails.size()))
+      .map(context::withEmails);
   }
 
-  private Future<Void> resendFailedEmails(RetryEmailsContext context) {
-
-    return chainFutures(context.getEmailEntries().getEmailEntity(),
-      emailEntity -> processEmail(context.getConfiguration(), emailEntity));
+  private Collection<EmailEntity> mapJsonObjectToEmails(JsonObject emailEntriesJson) {
+    return mapJsonObjectToEmailEntries(emailEntriesJson)
+      .getEmailEntity();
   }
 
-  private  <T> Future<Void> chainFutures(Collection<T> list, Function<T, Future<Void>> method) {
+  private Future<Void> retryEmails(RetryEmailsContext context) {
+    return chainFutures(context.getEmails(),
+      email -> processEmail(context.getConfigurations(), email));
+  }
+
+  protected Future<Void> processEmail(Configurations configurations, EmailEntity email) {
+    return sendEmail(configurations, email)
+      .compose(this::saveEmail)
+      .otherwiseEmpty()
+      .mapEmpty();
+  }
+
+  private static <T> Future<Void> chainFutures(Collection<T> list, Function<T, Future<Void>> method) {
     return list.stream().reduce(succeededFuture(),
-      (acc, item) -> acc.compose(v -> method.apply(item)),
+      (acc, email) -> acc.compose(v -> method.apply(email)),
       (a, b) -> succeededFuture());
   }
 }

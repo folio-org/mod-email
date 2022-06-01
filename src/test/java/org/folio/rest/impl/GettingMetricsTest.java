@@ -22,7 +22,7 @@ public class GettingMetricsTest extends AbstractAPITest {
 
   @Test
   public void testDelayedTaskExpiredEmailWithDateAndDeliveredStatus() {
-    Response response = getEmails(DELIVERED.value())
+    Response response = getEmails(DELIVERED)
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()
@@ -40,7 +40,7 @@ public class GettingMetricsTest extends AbstractAPITest {
 
   @Test
   public void testDelayedTaskExpiredEmailWithDateAndFailureStatus() {
-    Response response = getEmails(FAILURE.value())
+    Response response = getEmails(FAILURE)
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()
@@ -92,9 +92,9 @@ public class GettingMetricsTest extends AbstractAPITest {
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
 
     int statusCode = 200;
-    EmailEntity emailOne = sendEmails(statusCode);
-    EmailEntity emailTwo = sendEmails(statusCode);
-    EmailEntity emailThree = sendEmails(statusCode);
+    EmailEntity emailOne = sendEmail(statusCode);
+    EmailEntity emailTwo = sendEmail(statusCode);
+    EmailEntity emailThree = sendEmail(statusCode);
 
     // check email on DB
     checkStoredEmailsInDb(emailOne, DELIVERED);
@@ -109,7 +109,7 @@ public class GettingMetricsTest extends AbstractAPITest {
       .response();
 
     // find all delivered email
-    Response response = getEmails(DELIVERED.value())
+    Response response = getEmails(DELIVERED)
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()
@@ -125,9 +125,9 @@ public class GettingMetricsTest extends AbstractAPITest {
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
 
     int statusCode = 200;
-    EmailEntity emailOne = sendEmails(statusCode);
-    EmailEntity emailTwo = sendEmails(statusCode);
-    EmailEntity emailThree = sendEmails(statusCode);
+    EmailEntity emailOne = sendEmail(statusCode);
+    EmailEntity emailTwo = sendEmail(statusCode);
+    EmailEntity emailThree = sendEmail(statusCode);
 
     // check email on DB
     checkStoredEmailsInDb(emailOne, FAILURE);
@@ -142,7 +142,7 @@ public class GettingMetricsTest extends AbstractAPITest {
       .response();
 
     // find all failure email
-    Response response = getEmails(FAILURE.value())
+    Response response = getEmails(FAILURE)
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()
@@ -158,7 +158,7 @@ public class GettingMetricsTest extends AbstractAPITest {
     initModConfigStub(mockServerPort, getIncorrectConfigurations());
 
     // send email
-    EmailEntity email = sendEmails(200);
+    EmailEntity email = sendEmail(200);
 
     // check email on DB
     checkStoredEmailsInDb(email, FAILURE);
@@ -171,7 +171,7 @@ public class GettingMetricsTest extends AbstractAPITest {
       .response();
 
     // find all failure email
-    Response response = getEmails(FAILURE.value())
+    Response response = getEmails(FAILURE)
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()

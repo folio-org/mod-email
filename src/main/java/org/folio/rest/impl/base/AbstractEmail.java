@@ -1,9 +1,13 @@
 package org.folio.rest.impl.base;
 
+import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
+import static io.vertx.core.json.JsonObject.mapFrom;
+import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static org.folio.HttpStatus.HTTP_OK;
 import static org.folio.rest.RestVerticle.MODULE_SPECIFIC_ARGS;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TOKEN;
@@ -21,14 +25,9 @@ import java.util.regex.Pattern;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.buffer.Buffer;
-import io.vertx.ext.web.client.HttpRequest;
-import io.vertx.ext.web.client.WebClient;
-import io.vertx.ext.web.client.WebClientOptions;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.folio.HttpStatus;
 import org.folio.exceptions.ConfigurationException;
 import org.folio.exceptions.SmtpConfigurationException;
 import org.folio.rest.jaxrs.model.Configurations;
@@ -41,8 +40,9 @@ import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.client.WebClientOptions;
 
 public abstract class AbstractEmail {
 
@@ -58,7 +58,7 @@ public abstract class AbstractEmail {
   private static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SMTP server, the min config is: %s";
   private static final String ERROR_MESSAGE_INCORRECT_DATE_PARAMETER = "Invalid date value, the parameter must be in the format: yyyy-MM-dd";
 
-  private final Logger logger = LogManager.getLogger(AbstractEmail.class);
+  protected final Logger logger = LogManager.getLogger(AbstractEmail.class);
   protected final Vertx vertx;
   private final String tenantId;
 
@@ -69,9 +69,10 @@ public abstract class AbstractEmail {
   /**
    * Timeout to wait for response
    */
-  private final int lookupTimeout = Integer.parseInt(MODULE_SPECIFIC_ARGS.getOrDefault(LOOKUP_TIMEOUT, LOOKUP_TIMEOUT_VAL));
+  private final int lookupTimeout = Integer.parseInt(
+    MODULE_SPECIFIC_ARGS.getOrDefault(LOOKUP_TIMEOUT, LOOKUP_TIMEOUT_VAL));
 
-  public AbstractEmail(Vertx vertx, String tenantId) {
+  protected AbstractEmail(Vertx vertx, String tenantId) {
     this.vertx = vertx;
     this.tenantId = tenantId;
     initHttpClient();
@@ -96,95 +97,55 @@ public abstract class AbstractEmail {
     this.httpClient = WebClient.create(vertx, options);
   }
 
-  protected Future<JsonObject> lookupConfig(Map<String, String> requestHeaders) {
-    Promise<JsonObject> promise = Promise.promise();
+  protected Future<Configurations> lookupConfig(Map<String, String> requestHeaders) {
     MultiMap headers = MultiMap.caseInsensitiveMultiMap().addAll(requestHeaders);
     String okapiUrl = headers.get(OKAPI_URL_HEADER);
     String okapiToken = headers.get(OKAPI_HEADER_TOKEN);
-    String requestUrl = String.format(REQUEST_URL_TEMPLATE, okapiUrl, REQUEST_URI_PATH, MODULE_EMAIL_SMTP_SERVER);
-    HttpRequest<Buffer> request = httpClient.getAbs(requestUrl);
-    request
+    String url = String.format(REQUEST_URL_TEMPLATE, okapiUrl, REQUEST_URI_PATH, MODULE_EMAIL_SMTP_SERVER);
+
+    return httpClient.getAbs(url)
       .putHeader(OKAPI_HEADER_TOKEN, okapiToken)
       .putHeader(OKAPI_HEADER_TENANT, tenantId)
-      .putHeader(HttpHeaders.CONTENT_TYPE.toString(), APPLICATION_JSON)
-      .putHeader(HttpHeaders.ACCEPT.toString(), APPLICATION_JSON);
+      .putHeader(CONTENT_TYPE, APPLICATION_JSON)
+      .putHeader(ACCEPT, APPLICATION_JSON)
+      .send()
+      .compose(response -> {
+        if (response.statusCode() != HTTP_OK.toInt()) {
+          String errorMessage = String.format(ERROR_LOOKING_UP_MOD_CONFIG,
+            url, response.statusCode(), response.bodyAsString());
+          logger.error(errorMessage);
+          return failedFuture(new ConfigurationException(errorMessage));
+        } else {
+          Configurations configurations = response.bodyAsJsonObject().mapTo(Configurations.class);
+          if (isIncorrectSmtpServerConfig(configurations)) {
+            String errorMessage = String.format(ERROR_MIN_REQUIREMENT_MOD_CONFIG,
+              REQUIREMENTS_CONFIG_SET);
+            logger.error(errorMessage);
+            return failedFuture(new SmtpConfigurationException(errorMessage));
+          }
 
-    request.send(response -> {
-      if (response.result().statusCode() != HttpStatus.HTTP_OK.toInt()) {
-        String errMsg = String.format(ERROR_LOOKING_UP_MOD_CONFIG, requestUrl, response.result().statusCode(), response.result().bodyAsString());
-        logger.error(errMsg);
-        promise.fail(new ConfigurationException(errMsg));
-      } else {
-        JsonObject resultObject = response.result().bodyAsJsonObject();
-        promise.complete(resultObject);
-      }
-    });
-    return promise.future();
-  }
-
-  protected Future<JsonObject> checkConfiguration(JsonObject conf, EmailEntity entity) {
-    Promise<JsonObject> promise = Promise.promise();
-    Configurations configurations = conf.mapTo(Configurations.class);
-    if (isIncorrectSmtpServerConfig(configurations)) {
-      String errorMessage = String.format(ERROR_MIN_REQUIREMENT_MOD_CONFIG, REQUIREMENTS_CONFIG_SET);
-      JsonObject emailEntityJson = JsonObject.mapFrom(entity
-        .withStatus(EmailEntity.Status.FAILURE)
-        .withDate(Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC)))
-        .withMessage(errorMessage));
-
-      saveEmail(emailEntityJson).onComplete(result -> {
-        if (result.failed()) {
-          logger.error(result.cause());
+          return succeededFuture(configurations);
         }
       });
-
-      logger.error(errorMessage);
-      promise.fail(new SmtpConfigurationException(errorMessage));
-    } else {
-      promise.complete(conf);
-    }
-    return promise.future();
   }
 
-  protected Future<JsonObject> sendEmail(JsonObject configJson, EmailEntity entity) {
+  protected Future<JsonObject> sendEmail(Configurations configurations, EmailEntity entity) {
     Promise<JsonObject> promise = Promise.promise();
-    JsonObject emailEntityJson = JsonObject.mapFrom(entity);
-    mailService.sendEmail(configJson, emailEntityJson, promise);
+    mailService.sendEmail(mapFrom(configurations), mapFrom(entity), promise);
     return promise.future();
   }
 
-  protected Future<String> saveEmail(JsonObject emailEntityJson) {
-    Promise<String> promise = Promise.promise();
-    storageService.saveEmailEntity(tenantId, emailEntityJson, result -> {
-      if (result.failed()) {
-        promise.fail(result.cause());
-        return;
-      }
-      EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
-      promise.complete(emailEntity.getMessage());
-    });
-    return promise.future();
+  protected Future<JsonObject> handleFailure(Throwable throwable, EmailEntity email) {
+    return saveEmail(mapFrom(email
+      .withStatus(EmailEntity.Status.FAILURE)
+      .withDate(Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC)))
+      .withMessage(throwable.getMessage())));
   }
 
-  protected Future<EmailEntity> updateEmail(JsonObject emailEntityJson) {
-    Promise<EmailEntity> promise = Promise.promise();
-    storageService.updateEmailEntity(tenantId, emailEntityJson, result -> {
-      if (result.failed()) {
-        promise.fail(result.cause());
-        return;
-      }
-      EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
-      promise.complete(emailEntity);
-    });
+  protected Future<JsonObject> saveEmail(JsonObject emailEntityJson) {
+    Promise<JsonObject> promise = Promise.promise();
+    storageService.saveEmailEntity(tenantId, emailEntityJson, promise);
     return promise.future();
-  }
-
-  protected Future<Void> processEmail(JsonObject configuration, EmailEntity emailEntity) {
-    return succeededFuture(emailEntity)
-      .compose(unused -> checkConfiguration(configuration, emailEntity))
-      .compose(unused -> sendEmail(configuration, emailEntity))
-      .compose(this::updateEmail)
-      .mapEmpty();
   }
 
   protected Future<JsonObject> findEmailEntries(int limit, int offset, String query) {
@@ -193,13 +154,14 @@ public abstract class AbstractEmail {
     return promise.future();
   }
 
-  protected Future<EmailEntries> mapJsonObjectToEmailEntries(JsonObject emailEntriesJson) {
-    return Future.succeededFuture(emailEntriesJson.mapTo(EmailEntries.class));
+  protected EmailEntries mapJsonObjectToEmailEntries(JsonObject emailEntriesJson) {
+    return emailEntriesJson.mapTo(EmailEntries.class);
   }
 
   protected Future<Void> deleteEmailsByExpirationDate(String expirationDate, String emailStatus) {
     Promise<Void> promise = Promise.promise();
-    storageService.deleteEmailEntriesByExpirationDateAndStatus(tenantId, expirationDate, emailStatus,
+    storageService.deleteEmailEntriesByExpirationDateAndStatus(tenantId, expirationDate,
+      emailStatus,
       result -> {
         if (result.failed()) {
           promise.fail(result.cause());
@@ -256,4 +218,10 @@ public abstract class AbstractEmail {
   private boolean isCorrectDateFormat(String expirationDate) {
     return DATE_PATTERN.matcher(expirationDate).matches();
   }
+
+  protected static String extractMessage(JsonObject emailJson) {
+    return emailJson.mapTo(EmailEntity.class)
+      .getMessage();
+  }
+
 }

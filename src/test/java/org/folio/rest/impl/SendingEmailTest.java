@@ -15,7 +15,6 @@ import java.util.Enumeration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 import javax.mail.Header;
 import javax.ws.rs.core.MediaType;
@@ -235,80 +234,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
     // check email on DB
     checkStoredEmailsInDb(emailEntity, DELIVERED);
-  }
-
-  @Test
-  public void checkStoredEmailsInDbWithShouldRetryTrueWhileSMPTExceptionHappend() {
-    int maxRecipients = wiser.getServer().getMaxRecipients();
-    // to get error with status 4xx
-    wiser.getServer().setMaxRecipients(0);
-    initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
-
-    EmailEntity emailEntity = new EmailEntity()
-      .withNotificationId("1")
-      .withTo(String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5)))
-      .withFrom(String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7)))
-      .withHeader("Reset password")
-      .withBody("Test text for the message.")
-      .withOutputFormat(MediaType.TEXT_PLAIN);
-
-    Response response = sendEmail(emailEntity)
-      .then()
-      .statusCode(HttpStatus.SC_OK)
-      .extract()
-      .response();
-
-    String expectedMessage = "Error in the 'mod-email' module, the module didn't send email" +
-      " | message: recipient address not accepted: 452 Error: too many recipients";
-    postEmailsShouldBeRetried();
-
-    Awaitility.await()
-      .atMost(5, TimeUnit.SECONDS)
-      .until(() -> {
-        Response responseDb = getEmails("FAILURE")
-          .then()
-          .statusCode(HttpStatus.SC_OK)
-          .extract()
-          .response();
-        EmailEntity result = convertEntriesToJson(responseDb).getEmailEntity().get(0);
-        return result.getAttemptCount();
-      }, Predicate.isEqual(2));
-
-    // return to initial state
-    wiser.getServer().setMaxRecipients(maxRecipients);
-
-    assertEquals(expectedMessage, response.getBody().asString());
-  }
-
-  @Test
-  public void checkStoredEmailsInDbWithShouldRetryFalse() {
-    initModConfigStub(userMockServer.port(), getIncorrectWiserMockConfigurations());
-
-    EmailEntity emailEntity = new EmailEntity()
-      .withNotificationId("1")
-      .withTo(String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5)))
-      .withFrom(String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7)))
-      .withHeader("Reset password")
-      .withBody("Test text for the message.")
-      .withOutputFormat(MediaType.TEXT_PLAIN);
-
-    sendEmail(emailEntity)
-      .then()
-      .statusCode(HttpStatus.SC_OK)
-      .extract()
-      .response();
-
-    postEmailsShouldBeRetried();
-
-    Response responseDb = getEmails("FAILURE")
-      .then()
-      .statusCode(HttpStatus.SC_OK)
-      .extract()
-      .response();
-    EmailEntity result = convertEntriesToJson(responseDb).getEmailEntity().get(0);
-
-    assertEquals(Integer.valueOf(1), result.getAttemptCount());
-    assertEquals(false, result.getShouldRetry());
   }
 
   @Test

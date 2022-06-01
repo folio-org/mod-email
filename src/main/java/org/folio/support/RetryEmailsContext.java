@@ -1,44 +1,22 @@
 package org.folio.support;
 
-import io.vertx.core.json.JsonObject;
-import org.folio.rest.jaxrs.model.EmailEntries;
-
+import java.util.Collection;
 import java.util.Map;
 
+import org.folio.rest.jaxrs.model.Configurations;
+import org.folio.rest.jaxrs.model.EmailEntity;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.With;
+
+@RequiredArgsConstructor
+@AllArgsConstructor
+@Getter
+@With
 public class RetryEmailsContext {
-
-  private EmailEntries emailEntries;
-  private JsonObject configuration;
-  private Map<String, String> okapiHeaders;
-
-  public RetryEmailsContext(Map<String, String> okapiHeaders) {
-    this.okapiHeaders = okapiHeaders;
-  }
-
-  public RetryEmailsContext setEmailEntries(EmailEntries emailEntries) {
-    this.emailEntries = emailEntries;
-    return this;
-  }
-
-  public RetryEmailsContext setConfiguration(JsonObject configuration) {
-    this.configuration = configuration;
-    return this;
-  }
-
-  public RetryEmailsContext setOkapiHeaders(Map<String, String> okapiHeaders) {
-    this.okapiHeaders = okapiHeaders;
-    return this;
-  }
-
-  public EmailEntries getEmailEntries() {
-    return emailEntries;
-  }
-
-  public JsonObject getConfiguration() {
-    return configuration;
-  }
-
-  public Map<String, String> getOkapiHeaders() {
-    return okapiHeaders;
-  }
+  private final Map<String, String> okapiHeaders;
+  private Collection<EmailEntity> emails;
+  private Configurations configurations;
 }

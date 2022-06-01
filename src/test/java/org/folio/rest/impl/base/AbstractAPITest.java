@@ -22,6 +22,7 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.ws.rs.core.MediaType;
 
+import io.restassured.specification.RequestSpecification;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.client.HttpResponse;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -78,9 +79,8 @@ public abstract class AbstractAPITest {
   private static final String OKAPI_HOST = "localhost";
   private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
 
-  private static final String REST_PATH_GET_EMAILS = "/email";
-  private static final String REST_PATH_GET_RETRY = "/delayedTask/retryFailedEmails";
-  private static final String REST_PATH_WITH_QUERY = "%s?query=status=%s&limit=%s";
+  private static final String REST_PATH_EMAIL = "/email";
+  private static final String PATH_WITH_QUERY_TEMPLATE = "%s?query=%s&limit=%s";
   protected static final String ADDRESS_TEMPLATE = "%s@localhost";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
   private static final String MESSAGE_NOT_FOUND = "The message for the sender: `%s` was not found on the SMTP server";
@@ -89,7 +89,7 @@ public abstract class AbstractAPITest {
   private static final String REST_DELETE_BATCH_EMAILS = "/delayedTask/expiredMessages";
   private static final String REST_PATH_DELETE_BATCH_EMAILS = "%s?expirationDate=%s&emailStatus=%s";
 
-  protected static Wiser wiser;
+  private static Wiser wiser;
   private static Vertx vertx;
   private static int port;
 
@@ -109,8 +109,7 @@ public abstract class AbstractAPITest {
     vertx = Vertx.vertx();
     port = NetworkUtils.nextFreePort();
 
-    wiser = new Wiser();
-    wiser.setPort(2500);
+    wiser = new Wiser(2500);
 
     TenantClient tenantClient = new TenantClient(String.format(TENANT_CLIENT_HOST, OKAPI_HOST, port), OKAPI_TENANT, null);
     DeploymentOptions restDeploymentOptions = new DeploymentOptions()
@@ -167,6 +166,8 @@ public abstract class AbstractAPITest {
 
   @Before
   public void setUp(TestContext context) {
+    throwSmtpError(false);
+
     Async async = context.async();
     PostgresClient.getInstance(vertx, OKAPI_TENANT).delete(EMAIL_STATISTICS_TABLE_NAME, new Criterion(),
       event -> {
@@ -179,56 +180,38 @@ public abstract class AbstractAPITest {
       });
   }
 
-  /**
-   * Get emails by status
-   */
-  protected Response getEmails(String status) {
-    String okapiUrl = String.format(OKAPI_URL_TEMPLATE, userMockServer.port());
-    return RestAssured.given()
-      .port(port)
-      .contentType(MediaType.APPLICATION_JSON)
-      .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
-      .header(new Header(OKAPI_URL_HEADER, okapiUrl))
-      .when()
-      .get(String.format(REST_PATH_WITH_QUERY, REST_PATH_GET_EMAILS, status, DEFAULT_LIMIT));
+  protected Response getEmails(Status status) {
+    return getEmails("status==" + status.value());
   }
 
-  protected void postEmailsShouldBeRetried() {
-    String okapiUrl = String.format(OKAPI_URL_TEMPLATE, userMockServer.port());
-    RestAssured.given()
-      .port(port)
-      .contentType(MediaType.APPLICATION_JSON)
-      .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
-      .header(new Header(OKAPI_URL_HEADER, okapiUrl))
-      .when()
-      .post(REST_PATH_GET_RETRY);
+  protected Response getEmails(String query) {
+    return getRequestSpecification()
+      .get(String.format(PATH_WITH_QUERY_TEMPLATE, REST_PATH_EMAIL, query, DEFAULT_LIMIT));
+  }
+
+  protected Response post(String path) {
+    return getRequestSpecification()
+      .post(path);
+  }
+
+  protected Response post(String path, String body) {
+    return getRequestSpecification()
+      .body(body)
+      .post(path);
   }
 
   /**
    * Send email notifications
    */
   protected Response sendEmail(EmailEntity emailEntity) {
-    String okapiUrl = String.format(OKAPI_URL_TEMPLATE, userMockServer.port());
-    return RestAssured.given()
-      .port(port)
-      .contentType(MediaType.APPLICATION_JSON)
-      .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
-      .header(new Header(OKAPI_URL_HEADER, okapiUrl))
-      .body(JsonObject.mapFrom(emailEntity).toString())
-      .when()
-      .post(REST_PATH_GET_EMAILS);
+    return post(REST_PATH_EMAIL, JsonObject.mapFrom(emailEntity).encodePrettily());
   }
 
   /**
    * Delete email by expirationDate and status
    */
   protected Response deleteEmailByDateAndStatus(String expirationDate, String status) {
-    String okapiUrl = String.format(OKAPI_URL_TEMPLATE, userMockServer.port());
-    return RestAssured.given()
-      .port(port)
-      .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
-      .header(new Header(OKAPI_URL_HEADER, okapiUrl))
-      .when()
+    return getRequestSpecification()
       .delete(String.format(REST_PATH_DELETE_BATCH_EMAILS, REST_DELETE_BATCH_EMAILS, expirationDate, status));
   }
 
@@ -265,7 +248,7 @@ public abstract class AbstractAPITest {
    * Check on the SMTP server that the email was sent successfully.
    */
   protected void checkMessagesOnWiserServer(WiserMessage wiserMessage,
-                                            EmailEntity emailEntity) throws MessagingException {
+    EmailEntity emailEntity) throws MessagingException {
 
     assertTrue(wiserMessage.toString().contains(emailEntity.getBody()));
 
@@ -283,7 +266,7 @@ public abstract class AbstractAPITest {
    * Check stored emails in the database
    */
   protected void checkStoredEmailsInDb(EmailEntity emailEntity, Status status) {
-    Response responseDb = getEmails(status.value())
+    Response responseDb = getEmails(status)
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()
@@ -310,7 +293,7 @@ public abstract class AbstractAPITest {
   /**
    * Send random email
    */
-  protected EmailEntity sendEmails(int expectedStatusCode) {
+  protected EmailEntity sendEmail(int expectedStatusCode) {
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
     String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
@@ -348,7 +331,20 @@ public abstract class AbstractAPITest {
 
   private boolean isContainsSenderAddress(String sender, Address[] address) {
     return Arrays.stream(address)
-      .map(Address::toString).
-        anyMatch(ad -> ad.equals(sender));
+      .map(Address::toString)
+      .anyMatch(ad -> ad.equals(sender));
+  }
+
+  private RequestSpecification getRequestSpecification() {
+    return RestAssured.given()
+      .port(port)
+      .contentType(MediaType.APPLICATION_JSON)
+      .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
+      .header(new Header(OKAPI_URL_HEADER, String.format(OKAPI_URL_TEMPLATE, userMockServer.port())))
+      .when();
+  }
+
+  protected void throwSmtpError(boolean throwError) {
+    wiser.getServer().setMaxRecipients(throwError ? 0 : 1000);
   }
 }
