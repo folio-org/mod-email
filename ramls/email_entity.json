@@ -5,7 +5,7 @@
   "type": "object",
   "properties": {
     "id": {
-      "description":"id",
+      "description":"Unique UUID of the email",
       "$ref": "raml-util/schemas/uuid.schema"
     },
     "notificationId": {

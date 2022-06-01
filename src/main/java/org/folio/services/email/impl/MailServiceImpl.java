@@ -58,7 +58,7 @@ import io.vertx.ext.mail.StartTLSOptions;
 
 public class MailServiceImpl implements MailService {
 
-  private static final Logger log = LogManager.getLogger(MailServiceImpl.class);
+  private static final Logger logger = LogManager.getLogger(MailServiceImpl.class);
   private static final String ERROR_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message: %s";
   private static final String ERROR_ATTACHMENT_DATA = "Error attaching the `%s` file to email!";
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
@@ -85,24 +85,24 @@ public class MailServiceImpl implements MailService {
       MailConfig mailConfig = getMailConfig(configurations);
       MailMessage mailMessage = getMailMessage(email, configurations);
 
-      log.info("Sending email {} (attempt {}/{})",
+      logger.info("Sending email {} (attempt {}/{})",
         email.getId(), email.getAttemptsCount(), MAX_ATTEMPTS);
 
       defineMailClient(mailConfig)
         .sendMail(mailMessage)
         .onSuccess(result -> {
           String message = format(SUCCESS_SEND_EMAIL, join(",", result.getRecipients()));
-          log.info(message);
+          logger.info(message);
           resultHandler.handle(succeededFuture(buildResult(email, DELIVERED, message, false)));
         })
         .onFailure(cause -> {
           boolean shouldRetry = shouldRetry(cause, email);
           String message = format(ERROR_SENDING_EMAIL, cause.getMessage());
-          log.error(message, cause);
+          logger.error(message, cause);
           resultHandler.handle(succeededFuture(buildResult(email, FAILURE, message, shouldRetry)));
         });
     } catch (Exception ex) {
-      log.error(format(ERROR_SENDING_EMAIL, ex.getMessage()));
+      logger.error(format(ERROR_SENDING_EMAIL, ex.getMessage()));
       resultHandler.handle(failedFuture(ex.getMessage()));
     }
   }
@@ -175,7 +175,7 @@ public class MailServiceImpl implements MailService {
 
   private MailAttachment getMailAttachment(Attachment data) {
     if (Objects.isNull(data) || StringUtils.isEmpty(data.getData())) {
-      log.error(INCORRECT_ATTACHMENT_DATA);
+      logger.error(INCORRECT_ATTACHMENT_DATA);
       return MailAttachment.create().setData(Buffer.buffer());
     }
     return MailAttachment.create()
@@ -190,7 +190,7 @@ public class MailServiceImpl implements MailService {
   private Buffer getAttachmentData(Attachment data) {
     String file = data.getData();
     if (StringUtils.isEmpty(file)) {
-      log.error(format(ERROR_ATTACHMENT_DATA, data.getName()));
+      logger.error(format(ERROR_ATTACHMENT_DATA, data.getName()));
       return Buffer.buffer();
     }
     // Decode incoming data from JSON

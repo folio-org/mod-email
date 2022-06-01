@@ -84,7 +84,7 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
     initModConfigStub(userMockServer.port(), getIncorrectWiserMockConfigurations());
 
     String expectedErrorMessage = "Error in the 'mod-email' module, the module didn't send email | " +
-      "message: Connection refused: no further information: localhost/127.0.0.1:555";
+      "message: Connection refused: localhost/127.0.0.1:555";
 
     sendEmail(buildEmail())
       .then()
