@@ -160,8 +160,7 @@ public abstract class AbstractEmail {
 
   protected Future<Void> deleteEmailsByExpirationDate(String expirationDate, String emailStatus) {
     Promise<Void> promise = Promise.promise();
-    storageService.deleteEmailEntriesByExpirationDateAndStatus(tenantId, expirationDate,
-      emailStatus,
+    storageService.deleteEmailEntriesByExpirationDateAndStatus(tenantId, expirationDate, emailStatus,
       result -> {
         if (result.failed()) {
           promise.fail(result.cause());

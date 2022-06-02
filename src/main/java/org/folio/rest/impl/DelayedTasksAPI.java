@@ -57,8 +57,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
       .compose(this::lookupConfiguration)
       .compose(this::findEmailsForRetry)
       .compose(this::retryEmails)
-      .onSuccess(r -> logger.info("Email retry job finished successfully"))
-      .onFailure(t -> logger.error("Email retry job failed", t));
+      .onComplete(this::logRetryResult);
   }
 
   private Future<RetryEmailsContext> lookupConfiguration(RetryEmailsContext context) {
@@ -94,5 +93,13 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
     return list.stream().reduce(succeededFuture(),
       (acc, email) -> acc.compose(v -> method.apply(email)),
       (a, b) -> succeededFuture());
+  }
+
+  private void logRetryResult(AsyncResult<Void> result) {
+    if (result.succeeded()) {
+      logger.info("Email retry job finished successfully");
+    } else {
+      logger.error("Email retry job failed", result.cause());
+    }
   }
 }
