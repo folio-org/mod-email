@@ -52,14 +52,15 @@
       "default": "DELIVERED"
     },
     "shouldRetry" : {
-      "description":"Should retry sending email",
+      "description": "Should retry sending email",
       "type": "boolean",
       "default": false
     },
     "attemptsCount" : {
       "description": "Number of email sending attempts",
       "type": "integer",
-      "default": 0
+      "default": 0,
+      "minimum": 0
     },
     "message": {
       "description": "Server error message or other cause of the error",

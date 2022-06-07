@@ -9,11 +9,17 @@ import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
 import static org.folio.util.StubUtils.getWiserMockConfigurations;
 import static org.folio.util.StubUtils.initFailModConfigStub;
 import static org.folio.util.StubUtils.initModConfigStub;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -25,21 +31,22 @@ import org.folio.rest.impl.base.AbstractAPITest;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntity.Status;
 import org.folio.rest.jaxrs.model.EmailEntries;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 import io.restassured.response.Response;
 
 public class RetryFailedEmailsTest extends AbstractAPITest {
-  private static final int MAX_ATTEMPTS = 10;
+  private static final int RETRY_MAX_ATTEMPTS = 3;
+  private static final int RETRY_BATCH_SIZE = 50;
+  private static final int RETRY_AGE_THRESHOLD_MINUTES = 10;
   private static final String PATH_RETRY_FAILED_EMAILS = "/delayedTask/retryFailedEmails";
 
   @Test
   public void shouldRetryFailedEmailsUntilAllAttemptsAreExhausted() {
     initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
     throwSmtpError(true);
-    final int emailsCount = 100;
+    int emailsCount = 5;
 
     String expectedErrorMessage = "Error in the 'mod-email' module, the module " +
       "didn't send email | message: recipient address not accepted: 452 Error: too many recipients";
@@ -51,11 +58,31 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
 
     verifyStoredEmails(emailsCount, FAILURE, 1, true, expectedErrorMessage);
 
-    for (int i = 2; i < MAX_ATTEMPTS + 1; i++) {
-      boolean shouldRetry = i < MAX_ATTEMPTS;
+    for (int i = 2; i < RETRY_MAX_ATTEMPTS + 1; i++) {
+      boolean shouldRetry = i < RETRY_MAX_ATTEMPTS;
       runRetryJobAndWait(emailsCount, FAILURE, i, shouldRetry);
       verifyStoredEmails(emailsCount, FAILURE, i, shouldRetry, expectedErrorMessage);
     }
+  }
+
+  @Test
+  public void shouldRetryFailedEmailsInBatches() {
+    initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
+    throwSmtpError(true);
+    int twoBatches = RETRY_BATCH_SIZE * 2;
+
+    String expectedErrorMessage = "Error in the 'mod-email' module, the module " +
+      "didn't send email | message: recipient address not accepted: 452 Error: too many recipients";
+
+    sendEmails(twoBatches)
+      .forEach(response -> response.then()
+        .statusCode(HttpStatus.SC_OK)
+        .body(is(expectedErrorMessage)));
+
+    verifyStoredEmails(twoBatches, FAILURE, 1, true, expectedErrorMessage);
+    throwSmtpError(false);
+    runRetryJobAndWait(RETRY_BATCH_SIZE, DELIVERED, 2, false);
+    runRetryJobAndWait(twoBatches, DELIVERED, 2, false);
   }
 
   @Test
@@ -66,9 +93,7 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
     String expectedErrorMessage = "Error in the 'mod-email' module, the module " +
       "didn't send email | message: recipient address not accepted: 452 Error: too many recipients";
 
-    EmailEntity email = buildEmail();
-
-    sendEmail(email)
+    sendEmail(buildEmail())
       .then()
       .statusCode(HttpStatus.SC_OK)
       .body(is(expectedErrorMessage));
@@ -76,64 +101,96 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
     verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
     throwSmtpError(false);
     runRetryJobAndWait(1, DELIVERED, 2, false);
-    verifyStoredEmails(1, DELIVERED, 2, false, "The message has been delivered to " + email.getTo());
+    verifyThatEmailsWereSent(1, 2);
   }
 
   @Test
-  public void shouldNotRetryEmailFailedDueToInvalidConfiguration() {
+  public void shouldRetryEmailFailedDueToInvalidConfiguration() {
     initModConfigStub(userMockServer.port(), getIncorrectWiserMockConfigurations());
 
     String expectedErrorMessage = "Error in the 'mod-email' module, the module didn't send email | " +
-      "message: Connection refused: localhost/127.0.0.1:555";
+      "message: Connection refused";
 
     sendEmail(buildEmail())
       .then()
       .statusCode(HttpStatus.SC_OK)
-      .body(is(expectedErrorMessage));
+      .body(containsString(expectedErrorMessage));
 
-    verifyStoredEmails(1, FAILURE, 1, false, expectedErrorMessage);
-    runRetryJob();
-    // wait unconditionally since we expect that no data will be changed by the job
-    Awaitility.await().during(1, SECONDS);
-    verifyStoredEmails(1, FAILURE, 1, false, expectedErrorMessage);
+    verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
+    initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
+    runRetryJobAndWait(1, DELIVERED, 2, false);
+    verifyThatEmailsWereSent(1, 2);
   }
 
   @Test
-  public void shouldNotRetryEmailFailedDueToInsufficientConfiguration() {
+  public void shouldRetryEmailFailedDueToInsufficientConfiguration() {
     initModConfigStub(userMockServer.port(), getIncorrectConfigurations());
 
-    String expectedErrorMessage = "The 'mod-config' module doesn't have a minimum config for SMTP " +
-      "server, the min config is: [EMAIL_SMTP_PORT, EMAIL_PASSWORD, EMAIL_SMTP_HOST, EMAIL_USERNAME]";
+    String expectedErrorMessage = "Error in the 'mod-email' module, the module didn't send email | " +
+      "message: The 'mod-config' module doesn't have a minimum config for SMTP server, the min " +
+      "config is: [EMAIL_SMTP_PORT, EMAIL_PASSWORD, EMAIL_SMTP_HOST, EMAIL_USERNAME]";
 
     sendEmail(buildEmail())
       .then()
       .statusCode(HttpStatus.SC_OK)
       .body(is(expectedErrorMessage));
 
-    verifyStoredEmails(1, FAILURE, 0, false, expectedErrorMessage);
-    // wait unconditionally since we expect that no data will be changed by the job
-    Awaitility.await().during(1, SECONDS);
-    verifyStoredEmails(1, FAILURE, 0, false, expectedErrorMessage);
+    verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
+    initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
+    runRetryJobAndWait(1, DELIVERED, 2, false);
+    verifyThatEmailsWereSent(1, 2);
   }
 
   @Test
-  public void shouldNotRetryEmailFailedDueToErrorInModConfiguration() {
+  public void shouldRetryEmailFailedDueToErrorInModConfiguration() {
     initFailModConfigStub(userMockServer.port());
 
     String expectedErrorMessage = String.format("Error looking up config at url=" +
       "http://localhost:%d/configurations/entries?query=module==SMTP_SERVER | " +
       "Expected status code 200, got 404 | error message: null", userMockServer.port());
 
-
     sendEmail(buildEmail())
       .then()
       .statusCode(HttpStatus.SC_BAD_REQUEST)
       .body(is(expectedErrorMessage));
 
-    verifyStoredEmails(1, FAILURE, 0, false, expectedErrorMessage);
-    // wait unconditionally since we expect that no data will be changed by the job
-    Awaitility.await().during(1, SECONDS);
-    verifyStoredEmails(1, FAILURE, 0, false, expectedErrorMessage);
+    verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
+    initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
+    runRetryJobAndWait(1, DELIVERED, 2, false);
+    verifyThatEmailsWereSent(1, 2);
+  }
+
+  @Test
+  public void shouldNotRetryEmailsOlderThanConfiguredAge() {
+    initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
+    throwSmtpError(true);
+
+    String expectedErrorMessage = "Error in the 'mod-email' module, the module " +
+      "didn't send email | message: recipient address not accepted: 452 Error: too many recipients";
+
+    sendEmails(2)
+      .forEach(response -> response.then()
+        .statusCode(HttpStatus.SC_OK)
+        .body(is(expectedErrorMessage)));
+
+    List<EmailEntity> emailsBeforeRetry = verifyStoredEmails(2, FAILURE, 1, true, expectedErrorMessage);
+    EmailEntity firstEmail = emailsBeforeRetry.get(0);
+    EmailEntity secondEmail = emailsBeforeRetry.get(1);
+
+    Instant rightBelowThreshold = ZonedDateTime.now(ZoneOffset.UTC)
+      .minusMinutes(RETRY_AGE_THRESHOLD_MINUTES + 1)
+      .toInstant();
+
+    updateEmail(firstEmail.withDate(Date.from(rightBelowThreshold)));
+    runRetryJobAndWait(1, FAILURE, 2, true);
+
+    List<EmailEntity> ignoredEmails = verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
+    assertThat(ignoredEmails, hasSize(1));
+    assertThat(ignoredEmails.get(0).getId(), is(firstEmail.getId()));
+
+    List<EmailEntity> retriedEmails = verifyStoredEmails(1, FAILURE, 2, true, expectedErrorMessage);
+    assertThat(retriedEmails, hasSize(1));
+    assertThat(retriedEmails.get(0).getId(), is(secondEmail.getId()));
   }
 
   private static EmailEntity buildEmail() {
@@ -183,7 +240,7 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
       .statusCode(HttpStatus.SC_ACCEPTED);
 
     Awaitility.await()
-      .atMost(5, SECONDS)
+      .atMost(15, SECONDS)
       .untilAsserted(() -> assertThat(
         getEmails(expectedStatus, expectedAttemptsCount, expectedShouldRetry)
           .then()
@@ -193,23 +250,31 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
         hasSize(expectedEmailsCount)));
   }
 
-  private void verifyStoredEmails(int emailsCount, Status status, int attemptsCount,
-    boolean shouldRetry, String message) {
+  private List<EmailEntity> verifyThatEmailsWereSent(int emailsCount, int attemptsCount) {
+    return verifyStoredEmails(emailsCount, DELIVERED, attemptsCount, false,
+      "The message has been delivered");
+  }
 
-    getEmails(status, attemptsCount, shouldRetry)
+  private List<EmailEntity> verifyStoredEmails(int emailsCount, Status status,
+    int attemptsCount, boolean shouldRetry, String message) {
+
+    List<EmailEntity> emails = getEmails(status, attemptsCount, shouldRetry)
       .then()
       .statusCode(200)
       .body("emailEntity", hasSize(emailsCount))
       .extract()
       .body()
       .as(EmailEntries.class)
-      .getEmailEntity()
-      .forEach(email -> {
-        assertThat(email.getStatus(), is(status));
-        assertThat(email.getAttemptsCount(), is(attemptsCount));
-        assertThat(email.getShouldRetry(), is(shouldRetry));
-        assertThat(email.getMessage(), is(message));
-      });
+      .getEmailEntity();
+
+    emails.forEach(email -> {
+      assertThat(email.getStatus(), is(status));
+      assertThat(email.getAttemptsCount(), is(attemptsCount));
+      assertThat(email.getShouldRetry(), is(shouldRetry));
+      assertThat(email.getMessage(), containsString(message));
+    });
+
+    return emails;
   }
 
 }

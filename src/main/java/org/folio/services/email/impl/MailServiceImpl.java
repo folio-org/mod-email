@@ -1,9 +1,8 @@
 package org.folio.services.email.impl;
 
 import static io.vertx.core.Future.failedFuture;
-import static io.vertx.core.Future.succeededFuture;
 import static java.lang.String.format;
-import static java.lang.String.join;
+import static java.lang.System.currentTimeMillis;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 import static org.folio.enums.SmtpEmail.AUTH_METHODS;
@@ -15,14 +14,10 @@ import static org.folio.enums.SmtpEmail.EMAIL_SMTP_SSL;
 import static org.folio.enums.SmtpEmail.EMAIL_START_TLS_OPTIONS;
 import static org.folio.enums.SmtpEmail.EMAIL_TRUST_ALL;
 import static org.folio.enums.SmtpEmail.EMAIL_USERNAME;
-import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
-import static org.folio.rest.jaxrs.model.EmailEntity.Status.FAILURE;
+import static org.folio.rest.impl.base.AbstractEmail.RETRY_MAX_ATTEMPTS;
 import static org.folio.util.EmailUtils.getEmailConfig;
 import static org.folio.util.EmailUtils.getMessageConfig;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -34,12 +29,10 @@ import javax.ws.rs.core.MediaType;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.folio.enums.SmtpEmail;
 import org.folio.rest.jaxrs.model.Attachment;
 import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
-import org.folio.rest.jaxrs.model.EmailEntity.Status;
 import org.folio.services.email.MailService;
 
 import io.vertx.core.AsyncResult;
@@ -53,7 +46,6 @@ import io.vertx.ext.mail.MailAttachment;
 import io.vertx.ext.mail.MailClient;
 import io.vertx.ext.mail.MailConfig;
 import io.vertx.ext.mail.MailMessage;
-import io.vertx.ext.mail.SMTPException;
 import io.vertx.ext.mail.StartTLSOptions;
 
 public class MailServiceImpl implements MailService {
@@ -62,9 +54,7 @@ public class MailServiceImpl implements MailService {
   private static final String ERROR_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message: %s";
   private static final String ERROR_ATTACHMENT_DATA = "Error attaching the `%s` file to email!";
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
-  private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
   private static final String EMAIL_HEADERS_CONFIG_NAME = "email.headers";
-  private static final int MAX_ATTEMPTS = 10;
 
   private final Vertx vertx;
 
@@ -76,55 +66,29 @@ public class MailServiceImpl implements MailService {
   }
 
   @Override
-  public void sendEmail(JsonObject config, JsonObject emailEntityJson,
+  public void sendEmail(JsonObject config, JsonObject emailJson,
     Handler<AsyncResult<JsonObject>> resultHandler) {
 
     try {
       Configurations configurations = config.mapTo(Configurations.class);
-      EmailEntity email = buildEmailEntity(emailEntityJson, configurations);
+      EmailEntity email = emailJson.mapTo(EmailEntity.class);
       MailConfig mailConfig = getMailConfig(configurations);
       MailMessage mailMessage = getMailMessage(email, configurations);
+      String emailId = email.getId();
+      long start = currentTimeMillis();
 
-      logger.info("Sending email {} (attempt {}/{})",
-        email.getId(), email.getAttemptsCount(), MAX_ATTEMPTS);
+      logger.info("Sending email {}: attempt {}/{}",
+        emailId, email.getAttemptsCount() + 1, RETRY_MAX_ATTEMPTS);
 
       defineMailClient(mailConfig)
         .sendMail(mailMessage)
-        .onSuccess(result -> {
-          String message = format(SUCCESS_SEND_EMAIL, join(",", result.getRecipients()));
-          logger.info(message);
-          resultHandler.handle(succeededFuture(buildResult(email, DELIVERED, message, false)));
-        })
-        .onFailure(cause -> {
-          boolean shouldRetry = shouldRetry(cause, email);
-          String message = format(ERROR_SENDING_EMAIL, cause.getMessage());
-          logger.error(message, cause);
-          resultHandler.handle(succeededFuture(buildResult(email, FAILURE, message, shouldRetry)));
-        });
+        .onSuccess(r -> logger.debug("Email {} sent: {} ms", emailId, currentTimeMillis() - start))
+        .map(emailJson)
+        .onComplete(resultHandler);
     } catch (Exception ex) {
       logger.error(format(ERROR_SENDING_EMAIL, ex.getMessage()));
       resultHandler.handle(failedFuture(ex.getMessage()));
     }
-  }
-
-  private static boolean shouldRetry(Throwable error, EmailEntity email) {
-    if (error instanceof SMTPException) {
-      int replyCode = ((SMTPException) error).getReplyCode();
-      return replyCode >= 400 && replyCode < 500 && email.getAttemptsCount() < MAX_ATTEMPTS;
-    }
-    return false;
-  }
-
-  private EmailEntity buildEmailEntity(JsonObject emailEntityJson, Configurations configurations) {
-    EmailEntity emailEntity = emailEntityJson
-      .mapTo(EmailEntity.class);
-
-    if (StringUtils.isBlank(emailEntity.getFrom())) {
-      emailEntity.withFrom(getEmailConfig(configurations, SmtpEmail.EMAIL_FROM, String.class));
-    }
-
-    return emailEntity.withDate(Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC)))
-      .withAttemptsCount(emailEntity.getAttemptsCount() + 1);
   }
 
   private MailClient defineMailClient(MailConfig mailConfig) {
@@ -196,16 +160,6 @@ public class MailServiceImpl implements MailService {
     // Decode incoming data from JSON
     byte[] decode = Base64.getDecoder().decode(file);
     return Buffer.buffer(decode);
-  }
-
-  private static JsonObject buildResult(EmailEntity emailEntity, Status status,
-    String message, boolean shouldRetry) {
-
-    return JsonObject.mapFrom(emailEntity
-      .withStatus(status)
-      .withMessage(message)
-      .withShouldRetry(shouldRetry)
-    );
   }
 
   public static void addHeadersFromConfiguration(MailMessage message, Configurations configurations) {

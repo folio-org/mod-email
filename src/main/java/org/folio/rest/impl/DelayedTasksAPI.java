@@ -1,30 +1,33 @@
 package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
+import static java.lang.System.currentTimeMillis;
+import static java.time.ZoneOffset.UTC;
+import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME;
 
-import java.util.Collection;
+import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import javax.ws.rs.core.Response;
 
 import org.folio.rest.impl.base.AbstractEmail;
-import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.rest.jaxrs.model.EmailEntries;
 import org.folio.rest.jaxrs.resource.DelayedTask;
-import org.folio.support.RetryEmailsContext;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
 
 public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
 
-  private static final String FIND_EMAILS_FOR_RETRY_QUERY = "shouldRetry==true";
-  private static final int DEFAULT_RETRY_BATCH_SIZE = 100;
+  private static final int RETRY_AGE_THRESHOLD_MINUTES = 10;
+  private static final int RETRY_BATCH_SIZE = 50;
+  private static final String FIND_EMAILS_FOR_RETRY_QUERY_TEMPLATE =
+    "shouldRetry==true and date > %s sortBy attemptsCount/sort.ascending";
 
   public DelayedTasksAPI(Vertx vertx, String tenantId) {
     super(vertx, tenantId);
@@ -48,58 +51,35 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   public void postDelayedTaskRetryFailedEmails(Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
 
-    logger.info("Starting email retry job...");
-
     asyncResultHandler.handle(succeededFuture(
       PostDelayedTaskRetryFailedEmailsResponse.respond202()));
 
-    succeededFuture(new RetryEmailsContext(okapiHeaders))
-      .compose(this::lookupConfiguration)
-      .compose(this::findEmailsForRetry)
-      .compose(this::retryEmails)
-      .onComplete(this::logRetryResult);
+    logger.info("Starting email retry job");
+    final long startTimeMillis = currentTimeMillis();
+
+    findEmailsForRetry()
+      .compose(emails -> processEmails(emails, okapiHeaders))
+      .onComplete(r -> logRetryResult(r, startTimeMillis));
   }
 
-  private Future<RetryEmailsContext> lookupConfiguration(RetryEmailsContext context) {
-    return lookupConfig(context.getOkapiHeaders())
-      .map(context::withConfigurations);
+  private Future<List<EmailEntity>> findEmailsForRetry() {
+    String thresholdDate = ZonedDateTime.now(UTC)
+      .minusMinutes(RETRY_AGE_THRESHOLD_MINUTES)
+      .format(ISO_ZONED_DATE_TIME);
+
+    String query = String.format(FIND_EMAILS_FOR_RETRY_QUERY_TEMPLATE, thresholdDate);
+
+    return findEmailEntries(RETRY_BATCH_SIZE, 0, query)
+      .map(EmailEntries::getEmailEntity);
   }
 
-  private Future<RetryEmailsContext> findEmailsForRetry(RetryEmailsContext context){
-    return findEmailEntries(DEFAULT_RETRY_BATCH_SIZE, 0, FIND_EMAILS_FOR_RETRY_QUERY)
-      .map(this::mapJsonObjectToEmails)
-      .onSuccess(emails -> logger.info("Found {} emails for retry", emails.size()))
-      .map(context::withEmails);
-  }
-
-  private Collection<EmailEntity> mapJsonObjectToEmails(JsonObject emailEntriesJson) {
-    return mapJsonObjectToEmailEntries(emailEntriesJson)
-      .getEmailEntity();
-  }
-
-  private Future<Void> retryEmails(RetryEmailsContext context) {
-    return chainFutures(context.getEmails(),
-      email -> processEmail(context.getConfigurations(), email));
-  }
-
-  protected Future<Void> processEmail(Configurations configurations, EmailEntity email) {
-    return sendEmail(configurations, email)
-      .compose(this::saveEmail)
-      .otherwiseEmpty()
-      .mapEmpty();
-  }
-
-  private static <T> Future<Void> chainFutures(Collection<T> list, Function<T, Future<Void>> method) {
-    return list.stream().reduce(succeededFuture(),
-      (acc, email) -> acc.compose(v -> method.apply(email)),
-      (a, b) -> succeededFuture());
-  }
-
-  private void logRetryResult(AsyncResult<Void> result) {
+  private static void logRetryResult(AsyncResult<List<EmailEntity>> result, long startTimeMillis) {
+    long duration = currentTimeMillis() - startTimeMillis;
     if (result.succeeded()) {
-      logger.info("Email retry job finished successfully");
+      logger.info("Email retry job took {} ms and finished successfully", duration);
     } else {
-      logger.error("Email retry job failed", result.cause());
+      logger.error("Email retry job took {} ms and failed: {}", duration, result.cause().getMessage());
     }
   }
+
 }

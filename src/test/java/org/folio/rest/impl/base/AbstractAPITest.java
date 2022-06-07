@@ -1,5 +1,6 @@
 package org.folio.rest.impl.base;
 
+import static io.vertx.core.json.JsonObject.mapFrom;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status;
 import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
@@ -23,6 +24,7 @@ import javax.mail.internet.MimeMessage;
 import javax.ws.rs.core.MediaType;
 
 import io.restassured.specification.RequestSpecification;
+import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.client.HttpResponse;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -40,6 +42,7 @@ import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -62,6 +65,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import junit.framework.AssertionFailedError;
 
 @RunWith(VertxUnitRunner.class)
@@ -92,6 +97,7 @@ public abstract class AbstractAPITest {
   private static Wiser wiser;
   private static Vertx vertx;
   private static int port;
+  protected static PostgresClient postgresClient;
 
   @Rule
   public Timeout rule = Timeout.seconds(100);
@@ -108,7 +114,6 @@ public abstract class AbstractAPITest {
     Async async = context.async();
     vertx = Vertx.vertx();
     port = NetworkUtils.nextFreePort();
-
     wiser = new Wiser(2500);
 
     TenantClient tenantClient = new TenantClient(String.format(TENANT_CLIENT_HOST, OKAPI_HOST, port), OKAPI_TENANT, null);
@@ -144,6 +149,7 @@ public abstract class AbstractAPITest {
               assertThat(getResponse.statusCode(), is(HttpStatus.SC_OK));
               assertThat(getResponse.bodyAsJson(TenantJob.class).getComplete(), is(true));
               wiser.start();
+              postgresClient = PostgresClient.getInstance(vertx, OKAPI_TENANT);
               async.complete();
             });
             }
@@ -167,9 +173,10 @@ public abstract class AbstractAPITest {
   @Before
   public void setUp(TestContext context) {
     throwSmtpError(false);
+    wiser.getMessages().clear();
 
     Async async = context.async();
-    PostgresClient.getInstance(vertx, OKAPI_TENANT).delete(EMAIL_STATISTICS_TABLE_NAME, new Criterion(),
+    postgresClient.delete(EMAIL_STATISTICS_TABLE_NAME, new Criterion(),
       event -> {
         if (event.failed()) {
           logger.error(event.cause());
@@ -178,6 +185,11 @@ public abstract class AbstractAPITest {
           async.complete();
         }
       });
+  }
+
+  @After
+  public void afterEach(TestContext contex) {
+    wiser.getMessages().clear();
   }
 
   protected Response getEmails(Status status) {
@@ -204,7 +216,7 @@ public abstract class AbstractAPITest {
    * Send email notifications
    */
   protected Response sendEmail(EmailEntity emailEntity) {
-    return post(REST_PATH_EMAIL, JsonObject.mapFrom(emailEntity).encodePrettily());
+    return post(REST_PATH_EMAIL, mapFrom(emailEntity).encodePrettily());
   }
 
   /**
@@ -342,6 +354,10 @@ public abstract class AbstractAPITest {
       .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
       .header(new Header(OKAPI_URL_HEADER, String.format(OKAPI_URL_TEMPLATE, userMockServer.port())))
       .when();
+  }
+
+  protected Future<RowSet<Row>> updateEmail(EmailEntity email) {
+    return postgresClient.update(EMAIL_STATISTICS_TABLE_NAME, mapFrom(email), email.getId());
   }
 
   protected void throwSmtpError(boolean throwError) {
