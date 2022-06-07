@@ -70,7 +70,8 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
     String query = String.format(FIND_EMAILS_FOR_RETRY_QUERY_TEMPLATE, thresholdDate);
 
     return findEmailEntries(RETRY_BATCH_SIZE, 0, query)
-      .map(EmailEntries::getEmailEntity);
+      .map(EmailEntries::getEmailEntity)
+      .onSuccess(emails -> logger.info("Found {} emails for retry", emails.size()));
   }
 
   private static void logRetryResult(AsyncResult<List<EmailEntity>> result, long startTimeMillis) {

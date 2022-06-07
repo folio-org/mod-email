@@ -14,7 +14,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import javax.mail.Header;
 import javax.ws.rs.core.MediaType;
@@ -29,7 +28,6 @@ import org.subethamail.wiser.WiserMessage;
 
 import io.restassured.response.Response;
 import junit.framework.AssertionFailedError;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 public class SendingEmailTest extends AbstractAPITest {
 

@@ -11,6 +11,12 @@
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": false
+        },
+        {
+          "fieldName": "date",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": false
         }
       ]
     }
