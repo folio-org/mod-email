@@ -122,7 +122,7 @@ public abstract class AbstractEmail {
     Map<String, String> okapiHeaders) {
 
     if (emails.isEmpty()) {
-      logger.info("Have no emails to process");
+      logger.info("No emails to process");
       return succeededFuture(emails);
     }
 

@@ -63,6 +63,12 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
       runRetryJobAndWait(emailsCount, FAILURE, i, shouldRetry);
       verifyStoredEmails(emailsCount, FAILURE, i, shouldRetry, expectedErrorMessage);
     }
+
+    // another run to make sure that emails are no longer retried
+    runRetryJobAndWait(emailsCount, FAILURE, 3, false);
+    // wait unconditionally since there are no detectable changes to tell us that the job is done
+    Awaitility.await().during(3, SECONDS);
+    verifyStoredEmails(emailsCount, FAILURE, 3, false, expectedErrorMessage);
   }
 
   @Test
