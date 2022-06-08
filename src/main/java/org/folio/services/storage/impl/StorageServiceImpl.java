@@ -44,9 +44,11 @@ public class StorageServiceImpl implements StorageService {
 
     try {
       EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
+      String emailId = emailEntity.getId();
       PostgresClient.getInstance(vertx, tenantId)
-        .save(EMAIL_STATISTICS_TABLE_NAME, emailEntity.getId(), emailEntity, true, true)
-        .onFailure(t -> logger.error("Failed to save email {}: {}", emailEntity.getId(), t.getMessage()))
+        .save(EMAIL_STATISTICS_TABLE_NAME, emailId, emailEntity, true, true)
+        .onSuccess(id -> logger.info("Email {} saved successfully", id))
+        .onFailure(t -> logger.error("Failed to save email {}: {}", emailId, t.getMessage()))
         .map(emailJson)
         .onComplete(resultHandler);
     } catch (Exception ex) {

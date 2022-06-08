@@ -57,7 +57,8 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
     logger.info("Starting email retry job");
     final long startTimeMillis = currentTimeMillis();
 
-    findEmailsForRetry()
+    succeededFuture()
+      .compose(v -> findEmailsForRetry())
       .compose(emails -> processEmails(emails, okapiHeaders))
       .onComplete(r -> logRetryResult(r, startTimeMillis));
   }

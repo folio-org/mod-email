@@ -126,6 +126,8 @@ public abstract class AbstractEmail {
       return succeededFuture(emails);
     }
 
+    logger.info("Start processing {} emails", emails.size());
+
     return lookupConfiguration(okapiHeaders)
       .compose(config -> chainFutures(emails, email -> processEmail(email, config)))
       .onFailure(t -> handleFailure(emails, t))
@@ -133,6 +135,8 @@ public abstract class AbstractEmail {
   }
 
   protected Future<EmailEntity> processEmail(EmailEntity email, Configurations configurations) {
+    logger.info("Start processing email {}", email.getId());
+
     return validateConfiguration(configurations)
       .onSuccess(r -> applyConfiguration(email, configurations))
       .compose(r -> sendEmail(email, configurations))
@@ -168,6 +172,8 @@ public abstract class AbstractEmail {
   }
 
   protected void handleFailure(List<EmailEntity> emails, Throwable throwable) {
+    logger.error("Failed to process batch of {} emails: {}", emails.size(), throwable.getMessage());
+
     emails.stream()
       .map(email -> handleFailure(email, throwable))
       .forEach(this::saveEmail);
@@ -187,7 +193,9 @@ public abstract class AbstractEmail {
       .send()
       .compose(response -> {
         if (response.statusCode() == HTTP_OK.toInt()) {
-          return succeededFuture(response.bodyAsJsonObject().mapTo(Configurations.class));
+          Configurations config = response.bodyAsJsonObject().mapTo(Configurations.class);
+          logger.info("Successfully fetched {} configuration entries", config.getConfigs().size());
+          return succeededFuture(config);
         }
         String errorMessage = String.format(ERROR_LOOKING_UP_MOD_CONFIG,
           url, response.statusCode(), response.bodyAsString());
