@@ -2,10 +2,8 @@ package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
 import static java.lang.System.currentTimeMillis;
-import static java.time.ZoneOffset.UTC;
 import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME;
 
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +13,7 @@ import org.folio.rest.impl.base.AbstractEmail;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntries;
 import org.folio.rest.jaxrs.resource.DelayedTask;
+import org.folio.util.ClockUtil;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -27,7 +26,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   private static final int RETRY_AGE_THRESHOLD_MINUTES = 10;
   private static final int RETRY_BATCH_SIZE = 50;
   private static final String FIND_EMAILS_FOR_RETRY_QUERY_TEMPLATE =
-    "shouldRetry==true and date > %s sortBy attemptsCount/sort.ascending";
+    "shouldRetry==true and metadata.createdDate > %s sortBy attemptsCount/sort.ascending";
 
   public DelayedTasksAPI(Vertx vertx, String tenantId) {
     super(vertx, tenantId);
@@ -64,7 +63,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   }
 
   private Future<List<EmailEntity>> findEmailsForRetry() {
-    String thresholdDate = ZonedDateTime.now(UTC)
+    String thresholdDate = ClockUtil.getZonedDateTime()
       .minusMinutes(RETRY_AGE_THRESHOLD_MINUTES)
       .format(ISO_ZONED_DATE_TIME);
 

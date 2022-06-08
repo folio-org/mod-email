@@ -24,8 +24,6 @@ import static org.folio.util.EmailUtils.findStatusByName;
 import static org.folio.util.EmailUtils.getEmailConfig;
 import static org.folio.util.EmailUtils.isIncorrectSmtpServerConfig;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -46,6 +44,7 @@ import org.folio.rest.jaxrs.model.EmailEntity.Status;
 import org.folio.rest.jaxrs.model.EmailEntries;
 import org.folio.services.email.MailService;
 import org.folio.services.storage.StorageService;
+import org.folio.util.ClockUtil;
 
 import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
@@ -166,7 +165,7 @@ public abstract class AbstractEmail {
     return email
       .withStatus(status)
       .withMessage(message)
-      .withDate(Date.from(ZonedDateTime.now(ZoneOffset.UTC).toInstant()))
+      .withDate(Date.from(ClockUtil.getZonedDateTime().toInstant()))
       .withAttemptsCount(newAttemptsCount)
       .withShouldRetry(status == FAILURE && newAttemptsCount < RETRY_MAX_ATTEMPTS);
   }

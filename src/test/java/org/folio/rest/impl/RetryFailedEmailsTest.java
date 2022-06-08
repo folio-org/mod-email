@@ -14,11 +14,9 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -31,6 +29,7 @@ import org.folio.rest.impl.base.AbstractAPITest;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntity.Status;
 import org.folio.rest.jaxrs.model.EmailEntries;
+import org.folio.util.ClockUtil;
 import org.junit.Test;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
@@ -60,14 +59,12 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
 
     for (int i = 2; i < RETRY_MAX_ATTEMPTS + 1; i++) {
       boolean shouldRetry = i < RETRY_MAX_ATTEMPTS;
-      runRetryJobAndWait(emailsCount, FAILURE, i, shouldRetry);
+      runRetryJobAndWaitForResult(emailsCount, FAILURE, i, shouldRetry);
       verifyStoredEmails(emailsCount, FAILURE, i, shouldRetry, expectedErrorMessage);
     }
 
     // another run to make sure that emails are no longer retried
-    runRetryJobAndWait(emailsCount, FAILURE, 3, false);
-    // wait unconditionally since there are no detectable changes to tell us that the job is done
-    Awaitility.await().during(3, SECONDS);
+    runRetryJobAndWaitForResultAtLeast(emailsCount, FAILURE, 3, false, Duration.ofSeconds(3));
     verifyStoredEmails(emailsCount, FAILURE, 3, false, expectedErrorMessage);
   }
 
@@ -87,8 +84,8 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
 
     verifyStoredEmails(twoBatches, FAILURE, 1, true, expectedErrorMessage);
     throwSmtpError(false);
-    runRetryJobAndWait(RETRY_BATCH_SIZE, DELIVERED, 2, false);
-    runRetryJobAndWait(twoBatches, DELIVERED, 2, false);
+    runRetryJobAndWaitForResult(RETRY_BATCH_SIZE, DELIVERED, 2, false);
+    runRetryJobAndWaitForResult(twoBatches, DELIVERED, 2, false);
   }
 
   @Test
@@ -106,7 +103,7 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
 
     verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
     throwSmtpError(false);
-    runRetryJobAndWait(1, DELIVERED, 2, false);
+    runRetryJobAndWaitForResult(1, DELIVERED, 2, false);
     verifyThatEmailsWereSent(1, 2);
   }
 
@@ -124,7 +121,7 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
 
     verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
     initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
-    runRetryJobAndWait(1, DELIVERED, 2, false);
+    runRetryJobAndWaitForResult(1, DELIVERED, 2, false);
     verifyThatEmailsWereSent(1, 2);
   }
 
@@ -143,7 +140,7 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
 
     verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
     initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
-    runRetryJobAndWait(1, DELIVERED, 2, false);
+    runRetryJobAndWaitForResult(1, DELIVERED, 2, false);
     verifyThatEmailsWereSent(1, 2);
   }
 
@@ -162,41 +159,33 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
 
     verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
     initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
-    runRetryJobAndWait(1, DELIVERED, 2, false);
+    runRetryJobAndWaitForResult(1, DELIVERED, 2, false);
     verifyThatEmailsWereSent(1, 2);
   }
 
   @Test
-  public void shouldNotRetryEmailsOlderThanConfiguredAge() {
+  public void shouldNotRetryEmailOlderThanConfiguredAge() throws InterruptedException {
     initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
     throwSmtpError(true);
 
     String expectedErrorMessage = "Error in the 'mod-email' module, the module " +
       "didn't send email | message: recipient address not accepted: 452 Error: too many recipients";
 
-    sendEmails(2)
-      .forEach(response -> response.then()
-        .statusCode(HttpStatus.SC_OK)
-        .body(is(expectedErrorMessage)));
+    sendEmail(buildEmail())
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .body(is(expectedErrorMessage));
 
-    List<EmailEntity> emailsBeforeRetry = verifyStoredEmails(2, FAILURE, 1, true, expectedErrorMessage);
-    EmailEntity firstEmail = emailsBeforeRetry.get(0);
-    EmailEntity secondEmail = emailsBeforeRetry.get(1);
+    verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
 
-    Instant rightBelowThreshold = ZonedDateTime.now(ZoneOffset.UTC)
-      .minusMinutes(RETRY_AGE_THRESHOLD_MINUTES + 1)
-      .toInstant();
+    // run retry job and verify that email was retried
+    runRetryJobAndWaitForResult(1, FAILURE, 2, true);
 
-    updateEmail(firstEmail.withDate(Date.from(rightBelowThreshold)));
-    runRetryJobAndWait(1, FAILURE, 2, true);
-
-    List<EmailEntity> ignoredEmails = verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
-    assertThat(ignoredEmails, hasSize(1));
-    assertThat(ignoredEmails.get(0).getId(), is(firstEmail.getId()));
-
-    List<EmailEntity> retriedEmails = verifyStoredEmails(1, FAILURE, 2, true, expectedErrorMessage);
-    assertThat(retriedEmails, hasSize(1));
-    assertThat(retriedEmails.get(0).getId(), is(secondEmail.getId()));
+    // jump into the future to make email too old to retry
+    ClockUtil.setClock(Clock.offset(ClockUtil.getClock(),
+      Duration.ofMinutes(RETRY_AGE_THRESHOLD_MINUTES + 1)));
+    runRetryJobAndWaitForResultAtLeast(1, FAILURE, 2, true, Duration.ofSeconds(3));
+    verifyStoredEmails(1, FAILURE, 2, true, expectedErrorMessage);
   }
 
   private static EmailEntity buildEmail() {
@@ -238,14 +227,22 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
     return post(PATH_RETRY_FAILED_EMAILS);
   }
 
-  private void runRetryJobAndWait(int expectedEmailsCount, Status expectedStatus,
+  private void runRetryJobAndWaitForResult(int expectedEmailsCount, Status expectedStatus,
     int expectedAttemptsCount, boolean expectedShouldRetry) {
+
+    runRetryJobAndWaitForResultAtLeast(expectedEmailsCount, expectedStatus, expectedAttemptsCount,
+      expectedShouldRetry, Duration.ZERO);
+  }
+
+  private void runRetryJobAndWaitForResultAtLeast(int expectedEmailsCount, Status expectedStatus,
+    int expectedAttemptsCount, boolean expectedShouldRetry, Duration pollDelayDuration) {
 
     runRetryJob()
       .then()
       .statusCode(HttpStatus.SC_ACCEPTED);
 
     Awaitility.await()
+      .pollDelay(pollDelayDuration)
       .atMost(15, SECONDS)
       .untilAsserted(() -> assertThat(
         getEmails(expectedStatus, expectedAttemptsCount, expectedShouldRetry)

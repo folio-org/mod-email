@@ -42,6 +42,7 @@ import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.util.ClockUtil;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -174,6 +175,7 @@ public abstract class AbstractAPITest {
   public void setUp(TestContext context) {
     throwSmtpError(false);
     wiser.getMessages().clear();
+    ClockUtil.setDefaultClock();
 
     Async async = context.async();
     postgresClient.delete(EMAIL_STATISTICS_TABLE_NAME, new Criterion(),
@@ -188,8 +190,9 @@ public abstract class AbstractAPITest {
   }
 
   @After
-  public void afterEach(TestContext contex) {
+  public void afterEach(TestContext context) {
     wiser.getMessages().clear();
+    ClockUtil.setDefaultClock();
   }
 
   protected Response getEmails(Status status) {

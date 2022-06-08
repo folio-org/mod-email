@@ -13,7 +13,7 @@
           "removeAccents": false
         },
         {
-          "fieldName": "date",
+          "fieldName": "metadata.createdDate",
           "tOps": "ADD",
           "caseSensitive": false,
           "removeAccents": false
