@@ -90,7 +90,7 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
   }
 
   @Test
-  public void shouldSendFailedEmailOnFirstRetry() {
+  public void shouldRetryEmailFailedDueToSmtpError() {
     initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
     throwSmtpError(true);
 
@@ -253,7 +253,6 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
       .atMost(15, SECONDS)
       .until(() -> getEmails(expectedStatus, expectedAttemptsCount, expectedShouldRetry, expectedMessage),
         list -> list.size() == expectedEmailsCount);
-
   }
 
   private List<EmailEntity> verifyStoredEmails(int expectedEmailsCount, Status expectedStatus,
