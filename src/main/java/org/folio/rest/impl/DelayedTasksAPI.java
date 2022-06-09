@@ -4,6 +4,7 @@ import static io.vertx.core.Future.succeededFuture;
 import static java.lang.System.currentTimeMillis;
 import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -74,7 +75,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
       .onSuccess(emails -> logger.info("Found {} emails for retry", emails.size()));
   }
 
-  private static void logRetryResult(AsyncResult<List<EmailEntity>> result, long startTimeMillis) {
+  private static void logRetryResult(AsyncResult<Collection<EmailEntity>> result, long startTimeMillis) {
     long duration = currentTimeMillis() - startTimeMillis;
     if (result.succeeded()) {
       logger.info("Email retry job took {} ms and finished successfully", duration);

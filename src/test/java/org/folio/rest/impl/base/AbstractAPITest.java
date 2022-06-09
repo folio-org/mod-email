@@ -85,7 +85,7 @@ public abstract class AbstractAPITest {
   private static final String OKAPI_HOST = "localhost";
   private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
 
-  private static final String REST_PATH_EMAIL = "/email";
+  protected static final String REST_PATH_EMAIL = "/email";
   private static final String PATH_WITH_QUERY_TEMPLATE = "%s?query=%s&limit=%s";
   protected static final String ADDRESS_TEMPLATE = "%s@localhost";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";

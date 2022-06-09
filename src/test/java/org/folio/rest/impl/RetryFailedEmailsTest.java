@@ -128,9 +128,8 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
   public void shouldRetryEmailFailedDueToInsufficientConfiguration() {
     initModConfigStub(userMockServer.port(), getIncorrectConfigurations());
 
-    String expectedErrorMessage = "Error in the 'mod-email' module, the module didn't send email | " +
-      "message: The 'mod-config' module doesn't have a minimum config for SMTP server, the min " +
-      "config is: [EMAIL_SMTP_PORT, EMAIL_PASSWORD, EMAIL_SMTP_HOST, EMAIL_USERNAME]";
+    String expectedErrorMessage = "The 'mod-config' module doesn't have a minimum config for SMTP " +
+      "server, the min config is: [EMAIL_SMTP_PORT, EMAIL_PASSWORD, EMAIL_SMTP_HOST, EMAIL_USERNAME]";
 
     sendEmail(buildEmail())
       .then()
@@ -159,7 +158,7 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
   }
 
   @Test
-  public void shouldNotRetryEmailOlderThanConfiguredAge() throws InterruptedException {
+  public void shouldNotRetryEmailOlderThanConfiguredAge() {
     initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
     throwSmtpError(true);
 

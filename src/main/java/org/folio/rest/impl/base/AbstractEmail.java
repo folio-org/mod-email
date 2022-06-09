@@ -6,6 +6,7 @@ import static io.vertx.core.json.JsonObject.mapFrom;
 import static java.lang.String.format;
 import static java.lang.String.join;
 import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -17,6 +18,7 @@ import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TOKEN;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.FAILURE;
+import static org.folio.util.AsyncUtil.mapInOrder;
 import static org.folio.util.EmailUtils.MAIL_SERVICE_ADDRESS;
 import static org.folio.util.EmailUtils.REQUIREMENTS_CONFIG_SET;
 import static org.folio.util.EmailUtils.STORAGE_SERVICE_ADDRESS;
@@ -26,9 +28,7 @@ import static org.folio.util.EmailUtils.isIncorrectSmtpServerConfig;
 
 import java.util.Collection;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import javax.ws.rs.core.Response;
@@ -46,6 +46,7 @@ import org.folio.services.email.MailService;
 import org.folio.services.storage.StorageService;
 import org.folio.util.ClockUtil;
 
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
@@ -111,13 +112,13 @@ public abstract class AbstractEmail {
     this.httpClient = WebClient.create(vertx, options);
   }
 
-  protected Future<List<EmailEntity>> processEmail(EmailEntity email,
+  protected Future<Collection<EmailEntity>> processEmail(EmailEntity email,
     Map<String, String> okapiHeaders) {
 
     return processEmails(singletonList(email), okapiHeaders);
   }
 
-  protected Future<List<EmailEntity>> processEmails(List<EmailEntity> emails,
+  protected Future<Collection<EmailEntity>> processEmails(Collection<EmailEntity> emails,
     Map<String, String> okapiHeaders) {
 
     if (emails.isEmpty()) {
@@ -125,24 +126,23 @@ public abstract class AbstractEmail {
       return succeededFuture(emails);
     }
 
-    logger.info("Start processing {} emails", emails.size());
+    logger.info("Start processing a batch of {} emails", emails.size());
 
     return lookupConfiguration(okapiHeaders)
-      .compose(config -> chainFutures(emails, email -> processEmail(email, config)))
-      .onFailure(t -> handleFailure(emails, t))
-      .map(emails);
+      .compose(this::validateConfiguration)
+      .compose(config -> mapInOrder(emails, email -> processEmail(email, config)))
+      .recover(t -> handleFailure(emails, t));
   }
 
   protected Future<EmailEntity> processEmail(EmailEntity email, Configurations configurations) {
     logger.info("Start processing email {}", email.getId());
 
-    return validateConfiguration(configurations)
-      .onSuccess(r -> applyConfiguration(email, configurations))
-      .compose(r -> sendEmail(email, configurations))
+    applyConfiguration(email, configurations);
+
+    return sendEmail(email, configurations)
       .map(this::handleSuccess)
       .otherwise(t -> handleFailure(email, t))
-      .compose(this::saveEmail)
-      .otherwiseEmpty();
+      .compose(this::saveEmail);
   }
 
   protected EmailEntity handleSuccess(EmailEntity email) {
@@ -170,12 +170,15 @@ public abstract class AbstractEmail {
       .withShouldRetry(status == FAILURE && newAttemptsCount < RETRY_MAX_ATTEMPTS);
   }
 
-  protected void handleFailure(List<EmailEntity> emails, Throwable throwable) {
+  protected Future<Collection<EmailEntity>> handleFailure(Collection<EmailEntity> emails, Throwable throwable) {
     logger.error("Failed to process batch of {} emails: {}", emails.size(), throwable.getMessage());
 
-    emails.stream()
-      .map(email -> handleFailure(email, throwable))
-      .forEach(this::saveEmail);
+    return CompositeFuture.all(
+        emails.stream()
+          .map(email -> handleFailure(email, throwable))
+          .map(this::saveEmail)
+          .collect(toList()))
+      .compose(r -> failedFuture(throwable));
   }
 
   protected Future<Configurations> lookupConfiguration(Map<String, String> requestHeaders) {
@@ -298,16 +301,8 @@ public abstract class AbstractEmail {
 
   private static void applyConfiguration(EmailEntity email, Configurations configurations) {
     if (StringUtils.isBlank(email.getFrom())) {
-      email.setFrom(getEmailConfig(configurations, EMAIL_FROM, String.class));
+      email.withFrom(getEmailConfig(configurations, EMAIL_FROM, String.class));
     }
-  }
-
-  private static <T> Future<T> chainFutures(Collection<T> list,
-    Function<T, Future<T>> mapper) {
-
-    return list.stream().reduce(succeededFuture(),
-      (acc, email) -> acc.compose(v -> mapper.apply(email)),
-      (a, b) -> succeededFuture());
   }
 
 }

@@ -2,7 +2,7 @@ package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 
 import javax.ws.rs.core.Response;
@@ -48,7 +48,7 @@ public class EmailAPI extends AbstractEmail implements Email {
       .onComplete(resultHandler);
   }
 
-  private static String extractMessage(List<EmailEntity> emails) {
+  private static String extractMessage(Collection<EmailEntity> emails) {
     return emails.stream()
       .findFirst()
       .map(EmailEntity::getMessage)
