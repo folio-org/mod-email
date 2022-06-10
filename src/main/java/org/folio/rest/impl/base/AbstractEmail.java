@@ -57,8 +57,6 @@ import io.vertx.ext.web.client.WebClientOptions;
 
 public abstract class AbstractEmail {
 
-  protected static final Logger logger = LogManager.getLogger(AbstractEmail.class);
-
   private static final String REQUEST_URL_TEMPLATE = "%s/%s?query=module==%s";
   private static final String REQUEST_URI_PATH = "configurations/entries";
   private static final String OKAPI_URL_HEADER = "x-okapi-url";
@@ -74,8 +72,9 @@ public abstract class AbstractEmail {
   private static final String ERROR_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message: %s";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
 
+  protected static final Logger logger = LogManager.getLogger(AbstractEmail.class);
   protected final Vertx vertx;
-  private final String tenantId;
+  private String tenantId;
 
   private WebClient httpClient;
   private MailService mailService;
@@ -87,7 +86,7 @@ public abstract class AbstractEmail {
   private final int lookupTimeout = Integer.parseInt(
     MODULE_SPECIFIC_ARGS.getOrDefault(LOOKUP_TIMEOUT, LOOKUP_TIMEOUT_VAL));
 
-  protected AbstractEmail(Vertx vertx, String tenantId) {
+  public AbstractEmail(Vertx vertx, String tenantId) {
     this.vertx = vertx;
     this.tenantId = tenantId;
     initHttpClient();
@@ -112,10 +111,11 @@ public abstract class AbstractEmail {
     this.httpClient = WebClient.create(vertx, options);
   }
 
-  protected Future<Collection<EmailEntity>> processEmail(EmailEntity email,
+  protected Future<EmailEntity> processEmail(EmailEntity email,
     Map<String, String> okapiHeaders) {
 
-    return processEmails(singletonList(email), okapiHeaders);
+    return processEmails(singletonList(email), okapiHeaders)
+      .map(emails -> emails.stream().findFirst().orElseThrow());
   }
 
   protected Future<Collection<EmailEntity>> processEmails(Collection<EmailEntity> emails,

@@ -66,19 +66,19 @@ public class MailServiceImpl implements MailService {
   }
 
   @Override
-  public void sendEmail(JsonObject config, JsonObject emailJson,
+  public void sendEmail(JsonObject configJson, JsonObject emailJson,
     Handler<AsyncResult<JsonObject>> resultHandler) {
 
     try {
-      Configurations configurations = config.mapTo(Configurations.class);
-      EmailEntity email = emailJson.mapTo(EmailEntity.class);
+      Configurations configurations = configJson.mapTo(Configurations.class);
+      EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
       MailConfig mailConfig = getMailConfig(configurations);
-      MailMessage mailMessage = getMailMessage(email, configurations);
-      String emailId = email.getId();
+      MailMessage mailMessage = getMailMessage(emailEntity, configurations);
+      String emailId = emailEntity.getId();
       long start = currentTimeMillis();
 
       logger.info("Sending email {}: attempt {}/{}",
-        emailId, email.getAttemptsCount() + 1, RETRY_MAX_ATTEMPTS);
+        emailId, emailEntity.getAttemptsCount() + 1, RETRY_MAX_ATTEMPTS);
 
       defineMailClient(mailConfig)
         .sendMail(mailMessage)

@@ -28,7 +28,7 @@ public class EmailAPI extends AbstractEmail implements Email {
 
     succeededFuture()
       .compose(v -> processEmail(email, requestHeaders))
-      .map(EmailAPI::extractMessage)
+      .map(EmailEntity::getMessage)
       .map(PostEmailResponse::respond200WithTextPlain)
       .map(Response.class::cast)
       .otherwise(this::mapExceptionToResponse)
@@ -46,13 +46,6 @@ public class EmailAPI extends AbstractEmail implements Email {
       .map(Response.class::cast)
       .otherwise(this::mapExceptionToResponse)
       .onComplete(resultHandler);
-  }
-
-  private static String extractMessage(Collection<EmailEntity> emails) {
-    return emails.stream()
-      .findFirst()
-      .map(EmailEntity::getMessage)
-      .orElseThrow();
   }
 
 }

@@ -115,7 +115,9 @@ public abstract class AbstractAPITest {
     Async async = context.async();
     vertx = Vertx.vertx();
     port = NetworkUtils.nextFreePort();
-    wiser = new Wiser(2500);
+
+    wiser = new Wiser();
+    wiser.setPort(2500);
 
     TenantClient tenantClient = new TenantClient(String.format(TENANT_CLIENT_HOST, OKAPI_HOST, port), OKAPI_TENANT, null);
     DeploymentOptions restDeploymentOptions = new DeploymentOptions()
