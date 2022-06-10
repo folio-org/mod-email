@@ -2,7 +2,6 @@ package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
 
-import java.util.Collection;
 import java.util.Map;
 
 import javax.ws.rs.core.Response;
