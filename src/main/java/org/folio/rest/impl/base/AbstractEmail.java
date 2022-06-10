@@ -122,7 +122,6 @@ public abstract class AbstractEmail {
     Map<String, String> okapiHeaders) {
 
     if (emails.isEmpty()) {
-      logger.info("No emails to process");
       return succeededFuture(emails);
     }
 
@@ -142,7 +141,8 @@ public abstract class AbstractEmail {
     return sendEmail(email, configurations)
       .map(this::handleSuccess)
       .otherwise(t -> handleFailure(email, t))
-      .compose(this::saveEmail);
+      .compose(this::saveEmail)
+      .otherwiseEmpty();
   }
 
   protected EmailEntity handleSuccess(EmailEntity email) {
@@ -170,7 +170,9 @@ public abstract class AbstractEmail {
       .withShouldRetry(status == FAILURE && newAttemptsCount < RETRY_MAX_ATTEMPTS);
   }
 
-  protected Future<Collection<EmailEntity>> handleFailure(Collection<EmailEntity> emails, Throwable throwable) {
+  protected Future<Collection<EmailEntity>> handleFailure(Collection<EmailEntity> emails,
+    Throwable throwable) {
+
     logger.error("Failed to process batch of {} emails: {}", emails.size(), throwable.getMessage());
 
     return CompositeFuture.all(

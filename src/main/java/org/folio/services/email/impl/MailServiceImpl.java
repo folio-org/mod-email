@@ -82,7 +82,7 @@ public class MailServiceImpl implements MailService {
 
       defineMailClient(mailConfig)
         .sendMail(mailMessage)
-        .onSuccess(r -> logger.info("Email {} sent: {} ms", emailId, currentTimeMillis() - start))
+        .onSuccess(r -> logger.info("Email {} sent in {} ms", emailId, currentTimeMillis() - start))
         .onFailure(t -> logger.error("Failed to send email {}: {}", emailId, t.getMessage()))
         .map(emailJson)
         .onComplete(resultHandler);
