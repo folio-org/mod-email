@@ -82,6 +82,17 @@
           "pathPattern": "/delayedTask/expiredMessages",
           "unit": "minute",
           "delay": "30"
+        },
+        {
+          "methods": [
+            "POST"
+          ],
+          "pathPattern": "/delayedTask/retryFailedEmails",
+          "modulePermissions": [
+            "configuration.entries.collection.get"
+          ],
+          "unit": "minute",
+          "delay": "5"
         }
       ]
     }

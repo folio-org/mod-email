@@ -1,5 +1,6 @@
 package org.folio.rest.impl.base;
 
+import static io.vertx.core.json.JsonObject.mapFrom;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status;
 import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
@@ -22,6 +23,8 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.ws.rs.core.MediaType;
 
+import io.restassured.specification.RequestSpecification;
+import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.client.HttpResponse;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -39,6 +42,8 @@ import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.util.ClockUtil;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -61,6 +66,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import junit.framework.AssertionFailedError;
 
 @RunWith(VertxUnitRunner.class)
@@ -78,9 +85,8 @@ public abstract class AbstractAPITest {
   private static final String OKAPI_HOST = "localhost";
   private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
 
-  private static final String REST_PATH_GET_EMAILS = "/email";
-  private static final String REST_PATH_WITH_QUERY = "%s?query=status=%s&limit=%s";
-
+  protected static final String REST_PATH_EMAIL = "/email";
+  private static final String PATH_WITH_QUERY_TEMPLATE = "%s?query=%s&limit=%s";
   protected static final String ADDRESS_TEMPLATE = "%s@localhost";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
   private static final String MESSAGE_NOT_FOUND = "The message for the sender: `%s` was not found on the SMTP server";
@@ -92,6 +98,7 @@ public abstract class AbstractAPITest {
   private static Wiser wiser;
   private static Vertx vertx;
   private static int port;
+  protected static PostgresClient postgresClient;
 
   @Rule
   public Timeout rule = Timeout.seconds(100);
@@ -103,7 +110,7 @@ public abstract class AbstractAPITest {
       .notifier(new ConsoleNotifier(true)));
 
   @BeforeClass
-  public static void setUpClass(final TestContext context) throws Exception {
+  public static void setUpClass(final TestContext context) {
     PostgresClient.setPostgresTester(new PostgresTesterContainer());
     Async async = context.async();
     vertx = Vertx.vertx();
@@ -145,6 +152,7 @@ public abstract class AbstractAPITest {
               assertThat(getResponse.statusCode(), is(HttpStatus.SC_OK));
               assertThat(getResponse.bodyAsJson(TenantJob.class).getComplete(), is(true));
               wiser.start();
+              postgresClient = PostgresClient.getInstance(vertx, OKAPI_TENANT);
               async.complete();
             });
             }
@@ -167,8 +175,12 @@ public abstract class AbstractAPITest {
 
   @Before
   public void setUp(TestContext context) {
+    throwSmtpError(false);
+    wiser.getMessages().clear();
+    ClockUtil.setDefaultClock();
+
     Async async = context.async();
-    PostgresClient.getInstance(vertx, OKAPI_TENANT).delete(EMAIL_STATISTICS_TABLE_NAME, new Criterion(),
+    postgresClient.delete(EMAIL_STATISTICS_TABLE_NAME, new Criterion(),
       event -> {
         if (event.failed()) {
           logger.error(event.cause());
@@ -179,45 +191,44 @@ public abstract class AbstractAPITest {
       });
   }
 
-  /**
-   * Get emails by status
-   */
-  protected Response getEmails(String status) {
-    String okapiUrl = String.format(OKAPI_URL_TEMPLATE, userMockServer.port());
-    return RestAssured.given()
-      .port(port)
-      .contentType(MediaType.APPLICATION_JSON)
-      .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
-      .header(new Header(OKAPI_URL_HEADER, okapiUrl))
-      .when()
-      .get(String.format(REST_PATH_WITH_QUERY, REST_PATH_GET_EMAILS, status, DEFAULT_LIMIT));
+  @After
+  public void afterEach(TestContext context) {
+    wiser.getMessages().clear();
+    ClockUtil.setDefaultClock();
+  }
+
+  protected Response getEmails(Status status) {
+    return getEmails("status==" + status.value());
+  }
+
+  protected Response getEmails(String query) {
+    return getRequestSpecification()
+      .get(String.format(PATH_WITH_QUERY_TEMPLATE, REST_PATH_EMAIL, query, DEFAULT_LIMIT));
+  }
+
+  protected Response post(String path) {
+    return getRequestSpecification()
+      .post(path);
+  }
+
+  protected Response post(String path, String body) {
+    return getRequestSpecification()
+      .body(body)
+      .post(path);
   }
 
   /**
    * Send email notifications
    */
   protected Response sendEmail(EmailEntity emailEntity) {
-    String okapiUrl = String.format(OKAPI_URL_TEMPLATE, userMockServer.port());
-    return RestAssured.given()
-      .port(port)
-      .contentType(MediaType.APPLICATION_JSON)
-      .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
-      .header(new Header(OKAPI_URL_HEADER, okapiUrl))
-      .body(JsonObject.mapFrom(emailEntity).toString())
-      .when()
-      .post(REST_PATH_GET_EMAILS);
+    return post(REST_PATH_EMAIL, mapFrom(emailEntity).encodePrettily());
   }
 
   /**
    * Delete email by expirationDate and status
    */
   protected Response deleteEmailByDateAndStatus(String expirationDate, String status) {
-    String okapiUrl = String.format(OKAPI_URL_TEMPLATE, userMockServer.port());
-    return RestAssured.given()
-      .port(port)
-      .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
-      .header(new Header(OKAPI_URL_HEADER, okapiUrl))
-      .when()
+    return getRequestSpecification()
       .delete(String.format(REST_PATH_DELETE_BATCH_EMAILS, REST_DELETE_BATCH_EMAILS, expirationDate, status));
   }
 
@@ -254,7 +265,7 @@ public abstract class AbstractAPITest {
    * Check on the SMTP server that the email was sent successfully.
    */
   protected void checkMessagesOnWiserServer(WiserMessage wiserMessage,
-                                            EmailEntity emailEntity) throws MessagingException {
+    EmailEntity emailEntity) throws MessagingException {
 
     assertTrue(wiserMessage.toString().contains(emailEntity.getBody()));
 
@@ -272,7 +283,7 @@ public abstract class AbstractAPITest {
    * Check stored emails in the database
    */
   protected void checkStoredEmailsInDb(EmailEntity emailEntity, Status status) {
-    Response responseDb = getEmails(status.value())
+    Response responseDb = getEmails(status)
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()
@@ -299,7 +310,7 @@ public abstract class AbstractAPITest {
   /**
    * Send random email
    */
-  protected EmailEntity sendEmails(int expectedStatusCode) {
+  protected EmailEntity sendEmail(int expectedStatusCode) {
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
     String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
@@ -337,7 +348,24 @@ public abstract class AbstractAPITest {
 
   private boolean isContainsSenderAddress(String sender, Address[] address) {
     return Arrays.stream(address)
-      .map(Address::toString).
-        anyMatch(ad -> ad.equals(sender));
+      .map(Address::toString)
+      .anyMatch(ad -> ad.equals(sender));
+  }
+
+  private RequestSpecification getRequestSpecification() {
+    return RestAssured.given()
+      .port(port)
+      .contentType(MediaType.APPLICATION_JSON)
+      .header(new Header(OKAPI_HEADER_TENANT, OKAPI_TENANT))
+      .header(new Header(OKAPI_URL_HEADER, String.format(OKAPI_URL_TEMPLATE, userMockServer.port())))
+      .when();
+  }
+
+  protected Future<RowSet<Row>> updateEmail(EmailEntity email) {
+    return postgresClient.update(EMAIL_STATISTICS_TABLE_NAME, mapFrom(email), email.getId());
+  }
+
+  protected void throwSmtpError(boolean throwError) {
+    wiser.getServer().setMaxRecipients(throwError ? 0 : 1000);
   }
 }

@@ -4,7 +4,21 @@
     {
       "tableName": "email_statistics",
       "fromModuleVersion": "1.0",
-      "withMetadata": true
+      "withMetadata": true,
+      "index": [
+        {
+          "fieldName": "shouldRetry",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": false
+        },
+        {
+          "fieldName": "metadata.createdDate",
+          "tOps": "ADD",
+          "caseSensitive": false,
+          "removeAccents": false
+        }
+      ]
     }
   ]
 }

@@ -1,10 +1,14 @@
 package org.folio.services.storage.impl;
 
+import static io.vertx.core.Future.succeededFuture;
+import static org.folio.rest.persist.PostgresClient.convertToPsqlStandard;
 import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.folio.cql2pgjson.CQL2PgJSON;
+import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntries;
 import org.folio.rest.persist.Criteria.Limit;
@@ -13,8 +17,6 @@ import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.persist.interfaces.Results;
 import org.folio.services.storage.StorageService;
-import org.folio.cql2pgjson.CQL2PgJSON;
-import org.folio.cql2pgjson.exception.FieldException;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -37,19 +39,18 @@ public class StorageServiceImpl implements StorageService {
   }
 
   @Override
-  public void saveEmailEntity(String tenantId, JsonObject emailEntityJson,
-                              Handler<AsyncResult<JsonObject>> resultHandler) {
+  public void saveEmailEntity(String tenantId, JsonObject emailJson,
+    Handler<AsyncResult<JsonObject>> resultHandler) {
+
     try {
-      EmailEntity emailEntity = emailEntityJson.mapTo(EmailEntity.class);
-      PostgresClient pgClient = PostgresClient.getInstance(vertx, tenantId);
-      pgClient.save(EMAIL_STATISTICS_TABLE_NAME, emailEntity,
-        postReply -> {
-          if (postReply.failed()) {
-            errorHandler(postReply.cause(), resultHandler);
-            return;
-          }
-          resultHandler.handle(Future.succeededFuture());
-        });
+      EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
+      String emailId = emailEntity.getId();
+      PostgresClient.getInstance(vertx, tenantId)
+        .save(EMAIL_STATISTICS_TABLE_NAME, emailId, emailEntity, true, true)
+        .onSuccess(id -> logger.info("Email {} saved", emailId))
+        .onFailure(t -> logger.error("Failed to save email {}: {}", emailId, t.getMessage()))
+        .map(emailJson)
+        .onComplete(resultHandler);
     } catch (Exception ex) {
       errorHandler(ex, resultHandler);
     }
@@ -76,7 +77,7 @@ public class StorageServiceImpl implements StorageService {
             .withTotalRecords(totalRecords);
 
           JsonObject entries = JsonObject.mapFrom(emailEntries);
-          resultHandler.handle(Future.succeededFuture(entries));
+          resultHandler.handle(succeededFuture(entries));
         });
     } catch (Exception ex) {
       errorHandler(ex, resultHandler);
@@ -87,7 +88,7 @@ public class StorageServiceImpl implements StorageService {
   public void deleteEmailEntriesByExpirationDateAndStatus(String tenantId, String expirationDate, String status,
                                                           Handler<AsyncResult<JsonObject>> resultHandler) {
     try {
-      String fullTableName = String.format("%s.%s", PostgresClient.convertToPsqlStandard(tenantId), EMAIL_STATISTICS_TABLE_NAME);
+      String fullTableName = getFullTableName(EMAIL_STATISTICS_TABLE_NAME, tenantId);
       String query = StringUtils.isBlank(expirationDate)
         ? String.format(DELETE_QUERY_INTERVAL_ONE_DAY, fullTableName, status)
         : String.format(DELETE_QUERY_BY_DATE, fullTableName, expirationDate, status);
@@ -97,7 +98,7 @@ public class StorageServiceImpl implements StorageService {
           errorHandler(result.cause(), resultHandler);
           return;
         }
-        resultHandler.handle(Future.succeededFuture());
+        resultHandler.handle(succeededFuture());
       });
     } catch (Exception ex) {
       errorHandler(ex, resultHandler);
@@ -121,5 +122,9 @@ public class StorageServiceImpl implements StorageService {
     return new CQLWrapper(cql2pgJson, query)
       .setLimit(new Limit(limit))
       .setOffset(new Offset(offset));
+  }
+
+  private static String getFullTableName(String tableName, String tenantId) {
+    return convertToPsqlStandard(tenantId) + "." + tableName;
   }
 }

@@ -4,6 +4,10 @@
   "title": "Email Entity Schema",
   "type": "object",
   "properties": {
+    "id": {
+      "description":"Unique UUID of the email",
+      "$ref": "raml-util/schemas/uuid.schema"
+    },
     "notificationId": {
       "description":"notification identifier",
       "type": "string"
@@ -46,6 +50,17 @@
         "PROCESSING"
       ],
       "default": "DELIVERED"
+    },
+    "shouldRetry" : {
+      "description": "Should retry sending email",
+      "type": "boolean",
+      "default": false
+    },
+    "attemptsCount" : {
+      "description": "Number of email sending attempts",
+      "type": "integer",
+      "default": 0,
+      "minimum": 0
     },
     "message": {
       "description": "Server error message or other cause of the error",
