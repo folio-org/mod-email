@@ -78,7 +78,7 @@ public class MailServiceImpl implements MailService {
       long start = currentTimeMillis();
 
       logger.info("Sending email {}: attempt {}/{}",
-        emailId, emailEntity.getAttemptsCount() + 1, RETRY_MAX_ATTEMPTS);
+        emailId, emailEntity.getAttemptCount() + 1, RETRY_MAX_ATTEMPTS);
 
       defineMailClient(mailConfig)
         .sendMail(mailMessage)

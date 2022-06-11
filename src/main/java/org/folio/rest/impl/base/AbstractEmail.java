@@ -160,14 +160,14 @@ public abstract class AbstractEmail {
   }
 
   private static EmailEntity updateEmail(EmailEntity email, Status status, String message) {
-    int newAttemptsCount = email.getAttemptsCount() + 1;
+    int newAttemptCount = email.getAttemptCount() + 1;
 
     return email
       .withStatus(status)
       .withMessage(message)
       .withDate(Date.from(ClockUtil.getZonedDateTime().toInstant()))
-      .withAttemptsCount(newAttemptsCount)
-      .withShouldRetry(status == FAILURE && newAttemptsCount < RETRY_MAX_ATTEMPTS);
+      .withAttemptCount(newAttemptCount)
+      .withShouldRetry(status == FAILURE && newAttemptCount < RETRY_MAX_ATTEMPTS);
   }
 
   protected Future<Collection<EmailEntity>> handleFailure(Collection<EmailEntity> emails,

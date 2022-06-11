@@ -27,7 +27,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   private static final int RETRY_AGE_THRESHOLD_MINUTES = 10;
   private static final int RETRY_BATCH_SIZE = 50;
   private static final String FIND_EMAILS_FOR_RETRY_QUERY_TEMPLATE =
-    "shouldRetry==true and metadata.createdDate > %s sortBy attemptsCount/sort.ascending";
+    "shouldRetry==true and metadata.createdDate > %s sortBy attemptCount/sort.ascending";
 
   public DelayedTasksAPI(Vertx vertx, String tenantId) {
     super(vertx, tenantId);

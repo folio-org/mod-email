@@ -56,7 +56,7 @@
       "type": "boolean",
       "default": false
     },
-    "attemptsCount" : {
+    "attemptCount" : {
       "description": "Number of email sending attempts",
       "type": "integer",
       "default": 0,
