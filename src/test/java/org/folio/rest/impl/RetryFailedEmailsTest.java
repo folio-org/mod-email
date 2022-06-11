@@ -212,12 +212,12 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
       .collect(toList());
   }
 
-  private List<EmailEntity> getEmails(Status status, int attemptsCount, boolean shouldRetry,
+  private List<EmailEntity> getEmails(Status status, int attemptCount, boolean shouldRetry,
     String message) {
 
     String query = String.format(
-      "status==%s and attemptsCount==%d and shouldRetry==%b and message=\"%s\"",
-      status.value(), attemptsCount, shouldRetry, message);
+      "status==%s and attemptCount==%d and shouldRetry==%b and message=\"%s\"",
+      status.value(), attemptCount, shouldRetry, message);
 
     return getEmails(query)
       .then()
@@ -233,14 +233,14 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
   }
 
   private List<EmailEntity> runRetryJobAndWaitForResult(int expectedEmailsCount, Status expectedStatus,
-    int expectedAttemptsCount, boolean expectedShouldRetry, String expectedMessage) {
+    int expectedAttemptCount, boolean expectedShouldRetry, String expectedMessage) {
 
     return runRetryJobAndWaitForResult(expectedEmailsCount, expectedStatus,
-      expectedAttemptsCount, expectedShouldRetry, expectedMessage, Duration.ZERO);
+      expectedAttemptCount, expectedShouldRetry, expectedMessage, Duration.ZERO);
   }
 
   private List<EmailEntity> runRetryJobAndWaitForResult(int expectedEmailsCount,
-    Status expectedStatus, int expectedAttemptsCount, boolean expectedShouldRetry,
+    Status expectedStatus, int expectedAttemptCount, boolean expectedShouldRetry,
     String expectedMessage, Duration pollDelayDuration) {
 
     runRetryJob()
@@ -250,14 +250,14 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
     return Awaitility.await()
       .pollDelay(pollDelayDuration)
       .atMost(15, SECONDS)
-      .until(() -> getEmails(expectedStatus, expectedAttemptsCount, expectedShouldRetry, expectedMessage),
+      .until(() -> getEmails(expectedStatus, expectedAttemptCount, expectedShouldRetry, expectedMessage),
         list -> list.size() == expectedEmailsCount);
   }
 
   private List<EmailEntity> verifyStoredEmails(int expectedEmailsCount, Status expectedStatus,
-    int expectedAttemptsCount, boolean expectedShouldRetry, String expectedMessage) {
+    int expectedAttemptCount, boolean expectedShouldRetry, String expectedMessage) {
 
-    List<EmailEntity> emails = getEmails(expectedStatus, expectedAttemptsCount, expectedShouldRetry,
+    List<EmailEntity> emails = getEmails(expectedStatus, expectedAttemptCount, expectedShouldRetry,
       expectedMessage);
     assertThat(emails, hasSize(expectedEmailsCount));
 
