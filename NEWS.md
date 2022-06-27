@@ -1,3 +1,7 @@
+## 2022-06-27 v1.14.0
+* Upgrade to RMB v34.0.0 (MODEMAIL-74)
+* Retry logic implementation for failed emails (MODEMAIL-73)
+
 ## 2022-02-22 v1.13.0
 * Upgrade to RMB v33.2.4 (MODEMAIL-69)
 * Use new api-lint and api-doc CI facilities (FOLIO-3231)
