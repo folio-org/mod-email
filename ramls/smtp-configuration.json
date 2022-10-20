@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Configuration of the SMTP server",
+  "title": "SMTP configuration schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "description":"Unique UUID of the email",
+      "$ref": "raml-util/schemas/uuid.schema"
+    },
+    "host": {
+      "description": "SMTP server host",
+      "type": "string"
+    },
+    "port": {
+      "description": "SMTP server port",
+      "type": "integer"
+    },
+    "username": {
+      "description": "Username (credentials to access the SMTP server)",
+      "type": "string"
+    },
+    "password": {
+      "description": "Password (credentials to access the SMTP server)",
+      "type": "string"
+    },
+    "ssl": {
+      "description": "Connect to SMTP server using SSL",
+      "type": "boolean"
+    },
+    "trustAll": {
+      "description": "Trust all certificates when establishing an SSL connection",
+      "type": "boolean"
+    },
+    "loginOption": {
+      "description": "Login mode",
+      "type": "string",
+      "enum": [
+        "DISABLED",
+        "OPTIONAL",
+        "REQUIRED"
+      ]
+    },
+    "startTlsOptions": {
+      "description": "Start TLS options",
+      "type": "string",
+      "enum": [
+        "DISABLED",
+        "OPTIONAL",
+        "REQUIRED"
+      ]
+    },
+    "authMethods": {
+      "description": "Authentication methods",
+      "type": "string"
+    },
+    "from": {
+      "description": "Email address to send emails from",
+      "type": "string"
+    },
+    "emailHeaders": {
+      "description": "Custom email headers",
+      "type": "array",
+      "id": "emailHeaders",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Custom header name",
+            "type": "string"
+          },
+          "value": {
+            "description": "Custom header value",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "value"
+        ]
+      }
+    },
+    "metadata": {
+      "description": "Metadata about creation and changes to the SMTP configuration provided by the server",
+      "type" : "object",
+      "$ref" : "raml-util/schemas/metadata.schema"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "host",
+    "port",
+    "username",
+    "password"
+  ]
+}

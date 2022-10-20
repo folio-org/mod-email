@@ -19,6 +19,11 @@
           "removeAccents": false
         }
       ]
+    },
+    {
+      "tableName": "smtp_configuration",
+      "fromModuleVersion": "1.14.1",
+      "withMetadata": true
     }
   ]
 }

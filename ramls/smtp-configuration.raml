@@ -1,0 +1,84 @@
+#%RAML 1.0
+
+title: SMTP server configuration
+version: v1.0
+protocols: [ HTTP, HTTPS ]
+baseUri: http://localhost
+
+documentation:
+  - title: SMTP server configuration API
+    content: <b>API for managing SMTP server configuration</b>
+
+types:
+  errors: !include raml-util/schemas/errors.schema
+  smtp-configuration: !include smtp-configuration.json
+
+traits:
+  validate: !include raml-util/traits/validation.raml
+
+/smtp-configuration:
+  get:
+    description: Get SMTP configuration
+    responses:
+      200:
+        body:
+          application/json:
+            type: smtp-configuration
+            example: !include examples/smtp-configuration.sample
+      404:
+        description: "Not found"
+        body:
+          text/plain:
+            example: "Not found"
+      500:
+        description: "Internal server error"
+        body:
+          text/plain:
+            example: "Internal server error"
+  post:
+    is: [validate]
+    body:
+      application/json:
+        type: smtp-configuration
+    responses:
+      201:
+        description: "SMTP configuration has been created"
+        body:
+          application/json:
+            type: smtp-configuration
+      500:
+        description: "Internal server error"
+        body:
+          text/plain:
+            example: "Internal server error"
+  put:
+    is: [validate]
+    body:
+      application/json:
+        type: smtp-configuration
+    responses:
+      200:
+        description: "SMTP configuration has been updated"
+        body:
+          application/json:
+            type: smtp-configuration
+      404:
+        description: "Not found"
+        body:
+          text/plain:
+            example: "Not found"
+      500:
+        description: "Internal server error"
+        body:
+          text/plain:
+            example: "Internal server error"
+  delete:
+    description: "Delete Lost Item Fee Policy by id"
+    responses:
+      204:
+        description: "SMTP configuration has been deleted"
+      500:
+        description: "Internal server error"
+        body:
+          text/plain:
+            example: "Internal server error"

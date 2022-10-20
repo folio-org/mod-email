@@ -51,6 +51,32 @@
       ]
     },
     {
+      "id": "smtpConfiguration",
+      "version": "0.1",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/smtp-configuration",
+          "permissionsRequired": ["email.smtp-configuration.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/smtp-configuration",
+          "permissionsRequired": ["email.smtp-configuration.post"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/smtp-configuration",
+          "permissionsRequired": ["email.smtp-configuration.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/smtp-configuration",
+          "permissionsRequired": ["email.smtp-configuration.delete"]
+        }
+      ]
+    },
+    {
       "id": "_tenant",
       "version": "2.0",
       "interfaceType": "system",
@@ -121,6 +147,38 @@
         "email.message.post",
         "email.message.collection.get",
         "email.message.delete"
+      ],
+      "visible": false
+    },
+    {
+      "permissionName": "email.smtp-configuration.get",
+      "displayName": "get SMTP configuration",
+      "description": "get configuration of the SMTP server"
+    },
+    {
+      "permissionName": "email.smtp-configuration.post",
+      "displayName": "create SMTP configuration",
+      "description": "create configuration of the SMTP server"
+    },
+    {
+      "permissionName": "email.smtp-configuration.put",
+      "displayName": "update SMTP configuration",
+      "description": "update configuration of the SMTP server"
+    },
+    {
+      "permissionName": "email.smtp-configuration.delete",
+      "displayName": "delete SMTP configuration",
+      "description": "delete configuration of the SMTP server"
+    },
+    {
+      "permissionName": "email.smtp-configuration.all",
+      "displayName": "SMTP configuration - all permissions",
+      "description": "Entire set of permissions needed to manage SMTP configuration",
+      "subPermissions": [
+        "email.smtp-configuration.get",
+        "email.smtp-configuration.post",
+        "email.smtp-configuration.put",
+        "email.smtp-configuration.delete"
       ],
       "visible": false
     }
