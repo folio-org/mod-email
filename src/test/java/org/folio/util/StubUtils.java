@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.folio.enums.SmtpEmail;
 import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
+import org.folio.rest.jaxrs.model.SmtpConfiguration;
 
 import java.util.List;
 import java.util.Map;
@@ -104,6 +105,17 @@ public class StubUtils {
       createSmtpConfig(EMAIL_SMTP_PORT, port),
       createSmtpConfig(AUTH_METHODS, authMethods)
     )).withTotalRecords(7);
+  }
+
+  public static SmtpConfiguration createSmtpConfiguration(String user, String password,
+    String host, int port, String authMethods) {
+
+    return new SmtpConfiguration()
+      .withUsername(user)
+      .withPassword(password)
+      .withHost(host)
+      .withPort(port)
+      .withAuthMethods(authMethods);
   }
 
   private static Config createSmtpConfig(SmtpEmail code, String value) {

@@ -12,24 +12,31 @@ import org.folio.exceptions.SmtpConfigurationNotFoundException;
 import org.folio.repository.SmtpConfigurationRepository;
 import org.folio.rest.jaxrs.model.SmtpConfiguration;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.TenantTool;
 
 import io.vertx.core.Context;
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 
 public class SmtpConfigurationService {
-  private final Map<String, String> okapiHeaders;
+  private final String tenantId;
   private final SmtpConfigurationRepository repository;
-  public SmtpConfigurationService(Map<String, String> okapiHeaders, Context vertxContext) {
-    this.okapiHeaders = okapiHeaders;
-    PostgresClient pgClient = PostgresClient.getInstance(vertxContext.owner(),
-      tenantId(okapiHeaders));
+
+  public SmtpConfigurationService(Vertx vertx, String tenantId) {
+    this.tenantId = tenantId;
+
+    PostgresClient pgClient = PostgresClient.getInstance(vertx, tenantId);
     repository = new SmtpConfigurationRepository(pgClient);
+  }
+
+  public SmtpConfigurationService(Map<String, String> okapiHeaders, Context vertxContext) {
+    this(vertxContext.owner(), tenantId(okapiHeaders));
   }
 
   public Future<SmtpConfiguration> getSmtpConfiguration() {
     return repository.getAllWithLimit(1)
-      .map(configs -> configs.stream().findFirst().orElse(null));
+      .compose(configs -> configs.size() < 1
+        ? failedFuture(new SmtpConfigurationNotFoundException())
+        : succeededFuture(configs.get(0)));
   }
 
   public Future<String> createSmtpConfiguration(SmtpConfiguration smtpConfiguration) {
@@ -39,9 +46,6 @@ public class SmtpConfigurationService {
 
   public Future<SmtpConfiguration> updateSmtpConfiguration(SmtpConfiguration smtpConfiguration) {
     return getSmtpConfiguration()
-      .compose(config -> config == null
-        ? Future.failedFuture(new SmtpConfigurationNotFoundException())
-        : succeededFuture(config))
       .compose(config -> repository.update(config, config.getId()))
       .compose(updateSucceeded -> updateSucceeded
         ? getSmtpConfiguration()
@@ -49,11 +53,12 @@ public class SmtpConfigurationService {
   }
 
   public Future<Void> deleteSmtpConfiguration() {
-    return repository.removeAll(TenantTool.tenantId(okapiHeaders));
+    return repository.removeAll(tenantId);
   }
 
   private Future<String> getSmtpConfigurationId() {
     return getSmtpConfiguration()
-      .map(config -> config == null ? randomUUID().toString() : config.getId());
+      .map(SmtpConfiguration::getId)
+      .recover(throwable -> succeededFuture(randomUUID().toString()));
   }
 }

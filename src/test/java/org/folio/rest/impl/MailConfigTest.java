@@ -1,7 +1,7 @@
 package org.folio.rest.impl;
 
-import static org.folio.util.StubUtils.createConfigurations;
-import static org.folio.util.StubUtils.initModConfigStub;
+import static io.vertx.core.json.JsonObject.mapFrom;
+import static org.folio.util.StubUtils.createSmtpConfiguration;
 import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.verifyNew;
 import static org.powermock.api.mockito.PowerMockito.whenNew;
@@ -9,8 +9,8 @@ import static org.powermock.api.mockito.PowerMockito.whenNew;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.rest.jaxrs.model.SmtpConfiguration;
 import org.folio.services.email.impl.MailServiceImpl;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,9 +45,8 @@ public class MailConfigTest {
 
   @Test
   public void messageShouldIncludeAuthMethodsFromConfiguration() throws Exception {
-    Configurations configurations = createConfigurations("user", "pws", "localhost",
-      "2500", AUTH_METHODS);
-    initModConfigStub(mockServer.port(), configurations);
+    SmtpConfiguration smtpConfiguration = createSmtpConfiguration("user", "pws", "localhost", 2500,
+      AUTH_METHODS);
 
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
@@ -64,8 +63,8 @@ public class MailConfigTest {
     MailConfig mailConfigMock = PowerMockito.mock(MailConfig.class);
     whenNew(MailConfig.class).withNoArguments().thenReturn(mailConfigMock);
 
-    new MailServiceImpl(Vertx.vertx()).sendEmail(JsonObject.mapFrom(configurations),
-      JsonObject.mapFrom(emailEntity), asyncResult -> {});
+    new MailServiceImpl(Vertx.vertx()).sendEmail(mapFrom(smtpConfiguration),
+      mapFrom(emailEntity), asyncResult -> {});
 
     verifyNew(MailConfig.class, Mockito.times(1))
       .withNoArguments();

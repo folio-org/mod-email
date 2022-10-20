@@ -12,7 +12,6 @@ import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static org.folio.HttpStatus.HTTP_OK;
-import static org.folio.enums.SmtpEmail.EMAIL_FROM;
 import static org.folio.rest.RestVerticle.MODULE_SPECIFIC_ARGS;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TOKEN;
@@ -20,11 +19,8 @@ import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.FAILURE;
 import static org.folio.util.AsyncUtil.mapInOrder;
 import static org.folio.util.EmailUtils.MAIL_SERVICE_ADDRESS;
-import static org.folio.util.EmailUtils.REQUIREMENTS_CONFIG_SET;
 import static org.folio.util.EmailUtils.STORAGE_SERVICE_ADDRESS;
 import static org.folio.util.EmailUtils.findStatusByName;
-import static org.folio.util.EmailUtils.getEmailConfig;
-import static org.folio.util.EmailUtils.isIncorrectSmtpServerConfig;
 
 import java.util.Collection;
 import java.util.Date;
@@ -42,9 +38,12 @@ import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntity.Status;
 import org.folio.rest.jaxrs.model.EmailEntries;
+import org.folio.rest.jaxrs.model.SmtpConfiguration;
+import org.folio.services.SmtpConfigurationService;
 import org.folio.services.email.MailService;
 import org.folio.services.storage.StorageService;
 import org.folio.util.ClockUtil;
+import org.folio.util.EmailUtils;
 
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -67,7 +66,6 @@ public abstract class AbstractEmail {
 
   private static final Pattern DATE_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
   private static final String ERROR_LOOKING_UP_MOD_CONFIG = "Error looking up config at url=%s | Expected status code 200, got %s | error message: %s";
-  private static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SMTP server, the min config is: %s";
   private static final String ERROR_MESSAGE_INCORRECT_DATE_PARAMETER = "Invalid date value, the parameter must be in the format: yyyy-MM-dd";
   private static final String ERROR_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message: %s";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
@@ -79,6 +77,7 @@ public abstract class AbstractEmail {
   private WebClient httpClient;
   private MailService mailService;
   private StorageService storageService;
+  private SmtpConfigurationService smtpConfigurationService;
 
   /**
    * Timeout to wait for response
@@ -99,6 +98,7 @@ public abstract class AbstractEmail {
   private void initServices() {
     mailService = MailService.createProxy(vertx, MAIL_SERVICE_ADDRESS);
     storageService = StorageService.createProxy(vertx, STORAGE_SERVICE_ADDRESS);
+    smtpConfigurationService = new SmtpConfigurationService(vertx, tenantId);
   }
 
   /**
@@ -127,18 +127,17 @@ public abstract class AbstractEmail {
 
     logger.info("Start processing a batch of {} emails", emails.size());
 
-    return lookupConfiguration(okapiHeaders)
-      .compose(this::validateConfiguration)
+    return lookupSmtpConfiguration(okapiHeaders)
       .compose(config -> mapInOrder(emails, email -> processEmail(email, config)))
       .recover(t -> handleFailure(emails, t));
   }
 
-  protected Future<EmailEntity> processEmail(EmailEntity email, Configurations configurations) {
+  protected Future<EmailEntity> processEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
     logger.info("Start processing email {}", email.getId());
 
-    applyConfiguration(email, configurations);
+    applyConfiguration(email, smtpConfiguration);
 
-    return sendEmail(email, configurations)
+    return sendEmail(email, smtpConfiguration)
       .map(this::handleSuccess)
       .otherwise(t -> handleFailure(email, t))
       .compose(this::saveEmail)
@@ -152,7 +151,7 @@ public abstract class AbstractEmail {
     return updateEmail(email, DELIVERED, message);
   }
 
-  protected EmailEntity handleFailure( EmailEntity email, Throwable throwable) {
+  protected EmailEntity handleFailure(EmailEntity email, Throwable throwable) {
     String errorMessage = format(ERROR_SENDING_EMAIL, throwable.getMessage());
     logger.error(errorMessage);
 
@@ -183,7 +182,20 @@ public abstract class AbstractEmail {
       .compose(r -> failedFuture(throwable));
   }
 
-  protected Future<Configurations> lookupConfiguration(Map<String, String> requestHeaders) {
+  private Future<SmtpConfiguration> lookupSmtpConfiguration(Map<String, String> requestHeaders) {
+    return smtpConfigurationService.getSmtpConfiguration()
+      .recover(throwable -> fetchSmtpConfigurationFromModConfig(requestHeaders)
+        .map(EmailUtils::convertSmtpConfiguration)
+        .compose(EmailUtils::validateSmtpConfiguration)
+        .compose(smtpConfigurationService::createSmtpConfiguration)
+        .compose(smtpConfigurationId -> smtpConfigurationService.getSmtpConfiguration())
+      )
+      .compose(EmailUtils::validateSmtpConfiguration);
+  }
+
+  private Future<Configurations> fetchSmtpConfigurationFromModConfig(Map<String, String> requestHeaders) {
+    logger.warn("Failed to find SMTP configuration in the DB, fetching from mod-config");
+
     MultiMap headers = MultiMap.caseInsensitiveMultiMap().addAll(requestHeaders);
     String okapiUrl = headers.get(OKAPI_URL_HEADER);
     String okapiToken = headers.get(OKAPI_HEADER_TOKEN);
@@ -208,20 +220,9 @@ public abstract class AbstractEmail {
       });
   }
 
-  protected Future<Configurations> validateConfiguration(Configurations configurations) {
-    if (isIncorrectSmtpServerConfig(configurations)) {
-      String errorMessage = String.format(ERROR_MIN_REQUIREMENT_MOD_CONFIG,
-        REQUIREMENTS_CONFIG_SET);
-      logger.error(errorMessage);
-      return failedFuture(new SmtpConfigurationException(errorMessage));
-    }
-
-    return succeededFuture(configurations);
-  }
-
-  protected Future<EmailEntity> sendEmail(EmailEntity email, Configurations configurations) {
+  protected Future<EmailEntity> sendEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
     Promise<JsonObject> promise = Promise.promise();
-    mailService.sendEmail(mapFrom(configurations), mapFrom(email), promise);
+    mailService.sendEmail(mapFrom(smtpConfiguration), mapFrom(email), promise);
 
     return promise.future().map(email);
   }
@@ -301,9 +302,9 @@ public abstract class AbstractEmail {
     return DATE_PATTERN.matcher(expirationDate).matches();
   }
 
-  private static void applyConfiguration(EmailEntity email, Configurations configurations) {
+  private static void applyConfiguration(EmailEntity email, SmtpConfiguration smtpConfiguration) {
     if (StringUtils.isBlank(email.getFrom())) {
-      email.withFrom(getEmailConfig(configurations, EMAIL_FROM, String.class));
+      email.withFrom(smtpConfiguration.getFrom());
     }
   }
 

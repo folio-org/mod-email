@@ -5,17 +5,7 @@ import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
-import static org.folio.enums.SmtpEmail.AUTH_METHODS;
-import static org.folio.enums.SmtpEmail.EMAIL_PASSWORD;
-import static org.folio.enums.SmtpEmail.EMAIL_SMTP_HOST;
-import static org.folio.enums.SmtpEmail.EMAIL_SMTP_LOGIN_OPTION;
-import static org.folio.enums.SmtpEmail.EMAIL_SMTP_PORT;
-import static org.folio.enums.SmtpEmail.EMAIL_SMTP_SSL;
-import static org.folio.enums.SmtpEmail.EMAIL_START_TLS_OPTIONS;
-import static org.folio.enums.SmtpEmail.EMAIL_TRUST_ALL;
-import static org.folio.enums.SmtpEmail.EMAIL_USERNAME;
 import static org.folio.rest.impl.base.AbstractEmail.RETRY_MAX_ATTEMPTS;
-import static org.folio.util.EmailUtils.getEmailConfig;
 import static org.folio.util.EmailUtils.getMessageConfig;
 
 import java.util.Base64;
@@ -30,9 +20,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.Attachment;
-import org.folio.rest.jaxrs.model.Config;
-import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.rest.jaxrs.model.EmailHeader;
+import org.folio.rest.jaxrs.model.SmtpConfiguration;
 import org.folio.services.email.MailService;
 
 import io.vertx.core.AsyncResult;
@@ -54,7 +44,6 @@ public class MailServiceImpl implements MailService {
   private static final String ERROR_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message: %s";
   private static final String ERROR_ATTACHMENT_DATA = "Error attaching the `%s` file to email!";
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
-  private static final String EMAIL_HEADERS_CONFIG_NAME = "email.headers";
 
   private final Vertx vertx;
 
@@ -66,14 +55,15 @@ public class MailServiceImpl implements MailService {
   }
 
   @Override
-  public void sendEmail(JsonObject configJson, JsonObject emailJson,
+  public void sendEmail(JsonObject smtpConfigurationJson, JsonObject emailJson,
     Handler<AsyncResult<JsonObject>> resultHandler) {
 
+    SmtpConfiguration smtpConfiguration = smtpConfigurationJson.mapTo(SmtpConfiguration.class);
+
     try {
-      Configurations configurations = configJson.mapTo(Configurations.class);
       EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
-      MailConfig mailConfig = getMailConfig(configurations);
-      MailMessage mailMessage = getMailMessage(emailEntity, configurations);
+      MailConfig mailConfig = getMailConfig(smtpConfiguration);
+      MailMessage mailMessage = getMailMessage(emailEntity, smtpConfiguration);
       String emailId = emailEntity.getId();
       long start = currentTimeMillis();
 
@@ -100,20 +90,20 @@ public class MailServiceImpl implements MailService {
     return client;
   }
 
-  private MailConfig getMailConfig(Configurations configurations) {
+  private MailConfig getMailConfig(SmtpConfiguration smtpConfiguration) {
     return new MailConfig()
-      .setAuthMethods(getEmailConfig(configurations, AUTH_METHODS, String.class))
-      .setHostname(getEmailConfig(configurations, EMAIL_SMTP_HOST, String.class))
-      .setPort(getEmailConfig(configurations, EMAIL_SMTP_PORT, Integer.class))
-      .setSsl(getEmailConfig(configurations, EMAIL_SMTP_SSL, Boolean.class))
-      .setStarttls(getEmailConfig(configurations, EMAIL_START_TLS_OPTIONS, StartTLSOptions.class))
-      .setTrustAll(getEmailConfig(configurations, EMAIL_TRUST_ALL, Boolean.class))
-      .setLogin(getEmailConfig(configurations, EMAIL_SMTP_LOGIN_OPTION, LoginOption.class))
-      .setUsername(getEmailConfig(configurations, EMAIL_USERNAME, String.class))
-      .setPassword(getEmailConfig(configurations, EMAIL_PASSWORD, String.class));
+      .setAuthMethods(smtpConfiguration.getAuthMethods())
+      .setHostname(smtpConfiguration.getHost())
+      .setPort(smtpConfiguration.getPort())
+      .setSsl(smtpConfiguration.getSsl())
+      .setStarttls(StartTLSOptions.valueOf(smtpConfiguration.getStartTlsOptions().value()))
+      .setTrustAll(smtpConfiguration.getTrustAll())
+      .setLogin(LoginOption.valueOf(smtpConfiguration.getLoginOption().value()))
+      .setUsername(smtpConfiguration.getUsername())
+      .setPassword(smtpConfiguration.getPassword());
   }
 
-  private MailMessage getMailMessage(EmailEntity emailEntity, Configurations configurations) {
+  private MailMessage getMailMessage(EmailEntity emailEntity, SmtpConfiguration smtpConfiguration) {
     MailMessage mailMessage = new MailMessage()
       .setFrom(getMessageConfig(emailEntity.getFrom()))
       .setTo(getMessageConfig(emailEntity.getTo()))
@@ -127,7 +117,7 @@ public class MailServiceImpl implements MailService {
       mailMessage.setText(getMessageConfig(emailEntity.getBody()));
     }
 
-    addHeadersFromConfiguration(mailMessage, configurations);
+    addHeadersFromConfiguration(mailMessage, smtpConfiguration);
 
     return mailMessage;
   }
@@ -163,11 +153,10 @@ public class MailServiceImpl implements MailService {
     return Buffer.buffer(decode);
   }
 
-  public static void addHeadersFromConfiguration(MailMessage message, Configurations configurations) {
-    Map<String, String> headers = configurations.getConfigs().stream()
-      .filter(config -> EMAIL_HEADERS_CONFIG_NAME.equals(config.getConfigName()))
-      .filter(config -> isNoneBlank(config.getCode(), config.getValue()))
-      .collect(toMap(Config::getCode, Config::getValue));
+  public static void addHeadersFromConfiguration(MailMessage message, SmtpConfiguration smtpConfiguration) {
+    Map<String, String> headers = smtpConfiguration.getEmailHeaders().stream()
+      .filter(header -> isNoneBlank(header.getName(), header.getValue()))
+      .collect(toMap(EmailHeader::getName, EmailHeader::getValue));
 
     if (headers.isEmpty()) {
       return;

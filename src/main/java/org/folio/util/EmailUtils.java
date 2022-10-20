@@ -1,32 +1,52 @@
 package org.folio.util;
 
+import static io.vertx.core.Future.failedFuture;
+import static io.vertx.core.Future.succeededFuture;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.commons.lang3.StringUtils.isNoneBlank;
+import static org.folio.enums.SmtpEmail.AUTH_METHODS;
+import static org.folio.enums.SmtpEmail.EMAIL_FROM;
 import static org.folio.enums.SmtpEmail.EMAIL_PASSWORD;
 import static org.folio.enums.SmtpEmail.EMAIL_SMTP_HOST;
+import static org.folio.enums.SmtpEmail.EMAIL_SMTP_LOGIN_OPTION;
 import static org.folio.enums.SmtpEmail.EMAIL_SMTP_PORT;
+import static org.folio.enums.SmtpEmail.EMAIL_SMTP_SSL;
+import static org.folio.enums.SmtpEmail.EMAIL_START_TLS_OPTIONS;
+import static org.folio.enums.SmtpEmail.EMAIL_TRUST_ALL;
 import static org.folio.enums.SmtpEmail.EMAIL_USERNAME;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.enums.SmtpEmail;
+import org.folio.exceptions.SmtpConfigurationException;
 import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.rest.jaxrs.model.EmailHeader;
+import org.folio.rest.jaxrs.model.SmtpConfiguration;
 
+import io.vertx.core.Future;
 import io.vertx.ext.mail.LoginOption;
 import io.vertx.ext.mail.StartTLSOptions;
 
 public class EmailUtils {
+  private static final Logger logger = LogManager.getLogger(EmailUtils.class);
 
   public static final String MAIL_SERVICE_ADDRESS = "mail-service.queue";
   public static final String STORAGE_SERVICE_ADDRESS = "storage-service.queue";
   public static final String EMAIL_STATISTICS_TABLE_NAME = "email_statistics";
+  private static final String EMAIL_HEADERS_CONFIG_NAME = "email.headers";
+  private static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SMTP server, the min config is: %s";
 
   private EmailUtils() {
     //not called
@@ -50,6 +70,21 @@ public class EmailUtils {
       .map(val -> val.getCode().toUpperCase())
       .collect(Collectors.toSet());
     return !configSet.containsAll(REQUIREMENTS_CONFIG_SET);
+  }
+
+  public static Future<SmtpConfiguration> validateSmtpConfiguration(SmtpConfiguration smtpConfiguration) {
+    boolean configurationIsValid =  isNoneBlank(smtpConfiguration.getHost(),
+      ofNullable(smtpConfiguration.getPort()).map(String::valueOf).orElse(null),
+      smtpConfiguration.getUsername(), smtpConfiguration.getPassword());
+
+    if (configurationIsValid) {
+      return succeededFuture(smtpConfiguration);
+    }
+
+    String errorMessage = String.format(ERROR_MIN_REQUIREMENT_MOD_CONFIG,
+      REQUIREMENTS_CONFIG_SET);
+    logger.error(errorMessage);
+    return failedFuture(new SmtpConfigurationException(errorMessage));
   }
 
   /**
@@ -95,5 +130,30 @@ public class EmailUtils {
       .map(EmailEntity.Status::value)
       .findFirst()
       .orElse(EmailEntity.Status.DELIVERED.value());
+  }
+
+  public static SmtpConfiguration convertSmtpConfiguration(Configurations configurations) {
+    return new SmtpConfiguration()
+      .withId(UUID.randomUUID().toString())
+      .withHost(getEmailConfig(configurations, EMAIL_SMTP_HOST, String.class))
+      .withPort(getEmailConfig(configurations, EMAIL_SMTP_PORT, Integer.class))
+      .withUsername(getEmailConfig(configurations, EMAIL_USERNAME, String.class))
+      .withPassword(getEmailConfig(configurations, EMAIL_PASSWORD, String.class))
+      .withSsl(getEmailConfig(configurations, EMAIL_SMTP_SSL, Boolean.class))
+      .withTrustAll(getEmailConfig(configurations, EMAIL_TRUST_ALL, Boolean.class))
+      .withLoginOption(getEmailConfig(configurations, EMAIL_SMTP_LOGIN_OPTION,
+        SmtpConfiguration.LoginOption.class))
+      .withStartTlsOptions(getEmailConfig(configurations, EMAIL_START_TLS_OPTIONS,
+        SmtpConfiguration.StartTlsOptions.class))
+      .withAuthMethods(getEmailConfig(configurations, AUTH_METHODS, String.class))
+      .withFrom(getEmailConfig(configurations, EMAIL_FROM, String.class))
+      .withEmailHeaders(configurations.getConfigs().stream()
+        .filter(config -> EMAIL_HEADERS_CONFIG_NAME.equals(config.getConfigName()))
+        .filter(config -> isNoneBlank(config.getCode(), config.getValue()))
+        .map(config -> new EmailHeader()
+          .withName(config.getCode())
+          .withValue(config.getValue()))
+        .collect(Collectors.toList()));
+
   }
 }

@@ -21,19 +21,19 @@ public class SmtpConfigurationApi implements org.folio.rest.jaxrs.resource.SmtpC
 
     new SmtpConfigurationService(okapiHeaders, vertxContext)
       .getSmtpConfiguration()
-      .onSuccess(config -> {
-        if (config == null) {
+      .onSuccess(config -> asyncResultHandler.handle(succeededFuture(
+        org.folio.rest.jaxrs.resource.SmtpConfiguration.GetSmtpConfigurationResponse
+          .respond200WithApplicationJson(config))))
+      .onFailure(failure -> {
+        if (failure.getCause() instanceof SmtpConfigurationNotFoundException) {
           asyncResultHandler.handle(succeededFuture(
             org.folio.rest.jaxrs.resource.SmtpConfiguration.GetSmtpConfigurationResponse
-              .respond404WithTextPlain("SMTP configuration not found")));
+              .respond404WithTextPlain(failure.getMessage())));
         }
         asyncResultHandler.handle(succeededFuture(
           org.folio.rest.jaxrs.resource.SmtpConfiguration.GetSmtpConfigurationResponse
-            .respond200WithApplicationJson(config)));
-      })
-      .onFailure(failure -> asyncResultHandler.handle(succeededFuture(
-        org.folio.rest.jaxrs.resource.SmtpConfiguration.GetSmtpConfigurationResponse
-          .respond500WithTextPlain(failure.getLocalizedMessage()))));
+            .respond500WithTextPlain(failure.getMessage())));
+      });
   }
 
   @Override
