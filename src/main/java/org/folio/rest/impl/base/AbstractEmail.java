@@ -11,6 +11,7 @@ import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static org.folio.HttpStatus.HTTP_NO_CONTENT;
 import static org.folio.HttpStatus.HTTP_OK;
 import static org.folio.rest.RestVerticle.MODULE_SPECIFIC_ARGS;
 import static org.folio.rest.RestVerticle.OKAPI_HEADER_TENANT;
@@ -24,8 +25,10 @@ import static org.folio.util.EmailUtils.findStatusByName;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
@@ -34,6 +37,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.exceptions.ConfigurationException;
 import org.folio.exceptions.SmtpConfigurationException;
+import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntity.Status;
@@ -58,6 +62,7 @@ public abstract class AbstractEmail {
 
   private static final String REQUEST_URL_TEMPLATE = "%s/%s?query=module==%s";
   private static final String REQUEST_URI_PATH = "configurations/entries";
+  private static final String DELETE_CONFIG_URI_PATH = "%s/configurations/entries/%s";
   private static final String OKAPI_URL_HEADER = "x-okapi-url";
   private static final String MODULE_EMAIL_SMTP_SERVER = "SMTP_SERVER";
   private static final String LOOKUP_TIMEOUT = "lookup.timeout";
@@ -184,13 +189,52 @@ public abstract class AbstractEmail {
 
   private Future<SmtpConfiguration> lookupSmtpConfiguration(Map<String, String> requestHeaders) {
     return smtpConfigurationService.getSmtpConfiguration()
+      .compose(EmailUtils::validateSmtpConfiguration)
       .recover(throwable -> fetchSmtpConfigurationFromModConfig(requestHeaders)
-        .map(EmailUtils::convertSmtpConfiguration)
-        .compose(EmailUtils::validateSmtpConfiguration)
-        .compose(smtpConfigurationService::createSmtpConfiguration)
-        .compose(smtpConfigurationId -> smtpConfigurationService.getSmtpConfiguration())
-      )
-      .compose(EmailUtils::validateSmtpConfiguration);
+        .compose(configs -> copyConfigToDbAndRemoveFromModConfig(configs, requestHeaders)));
+  }
+
+  private Future<SmtpConfiguration> copyConfigToDbAndRemoveFromModConfig(
+    Configurations configurations, Map<String, String> requestHeaders) {
+
+    return succeededFuture(configurations)
+      .map(EmailUtils::convertSmtpConfiguration)
+      .compose(EmailUtils::validateSmtpConfiguration)
+      .compose(smtpConfigurationService::createSmtpConfiguration)
+      .compose(smtpConfigurationId -> smtpConfigurationService.getSmtpConfiguration())
+      .compose(EmailUtils::validateSmtpConfiguration)
+      .compose(smtpConfig -> removeEntriesFromModConfig(smtpConfig, configurations, requestHeaders));
+  }
+
+  private Future<SmtpConfiguration> removeEntriesFromModConfig(
+    SmtpConfiguration validSmtpConfiguration, Configurations configurationsToDelete,
+    Map<String, String> requestHeaders) {
+
+    logger.warn("Removing configuration from mod-config");
+
+    return CompositeFuture.all(configurationsToDelete.getConfigs().stream()
+        .map(Config::getId)
+        .map(id -> {
+          MultiMap headers = MultiMap.caseInsensitiveMultiMap().addAll(requestHeaders);
+          String okapiUrl = headers.get(OKAPI_URL_HEADER);
+          String okapiToken = headers.get(OKAPI_HEADER_TOKEN);
+          String url = String.format(DELETE_CONFIG_URI_PATH, okapiUrl, id);
+
+          return httpClient.deleteAbs(url)
+            .putHeader(OKAPI_HEADER_TOKEN, okapiToken)
+            .putHeader(OKAPI_HEADER_TENANT, tenantId)
+            .send()
+            .compose(response -> {
+              if (response.statusCode() == HTTP_NO_CONTENT.toInt()) {
+                logger.info("Successfully deleted configuration entry {}", id);
+              }
+              String errorMessage = format("Failed to delete configuration entry %s", id);
+              logger.error(errorMessage);
+              return failedFuture(new ConfigurationException(errorMessage));
+            });
+        })
+        .collect(Collectors.toList()))
+      .map(validSmtpConfiguration);
   }
 
   private Future<Configurations> fetchSmtpConfigurationFromModConfig(Map<String, String> requestHeaders) {
