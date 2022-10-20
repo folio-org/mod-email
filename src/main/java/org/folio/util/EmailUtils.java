@@ -141,10 +141,10 @@ public class EmailUtils {
       .withPassword(getEmailConfig(configurations, EMAIL_PASSWORD, String.class))
       .withSsl(getEmailConfig(configurations, EMAIL_SMTP_SSL, Boolean.class))
       .withTrustAll(getEmailConfig(configurations, EMAIL_TRUST_ALL, Boolean.class))
-      .withLoginOption(getEmailConfig(configurations, EMAIL_SMTP_LOGIN_OPTION,
-        SmtpConfiguration.LoginOption.class))
-      .withStartTlsOptions(getEmailConfig(configurations, EMAIL_START_TLS_OPTIONS,
-        SmtpConfiguration.StartTlsOptions.class))
+      .withLoginOption(SmtpConfiguration.LoginOption.valueOf(
+        getEmailConfig(configurations, EMAIL_SMTP_LOGIN_OPTION, LoginOption.class).toString()))
+      .withStartTlsOptions(SmtpConfiguration.StartTlsOptions.valueOf(
+        getEmailConfig(configurations, EMAIL_START_TLS_OPTIONS, StartTLSOptions.class).toString()))
       .withAuthMethods(getEmailConfig(configurations, AUTH_METHODS, String.class))
       .withFrom(getEmailConfig(configurations, EMAIL_FROM, String.class))
       .withEmailHeaders(configurations.getConfigs().stream()

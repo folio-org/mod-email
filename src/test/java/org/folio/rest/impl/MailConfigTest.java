@@ -1,7 +1,9 @@
 package org.folio.rest.impl;
 
 import static io.vertx.core.json.JsonObject.mapFrom;
+import static org.folio.util.StubUtils.createConfigurations;
 import static org.folio.util.StubUtils.createSmtpConfiguration;
+import static org.folio.util.StubUtils.initModConfigStub;
 import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.verifyNew;
 import static org.powermock.api.mockito.PowerMockito.whenNew;
@@ -9,6 +11,7 @@ import static org.powermock.api.mockito.PowerMockito.whenNew;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.SmtpConfiguration;
 import org.folio.services.email.impl.MailServiceImpl;
@@ -45,6 +48,10 @@ public class MailConfigTest {
 
   @Test
   public void messageShouldIncludeAuthMethodsFromConfiguration() throws Exception {
+    Configurations configurations = createConfigurations("user", "pws", "localhost",
+      "2500", AUTH_METHODS);
+    initModConfigStub(mockServer.port(), configurations);
+
     SmtpConfiguration smtpConfiguration = createSmtpConfiguration("user", "pws", "localhost", 2500,
       AUTH_METHODS);
 

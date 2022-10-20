@@ -37,8 +37,9 @@
       "type": "string",
       "enum": [
         "DISABLED",
-        "OPTIONAL",
-        "REQUIRED"
+        "NONE",
+        "REQUIRED",
+        "XOAUTH2"
       ]
     },
     "startTlsOptions": {
