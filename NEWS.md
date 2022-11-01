@@ -1,3 +1,7 @@
+## 2022-10-18 v1.15.0
+* Update copyright year (FOLIO-1021)
+* Upgrade to RMB 35.0.0 and Vertx 4.3.3 (MODEMAIL-78)
+
 ## 2022-06-27 v1.14.0
 * Upgrade to RMB v34.0.0 (MODEMAIL-74)
 * Retry logic implementation for failed emails (MODEMAIL-73)
