@@ -39,9 +39,10 @@ public class SmtpConfigurationService {
         : succeededFuture(configs.get(0)));
   }
 
-  public Future<String> createSmtpConfiguration(SmtpConfiguration smtpConfiguration) {
+  public Future<SmtpConfiguration> createSmtpConfiguration(SmtpConfiguration smtpConfiguration) {
     return getSmtpConfigurationId()
-      .compose(id -> repository.save(smtpConfiguration, id));
+      .compose(id -> repository.save(smtpConfiguration, id))
+      .map(smtpConfiguration::withId);
   }
 
   public Future<SmtpConfiguration> updateSmtpConfiguration(SmtpConfiguration smtpConfiguration) {

@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static java.util.stream.Collectors.toList;
+import static org.folio.HttpStatus.HTTP_NO_CONTENT;
 import static org.folio.enums.SmtpEmail.AUTH_METHODS;
 import static org.folio.enums.SmtpEmail.EMAIL_PASSWORD;
 import static org.folio.enums.SmtpEmail.EMAIL_SMTP_HOST;
@@ -26,6 +27,7 @@ public class StubUtils {
 
   private static final String MODULE_SMTP_SERVER = "SMTP_SERVER";
   private static final String URL_CONFIGURATIONS_TO_SMTP_SERVER = "/configurations/entries?query=module==" + MODULE_SMTP_SERVER;
+  private static final String URL_SINGLE_CONFIGURATION = "/configurations/entries/.+";
   private static final String CONFIG_NAME_SMTP = "smtp";
   private static final String CONFIG_NAME_EMAIL_HEADERS = "email.headers";
 
@@ -54,6 +56,12 @@ public class StubUtils {
         .withHeader("x-okapi-token", "x-okapi-token-TEST")
         .withHeader("x-okapi-url", "http://localhost:" + port)
         .withBody(JsonObject.mapFrom(configurations).toString())));
+
+    stubFor(delete(urlMatching(URL_SINGLE_CONFIGURATION))
+      .willReturn(aResponse()
+        .withStatus(HTTP_NO_CONTENT.toInt())
+        .withHeader("x-okapi-token", "x-okapi-token-TEST")
+        .withHeader("x-okapi-url", "http://localhost:" + port)));
   }
 
   public static void initFailModConfigStub(int port) {

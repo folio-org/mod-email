@@ -42,9 +42,9 @@ public class SmtpConfigurationApi implements org.folio.rest.jaxrs.resource.SmtpC
 
     new SmtpConfigurationService(okapiHeaders, vertxContext)
       .createSmtpConfiguration(entity)
-      .onSuccess(id -> asyncResultHandler.handle(succeededFuture(
+      .onSuccess(createdEntity -> asyncResultHandler.handle(succeededFuture(
         org.folio.rest.jaxrs.resource.SmtpConfiguration.PostSmtpConfigurationResponse
-          .respond201WithApplicationJson(entity.withId(id)))))
+          .respond201WithApplicationJson(createdEntity))))
       .onFailure(failure -> asyncResultHandler.handle(succeededFuture(
         org.folio.rest.jaxrs.resource.SmtpConfiguration.PostSmtpConfigurationResponse
           .respond500WithTextPlain(failure.getMessage()))));
