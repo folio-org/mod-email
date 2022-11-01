@@ -52,6 +52,7 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
+import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
@@ -75,6 +76,7 @@ public abstract class AbstractAPITest {
 
   private static final Logger logger = LogManager.getLogger(AbstractAPITest.class);
 
+  protected static final String SMTP_CONFIGURATION_TABLE_NAME = "smtp_configuration";
   private static final int DEFAULT_LIMIT = 100;
   private static final int POST_TENANT_TIMEOUT = 10000;
   private static final String HTTP_PORT = "http.port";
@@ -189,6 +191,24 @@ public abstract class AbstractAPITest {
           async.complete();
         }
       });
+
+    deleteLocalConfiguration()
+      .onComplete(event -> {
+        if (event.failed()) {
+          logger.error(event.cause());
+          context.fail(event.cause());
+        } else {
+          async.complete();
+        }
+      });
+  }
+
+  protected Future<RowSet<Row>> deleteLocalConfiguration() {
+    return postgresClient.delete(SMTP_CONFIGURATION_TABLE_NAME, new Criterion());
+  }
+
+  protected void deleteLocalConfigurationAndWait() {
+    Awaitility.await().until(deleteLocalConfiguration()::isComplete);;
   }
 
   @After

@@ -218,6 +218,9 @@ public class SendingEmailTest extends AbstractAPITest {
     // init correct SMTP mock configuration
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
 
+    // delete incorrect configuration from local DB
+    deleteLocalConfigurationAndWait();
+
     response = sendEmail(emailEntity)
       .then()
       .statusCode(HttpStatus.SC_OK)
