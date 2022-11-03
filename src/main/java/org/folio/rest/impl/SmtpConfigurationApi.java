@@ -25,7 +25,7 @@ public class SmtpConfigurationApi implements org.folio.rest.jaxrs.resource.SmtpC
         org.folio.rest.jaxrs.resource.SmtpConfiguration.GetSmtpConfigurationResponse
           .respond200WithApplicationJson(config))))
       .onFailure(failure -> {
-        if (failure.getCause() instanceof SmtpConfigurationNotFoundException) {
+        if (failure instanceof SmtpConfigurationNotFoundException) {
           asyncResultHandler.handle(succeededFuture(
             org.folio.rest.jaxrs.resource.SmtpConfiguration.GetSmtpConfigurationResponse
               .respond404WithTextPlain(failure.getMessage())));
@@ -60,7 +60,7 @@ public class SmtpConfigurationApi implements org.folio.rest.jaxrs.resource.SmtpC
         org.folio.rest.jaxrs.resource.SmtpConfiguration.PutSmtpConfigurationResponse
           .respond200WithApplicationJson(updatedEntity))))
       .onFailure(failure -> {
-        if (failure.getCause() instanceof SmtpConfigurationNotFoundException) {
+        if (failure instanceof SmtpConfigurationNotFoundException) {
           asyncResultHandler.handle(succeededFuture(
             org.folio.rest.jaxrs.resource.SmtpConfiguration.PutSmtpConfigurationResponse
               .respond404WithTextPlain(failure.getMessage())));

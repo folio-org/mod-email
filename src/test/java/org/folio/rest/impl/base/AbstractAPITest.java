@@ -88,6 +88,7 @@ public abstract class AbstractAPITest {
   private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
 
   protected static final String REST_PATH_EMAIL = "/email";
+  protected static final String REST_PATH_SMTP_CONFIGURATION = "/smtp-configuration";
   private static final String PATH_WITH_QUERY_TEMPLATE = "%s?query=%s&limit=%s";
   protected static final String ADDRESS_TEMPLATE = "%s@localhost";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
@@ -188,17 +189,15 @@ public abstract class AbstractAPITest {
           logger.error(event.cause());
           context.fail(event.cause());
         } else {
-          async.complete();
-        }
-      });
-
-    deleteLocalConfiguration()
-      .onComplete(event -> {
-        if (event.failed()) {
-          logger.error(event.cause());
-          context.fail(event.cause());
-        } else {
-          async.complete();
+          deleteLocalConfiguration()
+            .onComplete(eventConfig -> {
+              if (eventConfig.failed()) {
+                logger.error(eventConfig.cause());
+                context.fail(eventConfig.cause());
+              } else {
+                async.complete();
+              }
+            });
         }
       });
   }
@@ -226,6 +225,11 @@ public abstract class AbstractAPITest {
       .get(String.format(PATH_WITH_QUERY_TEMPLATE, REST_PATH_EMAIL, query, DEFAULT_LIMIT));
   }
 
+  protected Response get(String path) {
+    return getRequestSpecification()
+      .get(path);
+  }
+
   protected Response post(String path) {
     return getRequestSpecification()
       .post(path);
@@ -235,6 +239,17 @@ public abstract class AbstractAPITest {
     return getRequestSpecification()
       .body(body)
       .post(path);
+  }
+
+  protected Response put(String path, String body) {
+    return getRequestSpecification()
+      .body(body)
+      .put(path);
+  }
+
+  protected Response delete(String path) {
+    return getRequestSpecification()
+      .delete(path);
   }
 
   /**

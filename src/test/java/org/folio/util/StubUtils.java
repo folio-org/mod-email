@@ -153,4 +153,21 @@ public class StubUtils {
     return configurations;
   }
 
+  public static JsonObject buildSmtpConfiguration() {
+    return new JsonObject()
+      .put("host", "localhost")
+      .put("port", 502)
+      .put("username", "username")
+      .put("password", "password")
+      .put("ssl", true)
+      .put("trustAll", false)
+      .put("loginOption", "REQUIRED")
+      .put("startTlsOptions", "DISABLED")
+      .put("authMethods", "CRAM-MD5 LOGIN PLAIN")
+      .put("from", "noreply@folio.org")
+      .put("emailHeaders", List.of(new JsonObject()
+        .put("name", "Reply-To")
+        .put("value", "noreply@folio.org")
+      ));
+  }
 }

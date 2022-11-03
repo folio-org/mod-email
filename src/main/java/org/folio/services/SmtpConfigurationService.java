@@ -2,10 +2,10 @@ package org.folio.services;
 
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
-import static java.util.UUID.randomUUID;
 import static org.folio.rest.tools.utils.TenantTool.tenantId;
 
 import java.util.Map;
+import java.util.UUID;
 
 import org.folio.exceptions.FailedToUpdateSmtpConfigurationException;
 import org.folio.exceptions.SmtpConfigurationNotFoundException;
@@ -40,16 +40,20 @@ public class SmtpConfigurationService {
   }
 
   public Future<SmtpConfiguration> createSmtpConfiguration(SmtpConfiguration smtpConfiguration) {
-    return getSmtpConfigurationId()
+    String proposedId = smtpConfiguration.getId() == null
+      ? UUID.randomUUID().toString()
+      : smtpConfiguration.getId();
+
+    return getSmtpConfigurationId(proposedId)
       .compose(id -> repository.save(smtpConfiguration, id))
       .map(smtpConfiguration::withId);
   }
 
   public Future<SmtpConfiguration> updateSmtpConfiguration(SmtpConfiguration smtpConfiguration) {
     return getSmtpConfiguration()
-      .compose(config -> repository.update(config, config.getId()))
+      .compose(config -> repository.update(smtpConfiguration, config.getId()))
       .compose(updateSucceeded -> updateSucceeded
-        ? getSmtpConfiguration()
+        ? succeededFuture(smtpConfiguration)
         : failedFuture(new FailedToUpdateSmtpConfigurationException()));
   }
 
@@ -57,9 +61,9 @@ public class SmtpConfigurationService {
     return repository.removeAll(tenantId);
   }
 
-  private Future<String> getSmtpConfigurationId() {
+  private Future<String> getSmtpConfigurationId(String proposedId) {
     return getSmtpConfiguration()
       .map(SmtpConfiguration::getId)
-      .recover(throwable -> succeededFuture(randomUUID().toString()));
+      .recover(throwable -> succeededFuture(proposedId));
   }
 }
