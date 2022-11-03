@@ -50,9 +50,8 @@ public class BaseRepository<T> {
       .map(Results::getResults);
   }
 
-  public Future<Optional<T>> get(String id) {
-    return pgClient.getById(tableName, id, entityType)
-      .map(Optional::ofNullable);
+  public Future<T> get(String id) {
+    return pgClient.getById(tableName, id, entityType);
   }
 
   public Future<List<T>> getAllWithDefaultLimit() {

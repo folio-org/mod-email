@@ -3,6 +3,7 @@ package org.folio.services.email.impl;
 import static io.vertx.core.Future.failedFuture;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 import static org.folio.rest.impl.base.AbstractEmail.RETRY_MAX_ATTEMPTS;
@@ -91,16 +92,32 @@ public class MailServiceImpl implements MailService {
   }
 
   private MailConfig getMailConfig(SmtpConfiguration smtpConfiguration) {
+    boolean ssl = ofNullable(smtpConfiguration.getSsl()).orElse(false);
+
+    StartTLSOptions startTLSOptions = StartTLSOptions.valueOf(
+      ofNullable(smtpConfiguration.getStartTlsOptions())
+        .orElse(SmtpConfiguration.StartTlsOptions.OPTIONAL)
+        .value());
+
+    boolean trustAll = ofNullable(smtpConfiguration.getTrustAll()).orElse(false);
+
+    LoginOption loginOption = LoginOption.valueOf(
+      ofNullable(smtpConfiguration.getLoginOption())
+        .orElse(SmtpConfiguration.LoginOption.NONE)
+        .value());
+
+    String authMethods = ofNullable(smtpConfiguration.getAuthMethods()).orElse(StringUtils.EMPTY);
+
     return new MailConfig()
-      .setAuthMethods(smtpConfiguration.getAuthMethods())
       .setHostname(smtpConfiguration.getHost())
       .setPort(smtpConfiguration.getPort())
-      .setSsl(smtpConfiguration.getSsl())
-      .setStarttls(StartTLSOptions.valueOf(smtpConfiguration.getStartTlsOptions().value()))
-      .setTrustAll(smtpConfiguration.getTrustAll())
-      .setLogin(LoginOption.valueOf(smtpConfiguration.getLoginOption().value()))
       .setUsername(smtpConfiguration.getUsername())
-      .setPassword(smtpConfiguration.getPassword());
+      .setPassword(smtpConfiguration.getPassword())
+      .setSsl(ssl)
+      .setTrustAll(trustAll)
+      .setLogin(loginOption)
+      .setStarttls(startTLSOptions)
+      .setAuthMethods(authMethods);
   }
 
   private MailMessage getMailMessage(EmailEntity emailEntity, SmtpConfiguration smtpConfiguration) {

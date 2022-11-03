@@ -1,17 +1,25 @@
 package org.folio.rest.impl;
 
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
 import static junit.framework.TestCase.fail;
+import static org.folio.matchers.JsonMatchers.matchesJson;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
+import static org.folio.util.StubUtils.buildIncorrectWiserSmtpConfiguration;
+import static org.folio.util.StubUtils.buildInvalidSmtpConfiguration;
+import static org.folio.util.StubUtils.buildWiserSmtpConfiguration;
 import static org.folio.util.StubUtils.createConfigurationsWithCustomHeaders;
+import static org.folio.util.StubUtils.getIncorrectConfigurations;
 import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
 import static org.folio.util.StubUtils.getWiserMockConfigurations;
+import static org.folio.util.StubUtils.initFailModConfigStub;
 import static org.folio.util.StubUtils.initModConfigStub;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -35,8 +43,8 @@ public class SendingEmailTest extends AbstractAPITest {
   public void sendTextEmail() throws Exception {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
-    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
     String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
 
     EmailEntity emailEntity = new EmailEntity()
@@ -66,8 +74,8 @@ public class SendingEmailTest extends AbstractAPITest {
   public void sendHtmlEmail() throws Exception {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
-    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -96,8 +104,8 @@ public class SendingEmailTest extends AbstractAPITest {
   public void sendHtmlEmailAttachments() throws Exception {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
-    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -142,8 +150,8 @@ public class SendingEmailTest extends AbstractAPITest {
   public void sendHtmlEmailAttachmentsWithoutData() throws Exception {
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
-    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -182,8 +190,8 @@ public class SendingEmailTest extends AbstractAPITest {
 
     // init incorrect SMTP mock configuration
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
-    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -246,8 +254,8 @@ public class SendingEmailTest extends AbstractAPITest {
 
     int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, createConfigurationsWithCustomHeaders(customHeaders));
-    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
     String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
 
     EmailEntity emailEntity = new EmailEntity()
@@ -287,4 +295,227 @@ public class SendingEmailTest extends AbstractAPITest {
     assertEquals(expectedHeaders, actualHeaders);
   }
 
+  @Test
+  public void shouldSucceedWhenBothLocalAndRemoteConfigsExistAndAreValid() throws Exception {
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getWiserMockConfigurations());
+    createWiserSmtpConfigurationInDb();
+
+    sendEmailAndAssertDelivered();
+  }
+
+  @Test
+  public void shouldSucceedWhenOnlyLocalConfigExistsAndIsValid() throws Exception {
+    createWiserSmtpConfigurationInDb();
+
+    sendEmailAndAssertDelivered();
+  }
+
+  @Test
+  public void shouldSucceedWhenBothLocalAndRemoteConfigsExistAndRemoteIsInvalid() throws Exception {
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getIncorrectConfigurations());
+    createWiserSmtpConfigurationInDb();
+
+    sendEmailAndAssertDelivered();
+  }
+
+  @Test
+  public void shouldSucceedWhenBothLocalAndRemoteConfigsExistAndRemoteIsIncorrectForWiser() throws Exception {
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
+    createWiserSmtpConfigurationInDb();
+
+    sendEmailAndAssertDelivered();
+  }
+
+  @Test
+  public void shouldSucceedWhenOnlyRemoteConfigExistsAndIsValid() throws Exception {
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getWiserMockConfigurations());
+
+    sendEmailAndAssertDelivered();
+    checkThatCorrectConfigCopiedToLocalDb();
+  }
+
+  @Test
+  public void shouldFailWhenNoneOfTheConfigsExist() {
+    int mockServerPort = userMockServer.port();
+    initFailModConfigStub(mockServerPort);
+
+    sendEmailAndAssertFailure(HttpStatus.SC_BAD_REQUEST);
+  }
+
+  @Test
+  public void shouldFailWhenOnlyRemoteConfigExistsAndIsInvalid() throws Exception {
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getIncorrectConfigurations());
+
+    sendEmailAndAssertFailure(HttpStatus.SC_OK);
+  }
+
+  @Test
+  public void shouldFailWhenOnlyRemoteConfigExistsAndIsIncorrectForWiser() throws Exception {
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
+
+    sendEmailAndAssertFailure(HttpStatus.SC_OK);
+  }
+
+  @Test
+  public void shouldSucceedWhenBothConfigsExistAndLocalIsInvalid() throws Exception {
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getWiserMockConfigurations());
+
+    createInvalidSmtpConfigurationInDb();
+
+    sendEmailAndAssertDelivered();
+    checkThatCorrectConfigCopiedToLocalDb();
+  }
+
+  @Test
+  public void shouldFailWhenOnlyLocalConfigExistsAndIsInvalid() {
+    int mockServerPort = userMockServer.port();
+    initFailModConfigStub(mockServerPort);
+
+    createInvalidSmtpConfigurationInDb();
+
+    sendEmailAndAssertFailure(HttpStatus.SC_BAD_REQUEST);
+  }
+
+  @Test
+  public void shouldFailWhenBothConfigsExistAndBothAreInvalid() {
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getIncorrectConfigurations());
+
+    createInvalidSmtpConfigurationInDb();
+
+    sendEmailAndAssertFailure(HttpStatus.SC_OK);
+  }
+
+  @Test
+  public void shouldFailWhenBothConfigsExistAndLocalIsInvalidAndRemoteIsIncorrectForWiser() {
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
+
+    createInvalidSmtpConfigurationInDb();
+
+    sendEmailAndAssertFailure(HttpStatus.SC_OK);
+  }
+
+  @Test
+  public void shouldFailWhenBothConfigsExistAndLocalIsIncorrectForWiser() throws Exception {
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getWiserMockConfigurations());
+
+    createIncorrectWiserSmtpConfigurationInDb();
+
+    sendEmailAndAssertFailure(HttpStatus.SC_OK);
+  }
+
+  @Test
+  public void shouldFailWhenOnlyLocalConfigExistsAndIsIncorrectForWiser() {
+    int mockServerPort = userMockServer.port();
+    initFailModConfigStub(mockServerPort);
+
+    createIncorrectWiserSmtpConfigurationInDb();
+
+    sendEmailAndAssertFailure(HttpStatus.SC_OK);
+  }
+
+  @Test
+  public void shouldFailWhenBothConfigsExistAndLocalIsIncorrectForWiserAndRemoteIsInvalid() {
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getIncorrectConfigurations());
+
+    createIncorrectWiserSmtpConfigurationInDb();
+
+    sendEmailAndAssertFailure(HttpStatus.SC_OK);
+  }
+
+  @Test
+  public void shouldFailWhenBothConfigsExistAndBothAreIncorrectForWiser() {
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
+
+    createIncorrectWiserSmtpConfigurationInDb();
+
+    sendEmailAndAssertFailure(HttpStatus.SC_OK);
+  }
+
+  private void sendEmailAndAssertDelivered() throws Exception {
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
+
+    EmailEntity emailEntity = new EmailEntity()
+      .withNotificationId("1")
+      .withTo(recipient)
+      .withFrom(sender)
+      .withHeader("Reset password")
+      .withBody(msg)
+      .withOutputFormat(MediaType.TEXT_PLAIN);
+
+    Response response = sendEmail(emailEntity)
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+    checkResponseMessage(response, recipient);
+
+    // check email on SMTP server
+    WiserMessage wiserMessage = findMessageOnWiserServer(sender);
+    checkMessagesOnWiserServer(wiserMessage, emailEntity);
+
+    // check email on DB
+    checkStoredEmailsInDb(emailEntity, DELIVERED);
+  }
+
+  private void sendEmailAndAssertFailure(int expectedEmailSendingStatus) {
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
+
+    EmailEntity emailEntity = new EmailEntity()
+      .withNotificationId("1")
+      .withTo(recipient)
+      .withFrom(sender)
+      .withHeader("Reset password")
+      .withBody(msg)
+      .withOutputFormat(MediaType.TEXT_PLAIN);
+
+    sendEmail(emailEntity)
+      .then()
+      .statusCode(expectedEmailSendingStatus);
+
+    // check email on SMTP server
+    try {
+      findMessageOnWiserServer(sender);
+    } catch (AssertionFailedError e) {
+      assertEquals(e.getMessage(), format(MESSAGE_NOT_FOUND, sender));
+    }
+
+    // check email on DB
+    checkAbsenceOfStoredEmailsInDb(emailEntity, DELIVERED);
+  }
+
+  private void createWiserSmtpConfigurationInDb() {
+    post(REST_PATH_SMTP_CONFIGURATION, buildWiserSmtpConfiguration().encodePrettily());
+  }
+
+  private void createIncorrectWiserSmtpConfigurationInDb() {
+    post(REST_PATH_SMTP_CONFIGURATION, buildIncorrectWiserSmtpConfiguration().encodePrettily());
+  }
+
+  private void createInvalidSmtpConfigurationInDb() {
+    post(REST_PATH_SMTP_CONFIGURATION, buildInvalidSmtpConfiguration().encodePrettily());
+  }
+
+  private void checkThatCorrectConfigCopiedToLocalDb() {
+    get(REST_PATH_SMTP_CONFIGURATION)
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .body(matchesJson(buildWiserSmtpConfiguration(), List.of("id", "ssl", "trustAll",
+        "loginOption", "startTlsOptions", "authMethods", "from", "emailHeaders")));
+  }
 }

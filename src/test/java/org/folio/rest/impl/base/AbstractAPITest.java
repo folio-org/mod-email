@@ -7,6 +7,7 @@ import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -92,7 +93,7 @@ public abstract class AbstractAPITest {
   private static final String PATH_WITH_QUERY_TEMPLATE = "%s?query=%s&limit=%s";
   protected static final String ADDRESS_TEMPLATE = "%s@localhost";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
-  private static final String MESSAGE_NOT_FOUND = "The message for the sender: `%s` was not found on the SMTP server";
+  protected static final String MESSAGE_NOT_FOUND = "The message for the sender: `%s` was not found on the SMTP server";
   protected static final String FAIL_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message:";
 
   private static final String REST_DELETE_BATCH_EMAILS = "/delayedTask/expiredMessages";
@@ -314,6 +315,21 @@ public abstract class AbstractAPITest {
     checkAddress(emailEntity.getTo(), recipients);
   }
 
+  protected void checkAbsenceOfMessagesOnWiserServer(WiserMessage wiserMessage,
+    EmailEntity emailEntity) throws MessagingException {
+
+    assertTrue(wiserMessage.toString().contains(emailEntity.getBody()));
+
+    MimeMessage message = wiserMessage.getMimeMessage();
+    assertEquals(emailEntity.getHeader(), message.getSubject());
+
+    Address[] from = message.getFrom();
+    checkAddress(emailEntity.getFrom(), from);
+
+    Address[] recipients = message.getAllRecipients();
+    checkAddress(emailEntity.getTo(), recipients);
+  }
+
   /**
    * Check stored emails in the database
    */
@@ -340,6 +356,21 @@ public abstract class AbstractAPITest {
 
     assertTrue(StringUtils.isNoneBlank(entity.getMessage()));
     assertTrue(StringUtils.isNoneBlank(entity.getStatus().value()));
+  }
+
+  protected void checkAbsenceOfStoredEmailsInDb(EmailEntity emailEntity, Status status) {
+    Response responseDb = getEmails(status)
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+
+    List<EmailEntity> emailEntities = convertEntriesToJson(responseDb).getEmailEntity();
+    Optional<EmailEntity> emailEntityOpt = emailEntities.stream()
+      .filter(entity -> emailEntity.getTo().equals(entity.getTo()))
+      .findFirst();
+
+    assertFalse(emailEntityOpt.isPresent());
   }
 
   /**

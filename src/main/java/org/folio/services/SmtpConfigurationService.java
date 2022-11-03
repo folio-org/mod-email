@@ -39,6 +39,13 @@ public class SmtpConfigurationService {
         : succeededFuture(configs.get(0)));
   }
 
+  public Future<SmtpConfiguration> getSmtpConfigurationById(String id) {
+    return repository.get(id)
+      .compose(config -> config == null
+        ? failedFuture(new SmtpConfigurationNotFoundException())
+        : succeededFuture(config));
+  }
+
   public Future<SmtpConfiguration> createSmtpConfiguration(SmtpConfiguration smtpConfiguration) {
     String proposedId = smtpConfiguration.getId() == null
       ? UUID.randomUUID().toString()
@@ -50,7 +57,11 @@ public class SmtpConfigurationService {
   }
 
   public Future<SmtpConfiguration> updateSmtpConfiguration(SmtpConfiguration smtpConfiguration) {
-    return getSmtpConfiguration()
+    Future<SmtpConfiguration> smtpConfigurationFuture = smtpConfiguration.getId() == null
+      ? getSmtpConfiguration()
+      : getSmtpConfigurationById(smtpConfiguration.getId());
+
+    return smtpConfigurationFuture
       .compose(config -> repository.update(smtpConfiguration, config.getId()))
       .compose(updateSucceeded -> updateSucceeded
         ? succeededFuture(smtpConfiguration)

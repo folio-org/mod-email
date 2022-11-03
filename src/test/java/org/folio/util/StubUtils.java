@@ -154,6 +154,7 @@ public class StubUtils {
   }
 
   public static JsonObject buildSmtpConfiguration() {
+
     return new JsonObject()
       .put("host", "localhost")
       .put("port", 502)
@@ -170,4 +171,27 @@ public class StubUtils {
         .put("value", "noreply@folio.org")
       ));
   }
+
+  public static JsonObject buildWiserSmtpConfiguration() {
+    return new JsonObject()
+      .put("host", "localhost")
+      .put("port", 2500)
+      .put("username", "user")
+      .put("password", "password");
+  }
+
+  public static JsonObject buildIncorrectWiserSmtpConfiguration() {
+    return new JsonObject()
+      .put("host", "localhost")
+      .put("port", 555)
+      .put("username", "user")
+      .put("password", "password");
+  }
+
+  public static JsonObject buildInvalidSmtpConfiguration() {
+    return new JsonObject()
+      .put("host", "localhost")
+      .put("password", "password");
+  }
+
 }
