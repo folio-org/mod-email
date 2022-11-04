@@ -183,4 +183,15 @@ public class StubUtils {
       .put("password", "password");
   }
 
+  public static SmtpConfiguration buildSmtpConfiguration(String user, String password,
+    String host, int port, String authMethods) {
+
+    return new SmtpConfiguration()
+      .withUsername(user)
+      .withPassword(password)
+      .withHost(host)
+      .withPort(port)
+      .withAuthMethods(authMethods);
+  }
+
 }
