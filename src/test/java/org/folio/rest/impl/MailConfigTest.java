@@ -66,8 +66,8 @@ public class MailConfigTest {
       .withBody(msg)
       .withOutputFormat(MediaType.TEXT_PLAIN);
 
-    MailConfig mailConfigMock = PowerMockito.mock(MailConfig.class);
-    whenNew(MailConfig.class).withNoArguments().thenReturn(mailConfigMock);
+    MailConfig mailConfigSpy = PowerMockito.spy(new MailConfig());
+    whenNew(MailConfig.class).withNoArguments().thenReturn(mailConfigSpy);
 
     new MailServiceImpl(Vertx.vertx()).sendEmail(mapFrom(smtpConfiguration),
       mapFrom(emailEntity), asyncResult -> {});
@@ -75,7 +75,7 @@ public class MailConfigTest {
     verifyNew(MailConfig.class, Mockito.times(1))
       .withNoArguments();
 
-    verify(mailConfigMock, Mockito.times(1))
+    verify(mailConfigSpy, Mockito.times(1))
         .setAuthMethods(AUTH_METHODS);
   }
 }
