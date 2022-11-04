@@ -115,17 +115,6 @@ public class StubUtils {
     )).withTotalRecords(7);
   }
 
-  public static SmtpConfiguration createSmtpConfiguration(String user, String password,
-    String host, int port, String authMethods) {
-
-    return new SmtpConfiguration()
-      .withUsername(user)
-      .withPassword(password)
-      .withHost(host)
-      .withPort(port)
-      .withAuthMethods(authMethods);
-  }
-
   private static Config createSmtpConfig(SmtpEmail code, String value) {
     return createConfig(CONFIG_NAME_SMTP, code.name(), value);
   }
