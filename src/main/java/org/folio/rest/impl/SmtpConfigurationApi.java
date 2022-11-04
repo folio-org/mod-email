@@ -29,6 +29,7 @@ public class SmtpConfigurationApi implements org.folio.rest.jaxrs.resource.SmtpC
           asyncResultHandler.handle(succeededFuture(
             org.folio.rest.jaxrs.resource.SmtpConfiguration.GetSmtpConfigurationResponse
               .respond404WithTextPlain(failure.getMessage())));
+          return;
         }
         asyncResultHandler.handle(succeededFuture(
           org.folio.rest.jaxrs.resource.SmtpConfiguration.GetSmtpConfigurationResponse
@@ -64,6 +65,7 @@ public class SmtpConfigurationApi implements org.folio.rest.jaxrs.resource.SmtpC
           asyncResultHandler.handle(succeededFuture(
             org.folio.rest.jaxrs.resource.SmtpConfiguration.PutSmtpConfigurationResponse
               .respond404WithTextPlain(failure.getMessage())));
+          return;
         }
         asyncResultHandler.handle(succeededFuture(
           org.folio.rest.jaxrs.resource.SmtpConfiguration.PutSmtpConfigurationResponse
