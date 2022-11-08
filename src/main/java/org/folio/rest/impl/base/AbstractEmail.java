@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
@@ -215,34 +214,31 @@ public abstract class AbstractEmail {
       .map(EmailUtils::convertSmtpConfiguration)
       .compose(EmailUtils::validateSmtpConfiguration)
       .compose(smtpConfigurationService::createSmtpConfiguration)
-      .compose(smtpConfig -> deleteEntriesFromModConfig(smtpConfig, configurations, okapiClient));
+      .onSuccess(smtpConfig -> deleteEntriesFromModConfig(configurations, okapiClient));
   }
 
-  private Future<SmtpConfiguration> deleteEntriesFromModConfig(
-    SmtpConfiguration validSmtpConfiguration, Configurations configurationsToDelete,
+  private void deleteEntriesFromModConfig(Configurations configurationsToDelete,
     OkapiClient okapiClient) {
 
     logger.warn("Removing configuration from mod-config");
 
-    return CompositeFuture.all(configurationsToDelete.getConfigs().stream()
-        .map(Config::getId)
-        .map(id -> {
-          String path = format(DELETE_CONFIG_PATH_TEMPLATE, CONFIG_BASE_PATH, id);
+    configurationsToDelete.getConfigs().stream()
+      .map(Config::getId)
+      .forEach(id -> {
+        String path = format(DELETE_CONFIG_PATH_TEMPLATE, CONFIG_BASE_PATH, id);
 
-          return okapiClient.deleteAbs(path)
-            .send()
-            .compose(response -> {
-              if (response.statusCode() == HTTP_NO_CONTENT.toInt()) {
-                logger.info("Successfully deleted configuration entry {}", id);
-                return succeededFuture();
-              }
-              String errorMessage = format("Failed to delete configuration entry %s", id);
-              logger.error(errorMessage);
-              return failedFuture(new ConfigurationException(errorMessage));
-            });
-        })
-        .collect(Collectors.toList()))
-      .map(validSmtpConfiguration);
+        okapiClient.deleteAbs(path)
+          .send()
+          .compose(response -> {
+            if (response.statusCode() == HTTP_NO_CONTENT.toInt()) {
+              logger.info("Successfully deleted configuration entry {}", id);
+              return succeededFuture();
+            }
+            String errorMessage = format("Failed to delete configuration entry %s", id);
+            logger.error(errorMessage);
+            return failedFuture(new ConfigurationException(errorMessage));
+          });
+      });
   }
 
   protected Future<EmailEntity> sendEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
