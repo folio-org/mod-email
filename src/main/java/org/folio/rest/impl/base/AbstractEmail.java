@@ -183,8 +183,7 @@ public abstract class AbstractEmail {
     OkapiClient okapiClient = new OkapiClient(vertx, requestHeaders, webClientOptions);
 
     return fetchSmtpConfigurationFromModConfig(okapiClient)
-      .compose(configs -> copyConfigurationAndDeleteFromModConfig(configs, requestHeaders,
-        okapiClient));
+      .compose(configs -> copyConfigurationAndDeleteFromModConfig(configs, okapiClient));
   }
 
   private Future<Configurations> fetchSmtpConfigurationFromModConfig(OkapiClient okapiClient) {
@@ -208,7 +207,7 @@ public abstract class AbstractEmail {
   }
 
   private Future<SmtpConfiguration> copyConfigurationAndDeleteFromModConfig(
-    Configurations configurations, Map<String, String> requestHeaders, OkapiClient okapiClient) {
+    Configurations configurations, OkapiClient okapiClient) {
 
     return succeededFuture(configurations)
       .map(EmailUtils::convertSmtpConfiguration)

@@ -32,6 +32,7 @@ import org.apache.http.HttpStatus;
 import org.folio.rest.impl.base.AbstractAPITest;
 import org.folio.rest.jaxrs.model.Attachment;
 import org.folio.rest.jaxrs.model.EmailEntity;
+import org.junit.Before;
 import org.junit.Test;
 import org.subethamail.wiser.WiserMessage;
 
@@ -40,10 +41,15 @@ import io.vertx.core.json.JsonObject;
 import junit.framework.AssertionFailedError;
 
 public class SendingEmailTest extends AbstractAPITest {
-
+  
+  private int mockServerPort;
+  @Before
+  public void setUp() {
+    mockServerPort = userMockServer.port();
+  }
+  
   @Test
   public void sendTextEmail() throws Exception {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
     String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
@@ -74,7 +80,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void sendHtmlEmail() throws Exception {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
     String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
@@ -104,7 +109,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void sendHtmlEmailAttachments() throws Exception {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
     String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
@@ -150,7 +154,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void sendHtmlEmailAttachmentsWithoutData() throws Exception {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
     String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
@@ -188,8 +191,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void checkSendingEmailWithDifferentConfigs() throws Exception {
-    int mockServerPort = userMockServer.port();
-
     // init incorrect SMTP mock configuration
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
     String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
@@ -254,7 +255,6 @@ public class SendingEmailTest extends AbstractAPITest {
       "X-CUSTOM-HEADER", "customHeaderValue"
     );
 
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, createConfigurationsWithCustomHeaders(customHeaders));
     String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
@@ -299,7 +299,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldSucceedWhenBothLocalAndRemoteConfigsExistAndAreValid() throws Exception {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
     createWiserSmtpConfigurationInDb();
 
@@ -315,7 +314,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldSucceedWhenBothLocalAndRemoteConfigsExistAndRemoteIsInvalid() throws Exception {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getIncorrectConfigurations());
     createWiserSmtpConfigurationInDb();
 
@@ -324,7 +322,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldSucceedWhenBothLocalAndRemoteConfigsExistAndRemoteIsIncorrectForWiser() throws Exception {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
     createWiserSmtpConfigurationInDb();
 
@@ -333,7 +330,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldSucceedWhenOnlyRemoteConfigExistsAndIsValid() throws Exception {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
 
     sendEmailAndAssertDelivered();
@@ -342,7 +338,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldFailWhenNoneOfTheConfigsExist() {
-    int mockServerPort = userMockServer.port();
     initFailModConfigStub(mockServerPort);
 
     sendEmailAndAssertFailure(HttpStatus.SC_BAD_REQUEST);
@@ -350,7 +345,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldFailWhenOnlyRemoteConfigExistsAndIsInvalid() throws Exception {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getIncorrectConfigurations());
 
     sendEmailAndAssertFailure(HttpStatus.SC_OK);
@@ -358,7 +352,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldFailWhenOnlyRemoteConfigExistsAndIsIncorrectForWiser() throws Exception {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
 
     sendEmailAndAssertFailure(HttpStatus.SC_OK);
@@ -366,7 +359,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldSucceedWhenBothConfigsExistAndLocalIsInvalid() throws Exception {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
 
     createInvalidSmtpConfigurationInDb();
@@ -377,7 +369,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldFailWhenOnlyLocalConfigExistsAndIsInvalid() {
-    int mockServerPort = userMockServer.port();
     initFailModConfigStub(mockServerPort);
 
     createInvalidSmtpConfigurationInDb();
@@ -387,7 +378,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldFailWhenBothConfigsExistAndBothAreInvalid() {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getIncorrectConfigurations());
 
     createInvalidSmtpConfigurationInDb();
@@ -397,7 +387,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldFailWhenBothConfigsExistAndLocalIsInvalidAndRemoteIsIncorrectForWiser() {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
 
     createInvalidSmtpConfigurationInDb();
@@ -407,7 +396,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldFailWhenBothConfigsExistAndLocalIsIncorrectForWiser() throws Exception {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
 
     createIncorrectWiserSmtpConfigurationInDb();
@@ -417,7 +405,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldFailWhenOnlyLocalConfigExistsAndIsIncorrectForWiser() {
-    int mockServerPort = userMockServer.port();
     initFailModConfigStub(mockServerPort);
 
     createIncorrectWiserSmtpConfigurationInDb();
@@ -427,7 +414,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldFailWhenBothConfigsExistAndLocalIsIncorrectForWiserAndRemoteIsInvalid() {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getIncorrectConfigurations());
 
     createIncorrectWiserSmtpConfigurationInDb();
@@ -437,7 +423,6 @@ public class SendingEmailTest extends AbstractAPITest {
 
   @Test
   public void shouldFailWhenBothConfigsExistAndBothAreIncorrectForWiser() {
-    int mockServerPort = userMockServer.port();
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
 
     createIncorrectWiserSmtpConfigurationInDb();
