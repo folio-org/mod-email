@@ -181,14 +181,16 @@ public abstract class AbstractEmail {
   private Future<SmtpConfiguration> moveConfigsFromModConfigurationToLocalDb(
     Map<String, String> requestHeaders) {
 
-    return fetchSmtpConfigurationFromModConfig(requestHeaders)
-      .compose(configs -> copyConfigurationAndDeleteFromModConfig(configs, requestHeaders));
+    OkapiClient okapiClient = new OkapiClient(vertx, requestHeaders, webClientOptions);
+
+    return fetchSmtpConfigurationFromModConfig(okapiClient)
+      .compose(configs -> copyConfigurationAndDeleteFromModConfig(configs, requestHeaders,
+        okapiClient));
   }
 
-  private Future<Configurations> fetchSmtpConfigurationFromModConfig(Map<String, String> requestHeaders) {
+  private Future<Configurations> fetchSmtpConfigurationFromModConfig(OkapiClient okapiClient) {
     logger.warn("Failed to find SMTP configuration in the DB, fetching from mod-config");
 
-    OkapiClient okapiClient = new OkapiClient(vertx, requestHeaders, webClientOptions);
     String path = format(GET_CONFIG_PATH_TEMPLATE, CONFIG_BASE_PATH, MODULE_EMAIL_SMTP_SERVER);
 
     return okapiClient.getAbs(path)
@@ -207,22 +209,20 @@ public abstract class AbstractEmail {
   }
 
   private Future<SmtpConfiguration> copyConfigurationAndDeleteFromModConfig(
-    Configurations configurations, Map<String, String> requestHeaders) {
+    Configurations configurations, Map<String, String> requestHeaders, OkapiClient okapiClient) {
 
     return succeededFuture(configurations)
       .map(EmailUtils::convertSmtpConfiguration)
       .compose(EmailUtils::validateSmtpConfiguration)
       .compose(smtpConfigurationService::createSmtpConfiguration)
-      .compose(smtpConfig -> deleteEntriesFromModConfig(smtpConfig, configurations, requestHeaders));
+      .compose(smtpConfig -> deleteEntriesFromModConfig(smtpConfig, configurations, okapiClient));
   }
 
   private Future<SmtpConfiguration> deleteEntriesFromModConfig(
     SmtpConfiguration validSmtpConfiguration, Configurations configurationsToDelete,
-    Map<String, String> requestHeaders) {
+    OkapiClient okapiClient) {
 
     logger.warn("Removing configuration from mod-config");
-
-    OkapiClient okapiClient = new OkapiClient(vertx, requestHeaders, webClientOptions);
 
     return CompositeFuture.all(configurationsToDelete.getConfigs().stream()
         .map(Config::getId)
