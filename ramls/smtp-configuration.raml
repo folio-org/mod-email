@@ -10,75 +10,47 @@ documentation:
     content: <b>API for managing SMTP server configuration</b>
 
 types:
-  errors: !include raml-util/schemas/errors.schema
+  smtp-configurations: !include smtp-configurations.json
   smtp-configuration: !include smtp-configuration.json
+  errors: !include raml-util/schemas/errors.schema
+  parameters: !include raml-util/schemas/parameters.schema
 
 traits:
+  language: !include raml-util/traits/language.raml
+  pageable: !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
   validate: !include raml-util/traits/validation.raml
 
+resourceTypes:
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item: !include raml-util/rtypes/item-collection.raml
+
 /smtp-configuration:
+  displayName: SMTP configurations
+  type:
+    collection:
+      exampleCollection: !include examples/smtp-configurations.sample
+      exampleItem: !include examples/smtp-configuration.sample
+      schemaCollection: smtp-configurations
+      schemaItem: smtp-configuration
   get:
-    description: Get SMTP configuration
-    responses:
-      200:
-        body:
-          application/json:
-            type: smtp-configuration
-            example: !include examples/smtp-configuration.sample
-      404:
-        description: "Not found"
-        body:
-          text/plain:
-            example: "Not found"
-      500:
-        description: "Internal server error"
-        body:
-          text/plain:
-            example: "Internal server error"
+    is: [pageable,
+         searchable: {description: "by using CQL", example: "ssl=true"}]
   post:
     is: [validate]
     body:
       application/json:
         type: smtp-configuration
-    responses:
-      201:
-        description: "SMTP configuration has been created"
-        body:
-          application/json:
-            type: smtp-configuration
-      500:
-        description: "Internal server error"
-        body:
-          text/plain:
-            example: "Internal server error"
-  put:
-    is: [validate]
-    body:
-      application/json:
-        type: smtp-configuration
-    responses:
-      200:
-        description: "SMTP configuration has been updated"
-        body:
-          application/json:
-            type: smtp-configuration
-      404:
-        description: "Not found"
-        body:
-          text/plain:
-            example: "Not found"
-      500:
-        description: "Internal server error"
-        body:
-          text/plain:
-            example: "Internal server error"
-  delete:
-    description: "Delete Lost Item Fee Policy by id"
-    responses:
-      204:
-        description: "SMTP configuration has been deleted"
-      500:
-        description: "Internal server error"
-        body:
-          text/plain:
-            example: "Internal server error"
+  /{smtpConfigurationId}:
+    type:
+      collection-item:
+        exampleItem: !include examples/smtp-configuration.sample
+        schema: smtp-configuration
+    get:
+      description: "Get SMTP configuration"
+    put:
+      description: "Update SMTP configuration"
+      is: [ validate ]
+    delete:
+      description: "Delete SMTP configuration"
+      is: [ language ]

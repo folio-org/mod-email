@@ -15,6 +15,7 @@ import static org.folio.util.StubUtils.getWiserMockConfigurations;
 import static org.folio.util.StubUtils.initFailModConfigStub;
 import static org.folio.util.StubUtils.initModConfigStub;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collections;
@@ -35,6 +36,7 @@ import org.junit.Test;
 import org.subethamail.wiser.WiserMessage;
 
 import io.restassured.response.Response;
+import io.vertx.core.json.JsonObject;
 import junit.framework.AssertionFailedError;
 
 public class SendingEmailTest extends AbstractAPITest {
@@ -512,10 +514,16 @@ public class SendingEmailTest extends AbstractAPITest {
   }
 
   private void checkThatCorrectConfigCopiedToLocalDb() {
-    get(REST_PATH_SMTP_CONFIGURATION)
+    Response response = get(REST_PATH_SMTP_CONFIGURATION)
       .then()
       .statusCode(HttpStatus.SC_OK)
-      .body(matchesJson(buildWiserSmtpConfiguration(), List.of("id", "ssl", "trustAll",
-        "loginOption", "startTlsOptions", "authMethods", "from", "emailHeaders")));
+      .extract()
+      .response();
+
+    String configuration = new JsonObject(response.body().asString())
+      .getJsonArray("smtpConfigurations")
+      .getJsonObject(0)
+      .encodePrettily();
+    assertThat(configuration, matchesJson(buildWiserSmtpConfiguration(), List.of("id")));
   }
 }

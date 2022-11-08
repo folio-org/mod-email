@@ -1,7 +1,9 @@
 package org.folio.rest.impl;
 
+import static java.lang.String.format;
 import static org.folio.matchers.JsonMatchers.matchesJson;
 import static org.folio.util.StubUtils.buildSmtpConfiguration;
+import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,73 +16,173 @@ import io.restassured.response.Response;
 import io.vertx.core.json.JsonObject;
 
 public class SmtpConfigurationTest extends AbstractAPITest {
+  public static final String ITEM_PATH_TEMPLATE = "%s/%s";
 
   @Test
-  public void postSmtpConfigurationWithId() {
-    JsonObject smtpConfiguration = buildSmtpConfiguration()
-      .put("id", UUID.randomUUID().toString());
+  public void postSmtpConfigurationWithIdShouldSucceed() {
+    String id = UUID.randomUUID().toString();
 
-    post(REST_PATH_SMTP_CONFIGURATION, smtpConfiguration.encodePrettily())
+    JsonObject smtpConfiguration = buildSmtpConfiguration().put("id", id);
+
+    Response postResponse = post(REST_PATH_SMTP_CONFIGURATION, smtpConfiguration.encodePrettily())
       .then()
-      .statusCode(HttpStatus.SC_CREATED)
-      .body(matchesJson(smtpConfiguration, List.of("metadata")));
+      .statusCode(HttpStatus.SC_CREATED).extract()
+      .response();
+
+    assertEquals(new JsonObject(postResponse.body().asString()).getString("id"), id);
   }
 
   @Test
-  public void smtpConfigurationCrud() {
+  public void smtpConfigurationPost() {
     JsonObject smtpConfiguration = buildSmtpConfiguration();
 
     post(REST_PATH_SMTP_CONFIGURATION, smtpConfiguration.encodePrettily())
       .then()
       .statusCode(HttpStatus.SC_CREATED)
       .body(matchesJson(smtpConfiguration, List.of("id", "metadata")));
+  }
 
-    Response getResponse = get(REST_PATH_SMTP_CONFIGURATION)
+  @Test
+  public void smtpConfigurationGetAll() {
+    JsonObject smtpConfiguration = buildSmtpConfiguration();
+
+    Response postResponse = post(REST_PATH_SMTP_CONFIGURATION, smtpConfiguration.encodePrettily())
       .then()
-      .statusCode(HttpStatus.SC_OK)
-      .body(matchesJson(smtpConfiguration, List.of("id", "metadata")))
       .extract()
       .response();
 
-    String id = new JsonObject(getResponse.body().asString()).getString("id");
-
-    // PUT without an ID should succeed
-    JsonObject updatedSmtpConfiguration = smtpConfiguration
-      .copy()
-      .put("username", "updated-username");
-    put(REST_PATH_SMTP_CONFIGURATION, updatedSmtpConfiguration.encodePrettily())
-      .then()
-      .statusCode(HttpStatus.SC_OK)
-      .body(matchesJson(updatedSmtpConfiguration, List.of("id", "metadata")));
-
-    // PUT with correct ID should succeed
-    JsonObject updatedSmtpConfigurationWithId = smtpConfiguration
-      .copy()
-      .put("username", "updated-username-2")
-      .put("id", id);
-    put(REST_PATH_SMTP_CONFIGURATION, updatedSmtpConfigurationWithId.encodePrettily())
-      .then()
-      .statusCode(HttpStatus.SC_OK)
-      .body(matchesJson(updatedSmtpConfigurationWithId, List.of("metadata")));
-
-    // PUT with wrong ID should return 404
-    put(REST_PATH_SMTP_CONFIGURATION,
-      updatedSmtpConfiguration.put("id", UUID.randomUUID().toString()).encodePrettily())
-      .then()
-      .statusCode(HttpStatus.SC_NOT_FOUND);
+    JsonObject postResponseJson = new JsonObject(postResponse.body().asString());
+    JsonObject smtpConfigurations = new JsonObject()
+      .put("smtpConfigurations", List.of(postResponseJson))
+      .put("totalRecords", 1);
 
     get(REST_PATH_SMTP_CONFIGURATION)
       .then()
       .statusCode(HttpStatus.SC_OK)
-      .body(matchesJson(updatedSmtpConfigurationWithId, List.of("metadata")));
+      .body(matchesJson(smtpConfigurations, List.of("metadata")));
+  }
 
-    delete(REST_PATH_SMTP_CONFIGURATION)
+  @Test
+  public void smtpConfigurationGetById() {
+    JsonObject smtpConfiguration = buildSmtpConfiguration();
+
+    Response postResponse = post(REST_PATH_SMTP_CONFIGURATION, smtpConfiguration.encodePrettily())
       .then()
-      .statusCode(HttpStatus.SC_NO_CONTENT);
+      .extract()
+      .response();
 
-    get(REST_PATH_SMTP_CONFIGURATION)
+    String postResponseId = new JsonObject(postResponse.body().asString()).getString("id");
+
+    get(pathToSmtpConfigurationById(postResponseId))
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .body(matchesJson(smtpConfiguration.put("id", postResponseId), List.of("metadata")));
+  }
+
+  @Test
+  public void smtpConfigurationGetByIdShouldReturn404WhenIdIsWrong() {
+    JsonObject smtpConfiguration = buildSmtpConfiguration();
+
+    post(REST_PATH_SMTP_CONFIGURATION, smtpConfiguration.encodePrettily());
+
+    get(pathToSmtpConfigurationById(UUID.randomUUID().toString()))
       .then()
       .statusCode(HttpStatus.SC_NOT_FOUND);
   }
 
+  @Test
+  public void smtpConfigurationPut() {
+    JsonObject smtpConfiguration = buildSmtpConfiguration();
+
+    Response postResponse = post(REST_PATH_SMTP_CONFIGURATION, smtpConfiguration.encodePrettily())
+      .then()
+      .extract()
+      .response();
+
+    String postResponseId = new JsonObject(postResponse.body().asString()).getString("id");
+
+    JsonObject smtpConfigurationToPut = smtpConfiguration
+      .copy()
+      .put("id", postResponseId)
+      .put("username", "updated-username");
+
+    put(pathToSmtpConfigurationById(postResponseId), smtpConfigurationToPut.encodePrettily())
+      .then()
+      .statusCode(HttpStatus.SC_NO_CONTENT);
+
+    get(pathToSmtpConfigurationById(postResponseId))
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .body(matchesJson(smtpConfigurationToPut, List.of("metadata")));
+  }
+
+  @Test
+  public void smtpConfigurationPutShouldReturn404WhenIdPathParameterIsWrong() {
+    JsonObject smtpConfiguration = buildSmtpConfiguration();
+
+    Response postResponse = post(REST_PATH_SMTP_CONFIGURATION, smtpConfiguration.encodePrettily())
+      .then()
+      .extract()
+      .response();
+
+    String postResponseId = new JsonObject(postResponse.body().asString()).getString("id");
+
+    JsonObject smtpConfigurationToPut = smtpConfiguration
+      .copy()
+      .put("id", postResponseId);
+
+    String idPathParameter = UUID.randomUUID().toString();
+
+    put(pathToSmtpConfigurationById(idPathParameter),
+      smtpConfigurationToPut.encodePrettily())
+      .then()
+      .statusCode(HttpStatus.SC_NOT_FOUND);
+  }
+
+  @Test
+  public void smtpConfigurationDelete() {
+    JsonObject smtpConfiguration = buildSmtpConfiguration();
+
+    Response postResponse = post(REST_PATH_SMTP_CONFIGURATION, smtpConfiguration.encodePrettily())
+      .then()
+      .extract()
+      .response();
+
+    String postResponseId = new JsonObject(postResponse.body().asString()).getString("id");
+
+    delete(pathToSmtpConfigurationById(postResponseId))
+      .then()
+      .statusCode(HttpStatus.SC_NO_CONTENT);
+
+    get(pathToSmtpConfigurationById(postResponseId))
+      .then()
+      .statusCode(HttpStatus.SC_NOT_FOUND);
+  }
+
+  @Test
+  public void smtpConfigurationDeleteShouldReturn404WhenIdPathParameterIsWrong() {
+    JsonObject smtpConfiguration = buildSmtpConfiguration();
+
+    Response postResponse = post(REST_PATH_SMTP_CONFIGURATION, smtpConfiguration.encodePrettily())
+      .then()
+      .extract()
+      .response();
+
+    String postResponseId = new JsonObject(postResponse.body().asString()).getString("id");
+
+    String idPathParameter = UUID.randomUUID().toString();
+
+    delete(pathToSmtpConfigurationById(idPathParameter))
+      .then()
+      .statusCode(HttpStatus.SC_NOT_FOUND);
+
+    get(pathToSmtpConfigurationById(postResponseId))
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .body(matchesJson(smtpConfiguration.put("id", postResponseId), List.of("metadata")));;
+  }
+
+  private String pathToSmtpConfigurationById(String id) {
+    return format(ITEM_PATH_TEMPLATE, REST_PATH_SMTP_CONFIGURATION, id);
+  }
 }

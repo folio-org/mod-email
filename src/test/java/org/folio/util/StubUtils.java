@@ -166,7 +166,14 @@ public class StubUtils {
       .put("host", "localhost")
       .put("port", 2500)
       .put("username", "user")
-      .put("password", "password");
+      .put("password", "password")
+      .put("ssl", false)
+      .put("trustAll", false)
+      .put("loginOption", "NONE")
+      .put("startTlsOptions", "OPTIONAL")
+      .put("authMethods", "")
+      .put("from", "")
+      .put("emailHeaders", List.of());
   }
 
   public static JsonObject buildIncorrectWiserSmtpConfiguration() {

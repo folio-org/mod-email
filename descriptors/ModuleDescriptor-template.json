@@ -56,23 +56,28 @@
       "handlers": [
         {
           "methods": ["GET"],
-          "pathPattern": "/smtp-configuration",
-          "permissionsRequired": ["email.smtp-configuration.get"]
+          "pathPattern": "/smtp-configurations",
+          "permissionsRequired": ["email.smtp-configuration.collection.get"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/smtp-configurations/{smtpConfigurationId}",
+          "permissionsRequired": ["email.smtp-configuration.item.get"]
         },
         {
           "methods": ["POST"],
           "pathPattern": "/smtp-configuration",
-          "permissionsRequired": ["email.smtp-configuration.post"]
+          "permissionsRequired": ["email.smtp-configuration.item.post"]
         },
         {
           "methods": ["PUT"],
-          "pathPattern": "/smtp-configuration",
-          "permissionsRequired": ["email.smtp-configuration.put"]
+          "pathPattern": "/smtp-configuration/{smtpConfigurationId}",
+          "permissionsRequired": ["email.smtp-configuration.item.put"]
         },
         {
           "methods": ["DELETE"],
-          "pathPattern": "/smtp-configuration",
-          "permissionsRequired": ["email.smtp-configuration.delete"]
+          "pathPattern": "/smtp-configuration/{smtpConfigurationId}",
+          "permissionsRequired": ["email.smtp-configuration.item.delete"]
         }
       ]
     },
@@ -151,22 +156,27 @@
       "visible": false
     },
     {
-      "permissionName": "email.smtp-configuration.get",
+      "permissionName": "email.smtp-configuration.collection.get",
+      "displayName": "get SMTP configurations",
+      "description": "get configuration of the SMTP server"
+    },
+    {
+      "permissionName": "email.smtp-configuration.item.get",
       "displayName": "get SMTP configuration",
       "description": "get configuration of the SMTP server"
     },
     {
-      "permissionName": "email.smtp-configuration.post",
+      "permissionName": "email.smtp-configuration.item.post",
       "displayName": "create SMTP configuration",
       "description": "create configuration of the SMTP server"
     },
     {
-      "permissionName": "email.smtp-configuration.put",
+      "permissionName": "email.smtp-configuration.item.put",
       "displayName": "update SMTP configuration",
       "description": "update configuration of the SMTP server"
     },
     {
-      "permissionName": "email.smtp-configuration.delete",
+      "permissionName": "email.smtp-configuration.item.delete",
       "displayName": "delete SMTP configuration",
       "description": "delete configuration of the SMTP server"
     },
@@ -175,10 +185,11 @@
       "displayName": "SMTP configuration - all permissions",
       "description": "Entire set of permissions needed to manage SMTP configuration",
       "subPermissions": [
-        "email.smtp-configuration.get",
-        "email.smtp-configuration.post",
-        "email.smtp-configuration.put",
-        "email.smtp-configuration.delete"
+        "email.smtp-configuration.collection.get",
+        "email.smtp-configuration.item.get",
+        "email.smtp-configuration.item.post",
+        "email.smtp-configuration.item.put",
+        "email.smtp-configuration.item.delete"
       ],
       "visible": false
     }
