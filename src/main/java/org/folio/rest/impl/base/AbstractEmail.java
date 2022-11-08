@@ -54,8 +54,9 @@ import io.vertx.ext.web.client.WebClientOptions;
 
 public abstract class AbstractEmail {
 
-  private static final String GET_CONFIG_PATH = "/configurations/entries?query=module==%s";
-  private static final String DELETE_CONFIG_PATH = "/configurations/entries/%s";
+  private static final String CONFIG_BASE_PATH = "/configurations/entries";
+  private static final String GET_CONFIG_PATH_TEMPLATE = "%s?query=module==%s";
+  private static final String DELETE_CONFIG_PATH_TEMPLATE = "%s/%s";
   private static final String MODULE_EMAIL_SMTP_SERVER = "SMTP_SERVER";
   private static final String LOOKUP_TIMEOUT = "lookup.timeout";
   private static final String LOOKUP_TIMEOUT_VAL = "1000";
@@ -188,7 +189,7 @@ public abstract class AbstractEmail {
     logger.warn("Failed to find SMTP configuration in the DB, fetching from mod-config");
 
     OkapiClient okapiClient = new OkapiClient(vertx, requestHeaders, webClientOptions);
-    String path = format(GET_CONFIG_PATH, MODULE_EMAIL_SMTP_SERVER);
+    String path = format(GET_CONFIG_PATH_TEMPLATE, CONFIG_BASE_PATH, MODULE_EMAIL_SMTP_SERVER);
 
     return okapiClient.getAbs(path)
       .send()
@@ -226,7 +227,7 @@ public abstract class AbstractEmail {
     return CompositeFuture.all(configurationsToDelete.getConfigs().stream()
         .map(Config::getId)
         .map(id -> {
-          String path = format(DELETE_CONFIG_PATH, id);
+          String path = format(DELETE_CONFIG_PATH_TEMPLATE, CONFIG_BASE_PATH, id);
 
           return okapiClient.deleteAbs(path)
             .send()

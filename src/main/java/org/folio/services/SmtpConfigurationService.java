@@ -21,7 +21,7 @@ public class SmtpConfigurationService {
 
   public Future<SmtpConfiguration> getSmtpConfiguration() {
     return repository.getAllWithLimit(1)
-      .compose(configs -> configs.size() < 1
+      .compose(configs -> configs.isEmpty()
         ? failedFuture(new SmtpConfigurationNotFoundException())
         : succeededFuture(configs.get(0)));
   }
