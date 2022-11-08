@@ -1,18 +1,18 @@
 package org.folio.repository;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
+import org.folio.exceptions.FailedToCreateRepositoryException;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
-import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.persist.interfaces.Results;
+import org.folio.rest.tools.utils.ModuleName;
 
 import io.vertx.core.Future;
 import io.vertx.sqlclient.RowSet;
@@ -35,7 +35,7 @@ public class BaseRepository<T> {
     try {
       this.cql2pgJson = new CQL2PgJSON(tableName + ".jsonb");
     } catch (FieldException e) {
-      throw new RuntimeException(e);
+      throw new FailedToCreateRepositoryException(e);
     }
   }
 
