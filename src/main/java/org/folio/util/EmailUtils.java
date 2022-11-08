@@ -73,9 +73,10 @@ public class EmailUtils {
   }
 
   public static Future<SmtpConfiguration> validateSmtpConfiguration(SmtpConfiguration smtpConfiguration) {
-    boolean configurationIsValid =  isNoneBlank(smtpConfiguration.getHost(),
-      ofNullable(smtpConfiguration.getPort()).map(String::valueOf).orElse(null),
-      smtpConfiguration.getUsername(), smtpConfiguration.getPassword());
+    boolean configurationIsValid =  smtpConfiguration.getPort() != null && isNoneBlank(
+      smtpConfiguration.getHost(),
+      smtpConfiguration.getUsername(),
+      smtpConfiguration.getPassword());
 
     if (configurationIsValid) {
       return succeededFuture(smtpConfiguration);
