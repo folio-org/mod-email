@@ -5,7 +5,7 @@
   "type": "object",
   "properties": {
     "id": {
-      "description":"Unique UUID of the email",
+      "description":"Unique UUID of the configuration",
       "$ref": "raml-util/schemas/uuid.schema"
     },
     "host": {
