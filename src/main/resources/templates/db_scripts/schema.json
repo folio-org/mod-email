@@ -1,5 +1,11 @@
 {
-  "scripts": [],
+  "scripts": [
+    {
+      "run": "after",
+      "snippetPath": "addOneRowConstraintToSmtpConfiguration.sql",
+      "fromModuleVersion": "1.14.1"
+    }
+  ],
   "tables": [
     {
       "tableName": "email_statistics",

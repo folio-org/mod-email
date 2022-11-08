@@ -4,6 +4,7 @@ import static java.lang.String.format;
 import static org.folio.matchers.JsonMatchers.matchesJson;
 import static org.folio.util.StubUtils.buildSmtpConfiguration;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,7 +27,8 @@ public class SmtpConfigurationTest extends AbstractAPITest {
 
     Response postResponse = post(REST_PATH_SMTP_CONFIGURATION, smtpConfiguration.encodePrettily())
       .then()
-      .statusCode(HttpStatus.SC_CREATED).extract()
+      .statusCode(HttpStatus.SC_CREATED)
+      .extract()
       .response();
 
     assertEquals(new JsonObject(postResponse.body().asString()).getString("id"), id);
@@ -180,6 +182,26 @@ public class SmtpConfigurationTest extends AbstractAPITest {
       .then()
       .statusCode(HttpStatus.SC_OK)
       .body(matchesJson(smtpConfiguration.put("id", postResponseId), List.of("metadata")));;
+  }
+
+  @Test
+  public void attemptToPostMoreThanOneSmtpConfigurationShouldFail() {
+    post(REST_PATH_SMTP_CONFIGURATION, buildSmtpConfiguration().encodePrettily())
+      .then()
+      .statusCode(HttpStatus.SC_CREATED);
+
+    Response response = post(REST_PATH_SMTP_CONFIGURATION, buildSmtpConfiguration().encodePrettily())
+      .then()
+      .statusCode(HttpStatus.SC_UNPROCESSABLE_ENTITY)
+      .extract()
+      .response();
+
+    String errorMessage = new JsonObject(response.body().asString())
+      .getJsonArray("errors")
+      .getJsonObject(0)
+      .getString("message");
+
+    assertTrue(errorMessage.contains("value already exists in table smtp_configuration"));
   }
 
   private String pathToSmtpConfigurationById(String id) {
