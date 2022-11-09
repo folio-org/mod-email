@@ -1,0 +1,56 @@
+#%RAML 1.0
+
+title: SMTP server configuration
+version: v1.0
+protocols: [ HTTP, HTTPS ]
+baseUri: http://localhost
+
+documentation:
+  - title: SMTP server configuration API
+    content: <b>API for managing SMTP server configuration</b>
+
+types:
+  smtp-configurations: !include smtp-configurations.json
+  smtp-configuration: !include smtp-configuration.json
+  errors: !include raml-util/schemas/errors.schema
+  parameters: !include raml-util/schemas/parameters.schema
+
+traits:
+  language: !include raml-util/traits/language.raml
+  pageable: !include raml-util/traits/pageable.raml
+  searchable: !include raml-util/traits/searchable.raml
+  validate: !include raml-util/traits/validation.raml
+
+resourceTypes:
+  collection: !include raml-util/rtypes/collection.raml
+  collection-item: !include raml-util/rtypes/item-collection.raml
+
+/smtp-configuration:
+  displayName: SMTP configurations
+  type:
+    collection:
+      exampleCollection: !include examples/smtp-configurations.sample
+      exampleItem: !include examples/smtp-configuration.sample
+      schemaCollection: smtp-configurations
+      schemaItem: smtp-configuration
+  get:
+    is: [pageable,
+         searchable: {description: "by using CQL", example: "ssl=true"}]
+  post:
+    is: [validate]
+    body:
+      application/json:
+        type: smtp-configuration
+  /{smtpConfigurationId}:
+    type:
+      collection-item:
+        exampleItem: !include examples/smtp-configuration.sample
+        schema: smtp-configuration
+    get:
+      description: "Get SMTP configuration"
+    put:
+      description: "Update SMTP configuration"
+      is: [ validate ]
+    delete:
+      description: "Delete SMTP configuration"
+      is: [ language ]

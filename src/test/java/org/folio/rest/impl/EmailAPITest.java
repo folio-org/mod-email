@@ -51,7 +51,7 @@ public class EmailAPITest extends AbstractAPITest {
     initFailModConfigStub(mockServerPort);
 
     String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", null);
-    String expectedErrMsg = "Error looking up config at url";
+    String expectedErrMsg = "Error looking up config at";
 
     post(REST_PATH_EMAIL, okapiEmailEntity)
       .then()

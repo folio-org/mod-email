@@ -1,5 +1,7 @@
 package org.folio.rest.impl;
 
+import static io.vertx.core.json.JsonObject.mapFrom;
+import static org.folio.util.StubUtils.buildSmtpConfiguration;
 import static org.folio.util.StubUtils.createConfigurations;
 import static org.folio.util.StubUtils.initModConfigStub;
 import static org.mockito.Mockito.verify;
@@ -11,6 +13,7 @@ import javax.ws.rs.core.MediaType;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.rest.jaxrs.model.SmtpConfiguration;
 import org.folio.services.email.impl.MailServiceImpl;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,7 +29,6 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 
 import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mail.MailConfig;
 
 @RunWith(PowerMockRunner.class)
@@ -49,6 +51,9 @@ public class MailConfigTest {
       "2500", AUTH_METHODS);
     initModConfigStub(mockServer.port(), configurations);
 
+    SmtpConfiguration smtpConfiguration = buildSmtpConfiguration("user", "pws", "localhost",
+      2500, AUTH_METHODS);
+
     String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
     String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
     String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
@@ -61,16 +66,16 @@ public class MailConfigTest {
       .withBody(msg)
       .withOutputFormat(MediaType.TEXT_PLAIN);
 
-    MailConfig mailConfigMock = PowerMockito.mock(MailConfig.class);
-    whenNew(MailConfig.class).withNoArguments().thenReturn(mailConfigMock);
+    MailConfig mailConfigSpy = PowerMockito.spy(new MailConfig());
+    whenNew(MailConfig.class).withNoArguments().thenReturn(mailConfigSpy);
 
-    new MailServiceImpl(Vertx.vertx()).sendEmail(JsonObject.mapFrom(configurations),
-      JsonObject.mapFrom(emailEntity), asyncResult -> {});
+    new MailServiceImpl(Vertx.vertx()).sendEmail(mapFrom(smtpConfiguration),
+      mapFrom(emailEntity), asyncResult -> {});
 
     verifyNew(MailConfig.class, Mockito.times(1))
       .withNoArguments();
 
-    verify(mailConfigMock, Mockito.times(1))
+    verify(mailConfigSpy, Mockito.times(1))
         .setAuthMethods(AUTH_METHODS);
   }
 }
