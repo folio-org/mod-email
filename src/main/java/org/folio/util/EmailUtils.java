@@ -2,7 +2,6 @@ package org.folio.util;
 
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
-import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
