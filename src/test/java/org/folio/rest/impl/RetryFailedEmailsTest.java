@@ -121,6 +121,7 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
 
     verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
     initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
+    deleteLocalConfigurationAndWait();
     runRetryJobAndWaitForResult(1, DELIVERED, 2, false, MESSAGE_WAS_DELIVERED);
   }
 

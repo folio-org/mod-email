@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Collection of SMTP configurations",
+  "type": "object",
+  "properties": {
+    "smtpConfigurations": {
+      "description": "List of SMTP configurations",
+      "id": "smtpConfigurations",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "$ref": "smtp-configuration.json"
+      }
+    },
+    "totalRecords": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "smtpConfigurations",
+    "totalRecords"
+  ]
+}

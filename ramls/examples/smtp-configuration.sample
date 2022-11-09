@@ -1,0 +1,19 @@
+{
+  "id": "65de6432-be11-48ba-9686-a65101634040",
+  "host": "localhost",
+  "port": 502,
+  "username": "username",
+  "password": "password",
+  "ssl": true,
+  "trustAll": false,
+  "loginOption": "REQUIRED",
+  "startTlsOptions": "DISABLED",
+  "authMethods": "CRAM-MD5 LOGIN PLAIN",
+  "from": "noreply@folio.org",
+  "emailHeaders": [
+    {
+      "name": "Reply-To",
+      "value": "noreply@folio.org"
+    }
+  ]
+}

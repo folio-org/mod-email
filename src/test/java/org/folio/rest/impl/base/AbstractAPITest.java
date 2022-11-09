@@ -7,6 +7,7 @@ import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -52,6 +53,7 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
+import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
@@ -75,6 +77,7 @@ public abstract class AbstractAPITest {
 
   private static final Logger logger = LogManager.getLogger(AbstractAPITest.class);
 
+  protected static final String SMTP_CONFIGURATION_TABLE_NAME = "smtp_configuration";
   private static final int DEFAULT_LIMIT = 100;
   private static final int POST_TENANT_TIMEOUT = 10000;
   private static final String HTTP_PORT = "http.port";
@@ -86,10 +89,11 @@ public abstract class AbstractAPITest {
   private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
 
   protected static final String REST_PATH_EMAIL = "/email";
+  protected static final String REST_PATH_SMTP_CONFIGURATION = "/smtp-configuration";
   private static final String PATH_WITH_QUERY_TEMPLATE = "%s?query=%s&limit=%s";
   protected static final String ADDRESS_TEMPLATE = "%s@localhost";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
-  private static final String MESSAGE_NOT_FOUND = "The message for the sender: `%s` was not found on the SMTP server";
+  protected static final String MESSAGE_NOT_FOUND = "The message for the sender: `%s` was not found on the SMTP server";
   protected static final String FAIL_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message:";
 
   private static final String REST_DELETE_BATCH_EMAILS = "/delayedTask/expiredMessages";
@@ -186,9 +190,25 @@ public abstract class AbstractAPITest {
           logger.error(event.cause());
           context.fail(event.cause());
         } else {
-          async.complete();
+          deleteLocalConfiguration()
+            .onComplete(eventConfig -> {
+              if (eventConfig.failed()) {
+                logger.error(eventConfig.cause());
+                context.fail(eventConfig.cause());
+              } else {
+                async.complete();
+              }
+            });
         }
       });
+  }
+
+  protected Future<RowSet<Row>> deleteLocalConfiguration() {
+    return postgresClient.delete(SMTP_CONFIGURATION_TABLE_NAME, new Criterion());
+  }
+
+  protected void deleteLocalConfigurationAndWait() {
+    Awaitility.await().until(deleteLocalConfiguration()::isComplete);;
   }
 
   @After
@@ -206,6 +226,11 @@ public abstract class AbstractAPITest {
       .get(String.format(PATH_WITH_QUERY_TEMPLATE, REST_PATH_EMAIL, query, DEFAULT_LIMIT));
   }
 
+  protected Response get(String path) {
+    return getRequestSpecification()
+      .get(path);
+  }
+
   protected Response post(String path) {
     return getRequestSpecification()
       .post(path);
@@ -215,6 +240,17 @@ public abstract class AbstractAPITest {
     return getRequestSpecification()
       .body(body)
       .post(path);
+  }
+
+  protected Response put(String path, String body) {
+    return getRequestSpecification()
+      .body(body)
+      .put(path);
+  }
+
+  protected Response delete(String path) {
+    return getRequestSpecification()
+      .delete(path);
   }
 
   /**
@@ -279,6 +315,21 @@ public abstract class AbstractAPITest {
     checkAddress(emailEntity.getTo(), recipients);
   }
 
+  protected void checkAbsenceOfMessagesOnWiserServer(WiserMessage wiserMessage,
+    EmailEntity emailEntity) throws MessagingException {
+
+    assertTrue(wiserMessage.toString().contains(emailEntity.getBody()));
+
+    MimeMessage message = wiserMessage.getMimeMessage();
+    assertEquals(emailEntity.getHeader(), message.getSubject());
+
+    Address[] from = message.getFrom();
+    checkAddress(emailEntity.getFrom(), from);
+
+    Address[] recipients = message.getAllRecipients();
+    checkAddress(emailEntity.getTo(), recipients);
+  }
+
   /**
    * Check stored emails in the database
    */
@@ -305,6 +356,21 @@ public abstract class AbstractAPITest {
 
     assertTrue(StringUtils.isNoneBlank(entity.getMessage()));
     assertTrue(StringUtils.isNoneBlank(entity.getStatus().value()));
+  }
+
+  protected void checkAbsenceOfStoredEmailsInDb(EmailEntity emailEntity, Status status) {
+    Response responseDb = getEmails(status)
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+
+    List<EmailEntity> emailEntities = convertEntriesToJson(responseDb).getEmailEntity();
+    Optional<EmailEntity> emailEntityOpt = emailEntities.stream()
+      .filter(entity -> emailEntity.getTo().equals(entity.getTo()))
+      .findFirst();
+
+    assertFalse(emailEntityOpt.isPresent());
   }
 
   /**
