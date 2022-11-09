@@ -301,14 +301,12 @@ public class SendingEmailTest extends AbstractAPITest {
   public void shouldSucceedWhenBothLocalAndRemoteConfigsExistAndAreValid() throws Exception {
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
     createWiserSmtpConfigurationInDb();
-
     sendEmailAndAssertDelivered();
   }
 
   @Test
   public void shouldSucceedWhenOnlyLocalConfigExistsAndIsValid() throws Exception {
     createWiserSmtpConfigurationInDb();
-
     sendEmailAndAssertDelivered();
   }
 
@@ -316,7 +314,6 @@ public class SendingEmailTest extends AbstractAPITest {
   public void shouldSucceedWhenBothLocalAndRemoteConfigsExistAndRemoteIsInvalid() throws Exception {
     initModConfigStub(mockServerPort, getIncorrectConfigurations());
     createWiserSmtpConfigurationInDb();
-
     sendEmailAndAssertDelivered();
   }
 
@@ -324,14 +321,12 @@ public class SendingEmailTest extends AbstractAPITest {
   public void shouldSucceedWhenBothLocalAndRemoteConfigsExistAndRemoteIsIncorrectForWiser() throws Exception {
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
     createWiserSmtpConfigurationInDb();
-
     sendEmailAndAssertDelivered();
   }
 
   @Test
   public void shouldSucceedWhenOnlyRemoteConfigExistsAndIsValid() throws Exception {
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
-
     sendEmailAndAssertDelivered();
     checkThatCorrectConfigCopiedToLocalDb();
   }
@@ -339,30 +334,25 @@ public class SendingEmailTest extends AbstractAPITest {
   @Test
   public void shouldFailWhenNoneOfTheConfigsExist() {
     initFailModConfigStub(mockServerPort);
-
     sendEmailAndAssertFailure(HttpStatus.SC_BAD_REQUEST);
   }
 
   @Test
   public void shouldFailWhenOnlyRemoteConfigExistsAndIsInvalid() throws Exception {
     initModConfigStub(mockServerPort, getIncorrectConfigurations());
-
     sendEmailAndAssertFailure(HttpStatus.SC_OK);
   }
 
   @Test
   public void shouldFailWhenOnlyRemoteConfigExistsAndIsIncorrectForWiser() throws Exception {
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
-
     sendEmailAndAssertFailure(HttpStatus.SC_OK);
   }
 
   @Test
   public void shouldSucceedWhenBothConfigsExistAndLocalIsInvalid() throws Exception {
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
-
     createInvalidSmtpConfigurationInDb();
-
     sendEmailAndAssertDelivered();
     checkThatCorrectConfigCopiedToLocalDb();
   }
@@ -370,63 +360,49 @@ public class SendingEmailTest extends AbstractAPITest {
   @Test
   public void shouldFailWhenOnlyLocalConfigExistsAndIsInvalid() {
     initFailModConfigStub(mockServerPort);
-
     createInvalidSmtpConfigurationInDb();
-
     sendEmailAndAssertFailure(HttpStatus.SC_BAD_REQUEST);
   }
 
   @Test
   public void shouldFailWhenBothConfigsExistAndBothAreInvalid() {
     initModConfigStub(mockServerPort, getIncorrectConfigurations());
-
     createInvalidSmtpConfigurationInDb();
-
     sendEmailAndAssertFailure(HttpStatus.SC_OK);
   }
 
   @Test
   public void shouldFailWhenBothConfigsExistAndLocalIsInvalidAndRemoteIsIncorrectForWiser() {
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
-
     createInvalidSmtpConfigurationInDb();
-
     sendEmailAndAssertFailure(HttpStatus.SC_OK);
   }
 
   @Test
   public void shouldFailWhenBothConfigsExistAndLocalIsIncorrectForWiser() throws Exception {
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
-
     createIncorrectWiserSmtpConfigurationInDb();
-
     sendEmailAndAssertFailure(HttpStatus.SC_OK);
   }
 
   @Test
   public void shouldFailWhenOnlyLocalConfigExistsAndIsIncorrectForWiser() {
     initFailModConfigStub(mockServerPort);
-
     createIncorrectWiserSmtpConfigurationInDb();
-
     sendEmailAndAssertFailure(HttpStatus.SC_OK);
   }
 
   @Test
   public void shouldFailWhenBothConfigsExistAndLocalIsIncorrectForWiserAndRemoteIsInvalid() {
     initModConfigStub(mockServerPort, getIncorrectConfigurations());
-
     createIncorrectWiserSmtpConfigurationInDb();
-
     sendEmailAndAssertFailure(HttpStatus.SC_OK);
   }
 
   @Test
   public void shouldFailWhenBothConfigsExistAndBothAreIncorrectForWiser() {
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
-
     createIncorrectWiserSmtpConfigurationInDb();
-
     sendEmailAndAssertFailure(HttpStatus.SC_OK);
   }
 

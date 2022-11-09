@@ -228,15 +228,14 @@ public abstract class AbstractEmail {
 
         okapiClient.deleteAbs(path)
           .send()
-          .compose(response -> {
+          .onSuccess(response -> {
             if (response.statusCode() == HTTP_NO_CONTENT.toInt()) {
               logger.info("Successfully deleted configuration entry {}", id);
-              return succeededFuture();
+              return;
             }
-            String errorMessage = format("Failed to delete configuration entry %s", id);
-            logger.error(errorMessage);
-            return failedFuture(new ConfigurationException(errorMessage));
-          });
+            logger.error(format("Failed to delete configuration entry %s", id));
+          })
+          .onFailure(logger::error);
       });
   }
 
