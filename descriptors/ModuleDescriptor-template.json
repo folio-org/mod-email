@@ -56,12 +56,12 @@
       "handlers": [
         {
           "methods": ["GET"],
-          "pathPattern": "/smtp-configurations",
+          "pathPattern": "/smtp-configuration",
           "permissionsRequired": ["email.smtp-configuration.collection.get"]
         },
         {
           "methods": ["GET"],
-          "pathPattern": "/smtp-configurations/{smtpConfigurationId}",
+          "pathPattern": "/smtp-configuration/{smtpConfigurationId}",
           "permissionsRequired": ["email.smtp-configuration.item.get"]
         },
         {
