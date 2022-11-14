@@ -27,7 +27,7 @@ public class StubUtils {
 
   private static final String MODULE_SMTP_SERVER = "SMTP_SERVER";
   private static final String URL_CONFIGURATIONS_TO_SMTP_SERVER = "/configurations/entries?query=module==" + MODULE_SMTP_SERVER;
-  private static final String URL_SINGLE_CONFIGURATION = "/configurations/entries/.+";
+  public static final String URL_SINGLE_CONFIGURATION = "/configurations/entries/.+";
   private static final String CONFIG_NAME_SMTP = "smtp";
   private static final String CONFIG_NAME_EMAIL_HEADERS = "email.headers";
 

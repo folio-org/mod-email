@@ -2,6 +2,7 @@ package org.folio.rest.client;
 
 import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static org.folio.okapi.common.XOkapiHeaders.TENANT;
 import static org.folio.okapi.common.XOkapiHeaders.TOKEN;
 import static org.folio.okapi.common.XOkapiHeaders.URL;
@@ -10,10 +11,6 @@ import static org.folio.rest.client.WebClientProvider.getWebClient;
 import java.util.Map;
 
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -46,7 +43,7 @@ public class OkapiClient {
 
   public HttpRequest<Buffer> deleteAbs(String path) {
     return webClient.requestAbs(HttpMethod.DELETE, okapiUrl + path)
-      .putHeader(ACCEPT, APPLICATION_JSON)
+      .putHeader(ACCEPT, TEXT_PLAIN)
       .putHeader(URL, okapiUrl)
       .putHeader(TENANT, tenant)
       .putHeader(TOKEN, token);

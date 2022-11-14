@@ -21,7 +21,8 @@
             "email.message.post"
           ],
           "modulePermissions": [
-            "configuration.entries.collection.get"
+            "configuration.entries.collection.get",
+            "configuration.entries.item.delete"
           ]
         },
         {
@@ -120,7 +121,8 @@
           ],
           "pathPattern": "/delayedTask/retryFailedEmails",
           "modulePermissions": [
-            "configuration.entries.collection.get"
+            "configuration.entries.collection.get",
+            "configuration.entries.item.delete"
           ],
           "unit": "minute",
           "delay": "5"
