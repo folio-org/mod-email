@@ -1,10 +1,15 @@
 package org.folio.rest.impl;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toMap;
 import static junit.framework.TestCase.fail;
 import static org.folio.matchers.JsonMatchers.matchesJson;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
+import static org.folio.util.StubUtils.URL_SINGLE_CONFIGURATION;
 import static org.folio.util.StubUtils.buildIncorrectWiserSmtpConfiguration;
 import static org.folio.util.StubUtils.buildInvalidSmtpConfiguration;
 import static org.folio.util.StubUtils.buildWiserSmtpConfiguration;
@@ -25,6 +30,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import javax.mail.Header;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -329,6 +335,7 @@ public class SendingEmailTest extends AbstractAPITest {
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
     sendEmailAndAssertDelivered();
     checkThatCorrectConfigCopiedToLocalDb();
+    checkThatConfigAreDeletedFromModConfig();
   }
 
   @Test
@@ -347,6 +354,7 @@ public class SendingEmailTest extends AbstractAPITest {
   public void shouldFailWhenOnlyRemoteConfigExistsAndIsIncorrectForWiser() throws Exception {
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
     sendEmailAndAssertFailure(HttpStatus.SC_OK);
+    checkThatConfigAreDeletedFromModConfig();
   }
 
   @Test
@@ -355,6 +363,7 @@ public class SendingEmailTest extends AbstractAPITest {
     createInvalidSmtpConfigurationInDb();
     sendEmailAndAssertDelivered();
     checkThatCorrectConfigCopiedToLocalDb();
+    checkThatConfigAreDeletedFromModConfig();
   }
 
   @Test
@@ -376,6 +385,7 @@ public class SendingEmailTest extends AbstractAPITest {
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
     createInvalidSmtpConfigurationInDb();
     sendEmailAndAssertFailure(HttpStatus.SC_OK);
+    checkThatConfigAreDeletedFromModConfig();
   }
 
   @Test
@@ -486,5 +496,10 @@ public class SendingEmailTest extends AbstractAPITest {
       .getJsonObject(0)
       .encodePrettily();
     assertThat(configuration, matchesJson(buildWiserSmtpConfiguration(), List.of("id")));
+  }
+
+  private void checkThatConfigAreDeletedFromModConfig() {
+    verify(4, deleteRequestedFor(urlMatching(URL_SINGLE_CONFIGURATION)).withHeader(
+      HttpHeaders.ACCEPT, equalTo(MediaType.TEXT_PLAIN)));
   }
 }
