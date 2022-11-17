@@ -1,3 +1,6 @@
+## 2022-11-17 v1.15.2
+* Change fromModuleVersion to 1.15.2 for smtp_configuration table (MODEMAIL-86)
+
 ## 2022-11-17 v1.15.1
 * Move sensitive SMTP information from mod-configuration to mod-email's DB (MODEMAIL-76)
 
