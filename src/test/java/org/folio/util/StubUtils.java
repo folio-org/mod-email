@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.folio.enums.SmtpEmail;
 import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
+import org.folio.rest.jaxrs.model.SmtpConfiguration;
 
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static java.util.stream.Collectors.toList;
+import static org.folio.HttpStatus.HTTP_NO_CONTENT;
 import static org.folio.enums.SmtpEmail.AUTH_METHODS;
 import static org.folio.enums.SmtpEmail.EMAIL_PASSWORD;
 import static org.folio.enums.SmtpEmail.EMAIL_SMTP_HOST;
@@ -25,6 +27,7 @@ public class StubUtils {
 
   private static final String MODULE_SMTP_SERVER = "SMTP_SERVER";
   private static final String URL_CONFIGURATIONS_TO_SMTP_SERVER = "/configurations/entries?query=module==" + MODULE_SMTP_SERVER;
+  public static final String URL_SINGLE_CONFIGURATION = "/configurations/entries/.+";
   private static final String CONFIG_NAME_SMTP = "smtp";
   private static final String CONFIG_NAME_EMAIL_HEADERS = "email.headers";
 
@@ -53,6 +56,12 @@ public class StubUtils {
         .withHeader("x-okapi-token", "x-okapi-token-TEST")
         .withHeader("x-okapi-url", "http://localhost:" + port)
         .withBody(JsonObject.mapFrom(configurations).toString())));
+
+    stubFor(delete(urlMatching(URL_SINGLE_CONFIGURATION))
+      .willReturn(aResponse()
+        .withStatus(HTTP_NO_CONTENT.toInt())
+        .withHeader("x-okapi-token", "x-okapi-token-TEST")
+        .withHeader("x-okapi-url", "http://localhost:" + port)));
   }
 
   public static void initFailModConfigStub(int port) {
@@ -131,6 +140,65 @@ public class StubUtils {
       .addAll(createConfigsForCustomHeaders(headers));
 
     return configurations;
+  }
+
+  public static JsonObject buildSmtpConfiguration() {
+
+    return new JsonObject()
+      .put("host", "localhost")
+      .put("port", 502)
+      .put("username", "username")
+      .put("password", "password")
+      .put("ssl", true)
+      .put("trustAll", false)
+      .put("loginOption", "REQUIRED")
+      .put("startTlsOptions", "DISABLED")
+      .put("authMethods", "CRAM-MD5 LOGIN PLAIN")
+      .put("from", "noreply@folio.org")
+      .put("emailHeaders", List.of(new JsonObject()
+        .put("name", "Reply-To")
+        .put("value", "noreply@folio.org")
+      ));
+  }
+
+  public static JsonObject buildWiserSmtpConfiguration() {
+    return new JsonObject()
+      .put("host", "localhost")
+      .put("port", 2500)
+      .put("username", "user")
+      .put("password", "password")
+      .put("ssl", false)
+      .put("trustAll", false)
+      .put("loginOption", "NONE")
+      .put("startTlsOptions", "OPTIONAL")
+      .put("authMethods", "")
+      .put("from", "")
+      .put("emailHeaders", List.of());
+  }
+
+  public static JsonObject buildIncorrectWiserSmtpConfiguration() {
+    return new JsonObject()
+      .put("host", "localhost")
+      .put("port", 555)
+      .put("username", "user")
+      .put("password", "password");
+  }
+
+  public static JsonObject buildInvalidSmtpConfiguration() {
+    return new JsonObject()
+      .put("host", "localhost")
+      .put("password", "password");
+  }
+
+  public static SmtpConfiguration buildSmtpConfiguration(String user, String password,
+    String host, int port, String authMethods) {
+
+    return new SmtpConfiguration()
+      .withUsername(user)
+      .withPassword(password)
+      .withHost(host)
+      .withPort(port)
+      .withAuthMethods(authMethods);
   }
 
 }

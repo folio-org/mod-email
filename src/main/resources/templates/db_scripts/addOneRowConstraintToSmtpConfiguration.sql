@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX one_row_only_uidx ON smtp_configuration (( true ));
