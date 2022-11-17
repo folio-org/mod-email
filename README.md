@@ -6,45 +6,79 @@ This software is distributed under the terms of the Apache License,
 Version 2.0. See the file "[LICENSE](LICENSE)" for more information.
 
 <!-- ../../okapi/doc/md2toc -l 2 -h 4 README.md -->
-* [Introduction](#introduction)
-* [Compiling](#compiling)
-* [Docker](#docker)
-* [Installing the module](#installing-the-module)
-* [Deploying the module](#deploying-the-module)
-* [Additional information](#additional-information)
 
-## Introduction
+## Gaol
 
-The module provides the role of delivering messages using SMTP server to send email.
-This module use `mod-configuration` to get connection parameters.
+`mod-email` provides an API for delivering email messages.
 
-The module supports the following configuration for SMTP server:
+## Configuration
+For email delivery `mod-email` relies on the external SMTP server,
+configuration for which is stored by `mod-email` in its own database.
+The module also provides CRUD API for managing it.
+If `mod-email` couldn't find SMTP configuration in its own DB, it'll try to
+fetch one from`mod-configuration`, copy it to the DB and then delete it from
+`mod-configuration`.
 
- |  PARAMETERS              |  DESCRIPTION                           |  EXAMPLES                      |
- |--------------------------|----------------------------------------|--------------------------------|
- |  EMAIL_SMTP_HOST         |  the hostname of the smtp server       | 'localhost'                    |
- |  EMAIL_SMTP_PORT         |  the port of the smtp server           | 502                            |
- |  EMAIL_SMTP_LOGIN_OPTION |  the login mode for the connection     | DISABLED, OPTIONAL or REQUIRED |
- |  EMAIL_TRUST_ALL         |  trust all certificates on ssl connect | true or false                  |
- |  EMAIL_SMTP_SSL          |  sslOnConnect mode for the connection  | true or false                  |
- |  EMAIL_START_TLS_OPTIONS |  TLS security mode for the connection  | DISABLED, OPTIONAL or REQUIRED |
- |  EMAIL_USERNAME          |  the username for the login            | 'login'                        |
- |  EMAIL_PASSWORD          |  the password for the login            | 'password'                     |
- |  EMAIL_FROM              |  'from' property of the email          | noreply@folio.org              |
- |  AUTH_METHODS            |  authentication methods                | 'CRAM-MD5 LOGIN PLAIN'         |
+### Supported configuration parameters
 
+| mod-email parameter | mod-configuration parameter | DESCRIPTION                           | EXAMPLES                        |
+|---------------------|---------------------------------------|-----------------------------|---------------------------------|
+| host                | EMAIL_SMTP_HOST             | the hostname of the smtp server       | 'localhost'                     |
+| port                | EMAIL_SMTP_PORT             | the port of the smtp server           | 502                             |
+| loginOption         | EMAIL_SMTP_LOGIN_OPTION     | the login mode for the connection     | DISABLED, OPTIONAL or REQUIRED  |
+| trustAll            | EMAIL_TRUST_ALL             | trust all certificates on ssl connect | true or false                   |
+| ssl                 | EMAIL_SMTP_SSL              | sslOnConnect mode for the connection  | true or false                   |
+| startTlsOptions     | EMAIL_START_TLS_OPTIONS     | TLS security mode for the connection  | DISABLED, OPTIONAL or REQUIRED  |
+| username            | EMAIL_USERNAME              | the username for the login            | 'login'                         |
+| password            | EMAIL_PASSWORD              | the password for the login            | 'password'                      |
+| from                | EMAIL_FROM                  | 'from' property of the email          | noreply@folio.org               |
+| authMethods         | AUTH_METHODS                | authentication methods                | 'CRAM-MD5 LOGIN PLAIN'          |
 
- Required configuration options:
-  * EMAIL_SMTP_HOST
-  * EMAIL_SMTP_PORT
-  * EMAIL_USERNAME
-  * EMAIL_PASSWORD
-  * EMAIL_FROM
-  * EMAIL_SMTP_SSL
+### Configuration using `mod-email`'s API
 
- The main name of the module : "SMTP_SERVER"
+This method of configuration is preferred.
 
- Module configuration example:
+Required configuration parameters:
+* Host
+* Port
+* User name
+* Password
+
+SMTP configuration (`GET /smtp-configuration/{id}`) example:
+```
+{
+    "id": "d2db040b-3247-4b2b-8db4-5ef449e092ad",
+    "host": "example-host.com",
+    "port": 587,
+    "username": "example-username",
+    "password": "example-password",
+    "ssl": false,
+    "trustAll": false,
+    "loginOption": "NONE",
+    "startTlsOptions": "OPTIONAL",
+    "authMethods": "",
+    "from": "noreply@folio.org",
+    "emailHeaders": [
+        {
+            "name": "Reply-To",
+            "value": "noreply@folio.org"
+        }
+    ]
+}
+```
+
+Use `GET /smtp-configuration` to get all configurations. It's forbidden to
+create more than one configuration, but this call helps to find the ID of
+the configuration entry to use it in `GET`, `PUT`, `DELETE` requests.
+
+### Configuration using `mod-configuration` (deprecated)
+
+This method of configuration is deprecated and needs to be avoided.
+
+All SMTP configuration entries need their `module` field to be set to
+`SMTP_SERVER`.
+
+Module configuration example:
 
  ```
 curl -X POST \
@@ -64,7 +98,7 @@ curl -X POST \
     }'
  ```
 
- The example of request body with authentication methods configuration:
+The example of request body with authentication methods configuration:
 
  ```
  {
@@ -82,9 +116,14 @@ curl -X POST \
 
 Module provides next API:
 
- | METHOD |  URL                          | DESCRIPTION                                                       |
- |--------|-------------------------------|-------------------------------------------------------------------|
- | POST   | /email                        | Push email to mod-email for sending message to recipient          |
+| METHOD | URL                      | DESCRIPTION                                              |
+|--------|--------------------------|----------------------------------------------------------|
+| POST   | /email                   | Push email to mod-email for sending message to recipient |
+| GET    | /smtp-configuration      | Get all SMTP configurations                              |
+| GET    | /smtp-configuration/{id} | Get SMTP configuration                                   |
+| POST   | /smtp-configuration/{id} | Post SMTP configuration                                  |
+| PUT    | /smtp-configuration/{id} | Put SMTP configuration                                   |
+| DELETE | /smtp-configuration/{id} | Delete SMTP configuration                                |
 
 
 ## Compiling
@@ -107,11 +146,11 @@ The Docker container exposes port 8081.
 ## Docker
 Build the docker container with:
 
-  * docker build -t mod-email .
+* docker build -t mod-email .
 
 Test that it runs with:
 
-  * docker run -t -i -p 8081:8081 mod-email
+* docker run -t -i -p 8081:8081 mod-email
 
 ## Installing the module
 
