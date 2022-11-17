@@ -3,7 +3,7 @@
     {
       "run": "after",
       "snippetPath": "addOneRowConstraintToSmtpConfiguration.sql",
-      "fromModuleVersion": "1.14.1"
+      "fromModuleVersion": "1.15.2"
     }
   ],
   "tables": [
@@ -28,7 +28,7 @@
     },
     {
       "tableName": "smtp_configuration",
-      "fromModuleVersion": "1.14.1",
+      "fromModuleVersion": "1.15.2",
       "withMetadata": true
     }
   ]
