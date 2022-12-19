@@ -7,7 +7,7 @@ Version 2.0. See the file "[LICENSE](LICENSE)" for more information.
 
 <!-- ../../okapi/doc/md2toc -l 2 -h 4 README.md -->
 
-## Gaol
+## Goal
 
 `mod-email` provides an API for delivering email messages.
 
