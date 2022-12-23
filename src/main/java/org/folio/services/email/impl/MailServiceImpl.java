@@ -147,7 +147,7 @@ public class MailServiceImpl implements MailService {
 
   private MailAttachment getMailAttachment(Attachment data) {
     if (Objects.isNull(data) || StringUtils.isEmpty(data.getData())) {
-      logger.warn(format(ERROR_ATTACHMENT_DATA, data.getName()));
+      logger.warn(INCORRECT_ATTACHMENT_DATA);
       return MailAttachment.create().setData(Buffer.buffer());
     }
     return MailAttachment.create()
