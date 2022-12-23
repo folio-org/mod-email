@@ -36,7 +36,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   @Override
   public void deleteDelayedTaskExpiredMessages(String expirationDate, String status,
     Map<String, String> headers, Handler<AsyncResult<Response>> resultHandler, Context context) {
-    logger.debug("deleteDelayedTaskExpiredMessages::Trying to delete expired messages");
+    logger.debug("deleteDelayedTaskExpiredMessages:: parameters: expirationDate={}, status={}", expirationDate, status);
 
     succeededFuture()
       .compose(v -> checkExpirationDate(expirationDate))
@@ -55,7 +55,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
     asyncResultHandler.handle(succeededFuture(
       PostDelayedTaskRetryFailedEmailsResponse.respond202()));
 
-    logger.info("Starting email retry job");
+    logger.info("postDelayedTaskRetryFailedEmails:: Starting email retry job");
     final long startTimeMillis = currentTimeMillis();
 
     succeededFuture()
@@ -74,15 +74,15 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
 
     return findEmailEntries(RETRY_BATCH_SIZE, 0, query)
       .map(EmailEntries::getEmailEntity)
-      .onSuccess(emails -> logger.info("Found {} emails for retry", emails.size()));
+      .onSuccess(emails -> logger.info("findEmailsForRetry:: Found {} emails for retry", emails.size()));
   }
 
   private static void logRetryResult(AsyncResult<Collection<EmailEntity>> result, long startTimeMillis) {
     long duration = currentTimeMillis() - startTimeMillis;
     if (result.succeeded()) {
-      logger.info("Email retry job took {} ms and finished successfully", duration);
+      logger.info("logRetryResult:: Email retry job took {} ms and finished successfully", duration);
     } else {
-      logger.error("Email retry job took {} ms and failed: {}", duration, result.cause().getMessage());
+      logger.error("logRetryResult:: Email retry job took {} ms and failed: {}", duration, result.cause().getMessage());
     }
   }
 

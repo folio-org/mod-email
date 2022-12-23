@@ -44,7 +44,7 @@ public class StorageServiceImpl implements StorageService {
 
     try {
       EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
-      logger.debug("saveEmailEntity::Trying to save email entity: {}", emailEntity);
+      logger.debug("saveEmailEntity:: parameter emailEntity: {}", emailEntity);
       String emailId = emailEntity.getId();
       PostgresClient.getInstance(vertx, tenantId)
         .save(EMAIL_STATISTICS_TABLE_NAME, emailId, emailEntity, true, true)
@@ -53,7 +53,7 @@ public class StorageServiceImpl implements StorageService {
         .map(emailJson)
         .onComplete(resultHandler);
     } catch (Exception ex) {
-      logger.warn("Failed to save email: {}", ex.getMessage());
+      logger.warn("saveEmailEntity:: Failed to save email: {}", ex.getMessage());
       errorHandler(ex, resultHandler);
     }
   }
@@ -68,7 +68,7 @@ public class StorageServiceImpl implements StorageService {
       pgClient.get(EMAIL_STATISTICS_TABLE_NAME, EmailEntity.class, fieldList, cql, true, false,
         getReply -> {
           if (getReply.failed()) {
-            logger.warn("Failed to get email entries: {}", getReply.cause().getMessage());
+            logger.warn("findEmailEntries:: Failed to get email entries: {}", getReply.cause().getMessage());
             errorHandler(getReply.cause(), resultHandler);
             return;
           }
@@ -83,7 +83,7 @@ public class StorageServiceImpl implements StorageService {
           resultHandler.handle(succeededFuture(entries));
         });
     } catch (Exception ex) {
-      logger.warn("Failed to get email entries: {}", ex.getMessage());
+      logger.warn("findEmailEntries:: Failed to get email entries: {}", ex.getMessage());
       errorHandler(ex, resultHandler);
     }
   }
@@ -91,7 +91,7 @@ public class StorageServiceImpl implements StorageService {
   @Override
   public void deleteEmailEntriesByExpirationDateAndStatus(String tenantId, String expirationDate, String status,
                                                           Handler<AsyncResult<JsonObject>> resultHandler) {
-    logger.debug("deleteEmailEntriesByExpirationDateAndStatus::Trying to delete email entries by expiration date and status: {} {}", expirationDate, status);
+    logger.debug("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {}", expirationDate, status);
     try {
       String fullTableName = getFullTableName(EMAIL_STATISTICS_TABLE_NAME, tenantId);
       String query = StringUtils.isBlank(expirationDate)
@@ -103,11 +103,12 @@ public class StorageServiceImpl implements StorageService {
           errorHandler(result.cause(), resultHandler);
           return;
         }
-        logger.info("Email entries deleted by expiration date and status: {} {}", expirationDate, status);
+        logger.info("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {} - deleted {} entries",
+          expirationDate, status, result.result().rowCount());
         resultHandler.handle(succeededFuture());
       });
     } catch (Exception ex) {
-      logger.warn("Failed to delete email entries: {}", ex.getMessage());
+      logger.warn("deleteEmailEntriesByExpirationDateAndStatus:: Failed to delete email entries: {}", ex.getMessage());
       errorHandler(ex, resultHandler);
     }
   }

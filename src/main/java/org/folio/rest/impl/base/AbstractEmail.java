@@ -102,7 +102,7 @@ public abstract class AbstractEmail {
 
   protected Future<EmailEntity> processEmail(EmailEntity email,
     Map<String, String> okapiHeaders) {
-    logger.debug("Trying to process email: {}", email);
+    logger.debug("processEmail:: parameter email: {}", email);
     return processEmails(singletonList(email), okapiHeaders)
       .map(emails -> emails.stream().findFirst().orElseThrow());
   }
@@ -111,10 +111,10 @@ public abstract class AbstractEmail {
     Map<String, String> okapiHeaders) {
 
     if (emails.isEmpty()) {
-      logger.info("emails is empty");
+      logger.info("processEmails:: emails is empty");
       return succeededFuture(emails);
     }
-    logger.debug("Trying to process a batch of {} emails", emails.size());
+    logger.debug("processEmails:: Trying to process a batch of {} emails", emails.size());
 
     return lookupSmtpConfiguration(okapiHeaders)
       .compose(config -> mapInOrder(emails, email -> processEmail(email, config)))
@@ -122,7 +122,7 @@ public abstract class AbstractEmail {
   }
 
   protected Future<EmailEntity> processEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
-    logger.debug("Trying to process email {}", email.getId());
+    logger.debug("processEmail:: parameters email: {}, smtpConfiguration: {}", email, smtpConfiguration);
     applyConfiguration(email, smtpConfiguration);
 
     return sendEmail(email, smtpConfiguration)
@@ -134,21 +134,21 @@ public abstract class AbstractEmail {
 
   protected EmailEntity handleSuccess(EmailEntity email) {
     String message = format(SUCCESS_SEND_EMAIL, join(",", email.getTo()));
-    logger.info(message);
+    logger.info("handleSuccess:: {}", message);
 
     return updateEmail(email, DELIVERED, message);
   }
 
   protected EmailEntity handleFailure(EmailEntity email, Throwable throwable) {
     String errorMessage = format(ERROR_SENDING_EMAIL, throwable.getMessage());
-    logger.error(errorMessage);
+    logger.error("handleFailure:: {}", errorMessage);
 
     return updateEmail(email, FAILURE, errorMessage);
   }
 
   private static EmailEntity updateEmail(EmailEntity email, Status status, String message) {
     int newAttemptCount = email.getAttemptCount() + 1;
-    logger.debug("updateEmail::Trying to update email {} with status {} and message {}", email.getId(), status, message);
+    logger.debug("updateEmail:: parameters emailId: {}, status: {}, message: {}", email.getId(), status, message);
     return email
       .withStatus(status)
       .withMessage(message)
@@ -160,7 +160,7 @@ public abstract class AbstractEmail {
   protected Future<Collection<EmailEntity>> handleFailure(Collection<EmailEntity> emails,
     Throwable throwable) {
 
-    logger.error("Failed to process batch of {} emails: {}", emails.size(), throwable.getMessage());
+    logger.error("handleFailure:: Failed to process batch of {} emails: {}", emails.size(), throwable.getMessage());
 
     return CompositeFuture.all(
         emails.stream()
@@ -186,7 +186,7 @@ public abstract class AbstractEmail {
   }
 
   private Future<Configurations> fetchSmtpConfigurationFromModConfig(OkapiClient okapiClient) {
-    logger.warn("Failed to find SMTP configuration in the DB, fetching from mod-config");
+    logger.warn("fetchSmtpConfigurationFromModConfig:: Failed to find SMTP configuration in the DB, fetching from mod-config");
 
     String path = format(GET_CONFIG_PATH_TEMPLATE, CONFIG_BASE_PATH, MODULE_EMAIL_SMTP_SERVER);
 
@@ -195,12 +195,12 @@ public abstract class AbstractEmail {
       .compose(response -> {
         if (response.statusCode() == HTTP_OK.toInt()) {
           Configurations config = response.bodyAsJsonObject().mapTo(Configurations.class);
-          logger.info("Successfully fetched {} configuration entries", config.getConfigs().size());
+          logger.info("fetchSmtpConfigurationFromModConfig:: Successfully fetched {} configuration entries", config.getConfigs().size());
           return succeededFuture(config);
         }
         String errorMessage = String.format(ERROR_LOOKING_UP_MOD_CONFIG,
           path, response.statusCode(), response.bodyAsString());
-        logger.error(errorMessage);
+        logger.error("fetchSmtpConfigurationFromModConfig:: {}", errorMessage);
         return failedFuture(new ConfigurationException(errorMessage));
       });
   }
@@ -218,7 +218,7 @@ public abstract class AbstractEmail {
   private void deleteEntriesFromModConfig(Configurations configurationsToDelete,
     OkapiClient okapiClient) {
 
-    logger.warn("Trying to delete {} configuration entries", configurationsToDelete.getConfigs().size());
+    logger.warn("deleteEntriesFromModConfig:: Removing configuration from mod-config");
 
     configurationsToDelete.getConfigs().stream()
       .map(Config::getId)
@@ -229,10 +229,10 @@ public abstract class AbstractEmail {
           .send()
           .onSuccess(response -> {
             if (response.statusCode() == HTTP_NO_CONTENT.toInt()) {
-              logger.info("Successfully deleted configuration entry {}", id);
+              logger.info("deleteEntriesFromModConfig:: Successfully deleted configuration entry {}", id);
               return;
             }
-            logger.warn(format("Failed to delete configuration entry %s", id));
+            logger.warn(format("deleteEntriesFromModConfig:: Failed to delete configuration entry %s", id));
           })
           .onFailure(logger::error);
       });
@@ -240,6 +240,7 @@ public abstract class AbstractEmail {
 
   protected Future<EmailEntity> sendEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
     Promise<JsonObject> promise = Promise.promise();
+    logger.debug("sendEmail:: parameters email: {}, smtpConfiguration: {}", email, smtpConfiguration);
     mailService.sendEmail(mapFrom(smtpConfiguration), mapFrom(email), promise);
 
     return promise.future().map(email);
@@ -247,14 +248,14 @@ public abstract class AbstractEmail {
 
   protected Future<EmailEntity> saveEmail(EmailEntity email) {
     Promise<JsonObject> promise = Promise.promise();
-    logger.debug("saveEmail::Trying to save email {}", email.getId());
+    logger.debug("saveEmail:: parameter email: {}", email);
     storageService.saveEmailEntity(tenantId, JsonObject.mapFrom(email), promise);
 
     return promise.future().map(email);
   }
 
   protected Future<EmailEntries> findEmailEntries(int limit, int offset, String query) {
-    logger.debug("findEmailEntries::Trying to find email entries with limit {} and offset {}", limit, offset);
+    logger.debug("findEmailEntries:: parameters limit: {}, offset: {}, query: {}", limit, offset, query);
     Promise<JsonObject> promise = Promise.promise();
     storageService.findEmailEntries(tenantId, limit, offset, query, promise);
 
@@ -264,38 +265,38 @@ public abstract class AbstractEmail {
 
   protected Future<Void> deleteEmailsByExpirationDate(String expirationDate, String emailStatus) {
     Promise<Void> promise = Promise.promise();
-    logger.debug("deleteEmailsByExpirationDate::Trying to delete emails with expiration date {}", expirationDate);
+    logger.debug("deleteEmailsByExpirationDate:: parameters expirationDate: {}, emailStatus: {}", expirationDate, emailStatus);
     storageService.deleteEmailEntriesByExpirationDateAndStatus(tenantId, expirationDate, emailStatus,
       result -> {
         if (result.failed()) {
-          logger.warn("Failed to delete emails with expiration date {}", expirationDate);
+          logger.warn("deleteEmailsByExpirationDate:: Failed to delete emails with expiration date {}", expirationDate);
           promise.fail(result.cause());
           return;
         }
-        logger.info("Successfully deleted emails with expiration date {}", expirationDate);
+        logger.info("deleteEmailsByExpirationDate:: Successfully deleted emails with expiration date {}", expirationDate);
         promise.complete();
       });
     return promise.future();
   }
 
   protected Future<String> determinateEmailStatus(String emailStatus) {
-    logger.debug("determinateEmailStatus::Trying to determinate email status {}", emailStatus);
+    logger.debug("determinateEmailStatus:: parameter emailStatus: {}", emailStatus);
     Promise<String> promise = Promise.promise();
     String status = StringUtils.isBlank(emailStatus)
       ? DELIVERED.value()
       : findStatusByName(emailStatus);
     promise.complete(status);
-    logger.info("Successfully determinated email status {}", status);
+    logger.info("deleteEmailsByExpirationDate:: Successfully determinated email status {}", status);
     return promise.future();
   }
 
   protected Future<Void> checkExpirationDate(String expirationDate) {
-    logger.debug("checkExpirationDate::Trying to check expiration date {}", expirationDate);
+    logger.debug("checkExpirationDate:: parameter expirationDate: {}", expirationDate);
     Promise<Void> promise = Promise.promise();
     if (StringUtils.isBlank(expirationDate) || isCorrectDateFormat(expirationDate)) {
       promise.complete();
     } else {
-      logger.warn("Failed to check expiration date {}", expirationDate);
+      logger.warn("checkExpirationDate:: Failed to check expiration date {}", expirationDate);
       promise.fail(new IllegalArgumentException(ERROR_MESSAGE_INCORRECT_DATE_PARAMETER));
     }
     return promise.future();

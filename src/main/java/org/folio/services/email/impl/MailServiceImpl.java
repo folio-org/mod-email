@@ -68,13 +68,13 @@ public class MailServiceImpl implements MailService {
       String emailId = emailEntity.getId();
       long start = currentTimeMillis();
 
-      logger.info("Sending email {}: attempt {}/{}",
+      logger.info("sendEmail:: Sending email {}: attempt {}/{}",
         emailId, emailEntity.getAttemptCount() + 1, RETRY_MAX_ATTEMPTS);
 
       defineMailClient(mailConfig)
         .sendMail(mailMessage)
-        .onSuccess(r -> logger.info("Email {} sent in {} ms", emailId, currentTimeMillis() - start))
-        .onFailure(t -> logger.error("Failed to send email {}: {}", emailId, t.getMessage()))
+        .onSuccess(r -> logger.info("sendEmail:: Email {} sent in {} ms", emailId, currentTimeMillis() - start))
+        .onFailure(t -> logger.error("sendEmail:: Failed to send email {}: {}", emailId, t.getMessage()))
         .map(emailJson)
         .onComplete(resultHandler);
     } catch (Exception ex) {
@@ -147,7 +147,7 @@ public class MailServiceImpl implements MailService {
 
   private MailAttachment getMailAttachment(Attachment data) {
     if (Objects.isNull(data) || StringUtils.isEmpty(data.getData())) {
-      logger.warn(INCORRECT_ATTACHMENT_DATA);
+      logger.warn("getMailAttachment:: {}", INCORRECT_ATTACHMENT_DATA);
       return MailAttachment.create().setData(Buffer.buffer());
     }
     return MailAttachment.create()
