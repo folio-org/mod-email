@@ -78,7 +78,7 @@ public class MailServiceImpl implements MailService {
         .map(emailJson)
         .onComplete(resultHandler);
     } catch (Exception ex) {
-      logger.error(format(ERROR_SENDING_EMAIL, ex.getMessage()));
+      logger.warn(format(ERROR_SENDING_EMAIL, ex.getMessage()));
       resultHandler.handle(failedFuture(ex.getMessage()));
     }
   }
@@ -147,7 +147,7 @@ public class MailServiceImpl implements MailService {
 
   private MailAttachment getMailAttachment(Attachment data) {
     if (Objects.isNull(data) || StringUtils.isEmpty(data.getData())) {
-      logger.error(INCORRECT_ATTACHMENT_DATA);
+      logger.warn(format(ERROR_ATTACHMENT_DATA, data.getName()));
       return MailAttachment.create().setData(Buffer.buffer());
     }
     return MailAttachment.create()

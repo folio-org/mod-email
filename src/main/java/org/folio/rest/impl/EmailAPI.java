@@ -24,7 +24,7 @@ public class EmailAPI extends AbstractEmail implements Email {
   @Override
   public void postEmail(EmailEntity email, Map<String, String> requestHeaders,
     Handler<AsyncResult<Response>> resultHandler, Context vertxContext) {
-
+    logger.debug("postEmail::Trying to post email email={}", email);
     succeededFuture()
       .compose(v -> processEmail(email, requestHeaders))
       .map(EmailEntity::getMessage)
@@ -38,7 +38,7 @@ public class EmailAPI extends AbstractEmail implements Email {
   public void getEmail(String query, int offset, int limit, String lang,
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> resultHandler,
     Context context) {
-
+    logger.debug("getEmail::Trying to get emails query={}, offset={}, limit={}, lang={}", query, offset, limit, lang);
     succeededFuture()
       .compose(v -> findEmailEntries(limit, offset, query))
       .map(GetEmailResponse::respond200WithApplicationJson)

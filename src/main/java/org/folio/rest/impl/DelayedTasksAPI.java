@@ -36,6 +36,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   @Override
   public void deleteDelayedTaskExpiredMessages(String expirationDate, String status,
     Map<String, String> headers, Handler<AsyncResult<Response>> resultHandler, Context context) {
+    logger.debug("deleteDelayedTaskExpiredMessages::Trying to delete expired messages");
 
     succeededFuture()
       .compose(v -> checkExpirationDate(expirationDate))
@@ -50,7 +51,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   @Override
   public void postDelayedTaskRetryFailedEmails(Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-
+    logger.debug("postDelayedTaskRetryFailedEmails::Trying to retry failed emails");
     asyncResultHandler.handle(succeededFuture(
       PostDelayedTaskRetryFailedEmailsResponse.respond202()));
 
@@ -64,6 +65,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   }
 
   private Future<List<EmailEntity>> findEmailsForRetry() {
+    logger.debug("findEmailsForRetry::Trying to find emails for retry");
     String thresholdDate = ClockUtil.getZonedDateTime()
       .minusMinutes(RETRY_AGE_THRESHOLD_MINUTES)
       .format(ISO_ZONED_DATE_TIME);
