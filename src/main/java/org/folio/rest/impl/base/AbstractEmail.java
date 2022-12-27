@@ -102,7 +102,7 @@ public abstract class AbstractEmail {
 
   protected Future<EmailEntity> processEmail(EmailEntity email,
     Map<String, String> okapiHeaders) {
-    logger.debug("processEmail:: parameter email: {}", email);
+    logger.debug("processEmail:: parameter email: {}", email.getId());
     return processEmails(singletonList(email), okapiHeaders)
       .map(emails -> emails.stream().findFirst().orElseThrow());
   }
@@ -134,16 +134,20 @@ public abstract class AbstractEmail {
 
   protected EmailEntity handleSuccess(EmailEntity email) {
     String message = format(SUCCESS_SEND_EMAIL, join(",", email.getTo()));
-    logger.info("handleSuccess:: {}", message);
+    logger.debug("handleSuccess:: parameter email: {}", email.getId());
 
-    return updateEmail(email, DELIVERED, message);
+    EmailEntity emailEntity = updateEmail(email, DELIVERED, message);
+    logger.info("handleSuccess:: result: {}", emailEntity.getId());
+    return emailEntity;
   }
 
   protected EmailEntity handleFailure(EmailEntity email, Throwable throwable) {
     String errorMessage = format(ERROR_SENDING_EMAIL, throwable.getMessage());
-    logger.error("handleFailure:: {}", errorMessage);
+    logger.debug("handleFailure:: parameters email: {}, throwable: {}", email.getId(), throwable.getMessage());
 
-    return updateEmail(email, FAILURE, errorMessage);
+    EmailEntity emailEntity = updateEmail(email, FAILURE, errorMessage);
+    logger.info("handleFailure:: result: {}", emailEntity.getId());
+    return emailEntity;
   }
 
   private static EmailEntity updateEmail(EmailEntity email, Status status, String message) {
@@ -232,7 +236,7 @@ public abstract class AbstractEmail {
               logger.info("deleteEntriesFromModConfig:: Successfully deleted configuration entry {}", id);
               return;
             }
-            logger.warn(format("deleteEntriesFromModConfig:: Failed to delete configuration entry %s", id));
+            logger.warn("deleteEntriesFromModConfig:: Failed to delete configuration entry {}", id);
           })
           .onFailure(logger::error);
       });

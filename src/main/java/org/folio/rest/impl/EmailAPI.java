@@ -24,7 +24,8 @@ public class EmailAPI extends AbstractEmail implements Email {
   @Override
   public void postEmail(EmailEntity email, Map<String, String> requestHeaders,
     Handler<AsyncResult<Response>> resultHandler, Context vertxContext) {
-    logger.debug("postEmail:: parameters: email={}", email);
+
+    logger.debug("postEmail:: parameters: email={}, requestHeaders={}", email, requestHeaders);
     succeededFuture()
       .compose(v -> processEmail(email, requestHeaders))
       .map(EmailEntity::getMessage)

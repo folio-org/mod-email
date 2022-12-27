@@ -36,7 +36,8 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   @Override
   public void deleteDelayedTaskExpiredMessages(String expirationDate, String status,
     Map<String, String> headers, Handler<AsyncResult<Response>> resultHandler, Context context) {
-    logger.debug("deleteDelayedTaskExpiredMessages:: parameters: expirationDate={}, status={}", expirationDate, status);
+
+    logger.debug("deleteDelayedTaskExpiredMessages:: parameters: expirationDate={}, status={}, headers={}", expirationDate, status, headers);
 
     succeededFuture()
       .compose(v -> checkExpirationDate(expirationDate))
@@ -51,11 +52,11 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   @Override
   public void postDelayedTaskRetryFailedEmails(Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    logger.debug("postDelayedTaskRetryFailedEmails::Trying to retry failed emails");
+
+    logger.debug("postDelayedTaskRetryFailedEmails:: parameters: okapiHeaders={}, asyncResultHandler={}, vertxContext={}", okapiHeaders, asyncResultHandler, vertxContext);
     asyncResultHandler.handle(succeededFuture(
       PostDelayedTaskRetryFailedEmailsResponse.respond202()));
 
-    logger.info("postDelayedTaskRetryFailedEmails:: Starting email retry job");
     final long startTimeMillis = currentTimeMillis();
 
     succeededFuture()
@@ -65,7 +66,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   }
 
   private Future<List<EmailEntity>> findEmailsForRetry() {
-    logger.debug("findEmailsForRetry::Trying to find emails for retry");
+    logger.debug("findEmailsForRetry::");
     String thresholdDate = ClockUtil.getZonedDateTime()
       .minusMinutes(RETRY_AGE_THRESHOLD_MINUTES)
       .format(ISO_ZONED_DATE_TIME);
@@ -82,7 +83,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
     if (result.succeeded()) {
       logger.info("logRetryResult:: Email retry job took {} ms and finished successfully", duration);
     } else {
-      logger.error("logRetryResult:: Email retry job took {} ms and failed: {}", duration, result.cause().getMessage());
+      logger.error("logRetryResult:: Email retry job took {} ms and failed: {}", duration,result);
     }
   }
 
