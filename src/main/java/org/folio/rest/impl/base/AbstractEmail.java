@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.core.json.Json;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -102,7 +103,7 @@ public abstract class AbstractEmail {
 
   protected Future<EmailEntity> processEmail(EmailEntity email,
     Map<String, String> okapiHeaders) {
-    logger.debug("processEmail:: parameter email: {}", email.getId());
+    logger.debug("processEmail:: parameter email: {}", Json.encode(email));
     return processEmails(singletonList(email), okapiHeaders)
       .map(emails -> emails.stream().findFirst().orElseThrow());
   }
@@ -122,7 +123,7 @@ public abstract class AbstractEmail {
   }
 
   protected Future<EmailEntity> processEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
-    logger.debug("processEmail:: parameters email: {}, smtpConfiguration: {}", email, smtpConfiguration);
+    logger.debug("processEmail:: parameters email: {}, smtpConfiguration: {}", Json.encode(email), smtpConfiguration);
     applyConfiguration(email, smtpConfiguration);
 
     return sendEmail(email, smtpConfiguration)
@@ -134,7 +135,7 @@ public abstract class AbstractEmail {
 
   protected EmailEntity handleSuccess(EmailEntity email) {
     String message = format(SUCCESS_SEND_EMAIL, join(",", email.getTo()));
-    logger.debug("handleSuccess:: parameter email: {}", email.getId());
+    logger.debug("handleSuccess:: parameter email: {}", Json.encode(email));
 
     EmailEntity emailEntity = updateEmail(email, DELIVERED, message);
     logger.info("handleSuccess:: result: {}", emailEntity.getId());
@@ -146,13 +147,13 @@ public abstract class AbstractEmail {
     logger.debug("handleFailure:: parameters email: {}, throwable: {}", email.getId(), throwable.getMessage());
 
     EmailEntity emailEntity = updateEmail(email, FAILURE, errorMessage);
-    logger.info("handleFailure:: result: {}", emailEntity.getId());
+    logger.info("handleFailure:: result: {}", Json.encode(emailEntity));
     return emailEntity;
   }
 
   private static EmailEntity updateEmail(EmailEntity email, Status status, String message) {
     int newAttemptCount = email.getAttemptCount() + 1;
-    logger.debug("updateEmail:: parameters emailId: {}, status: {}, message: {}", email.getId(), status, message);
+    logger.debug("updateEmail:: parameters emailId: {}, status: {}, message: {}", Json.encode(email), status, message);
     return email
       .withStatus(status)
       .withMessage(message)
@@ -244,7 +245,7 @@ public abstract class AbstractEmail {
 
   protected Future<EmailEntity> sendEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
     Promise<JsonObject> promise = Promise.promise();
-    logger.debug("sendEmail:: parameters email: {}, smtpConfiguration: {}", email, smtpConfiguration);
+    logger.debug("sendEmail:: parameters email: {}, smtpConfiguration: {}", Json.encode(email), smtpConfiguration);
     mailService.sendEmail(mapFrom(smtpConfiguration), mapFrom(email), promise);
 
     return promise.future().map(email);
@@ -252,7 +253,7 @@ public abstract class AbstractEmail {
 
   protected Future<EmailEntity> saveEmail(EmailEntity email) {
     Promise<JsonObject> promise = Promise.promise();
-    logger.debug("saveEmail:: parameter email: {}", email);
+    logger.debug("saveEmail:: parameter email: {}", Json.encode(email));
     storageService.saveEmailEntity(tenantId, JsonObject.mapFrom(email), promise);
 
     return promise.future().map(email);

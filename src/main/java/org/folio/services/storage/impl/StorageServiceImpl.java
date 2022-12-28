@@ -4,6 +4,7 @@ import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.persist.PostgresClient.convertToPsqlStandard;
 import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
 
+import io.vertx.core.json.Json;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,7 +45,7 @@ public class StorageServiceImpl implements StorageService {
 
     try {
       EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
-      logger.debug("saveEmailEntity:: parameter emailEntity: {}", emailEntity);
+      logger.debug("saveEmailEntity:: parameter emailEntity: {}", Json.encode(emailEntity));
       String emailId = emailEntity.getId();
       PostgresClient.getInstance(vertx, tenantId)
         .save(EMAIL_STATISTICS_TABLE_NAME, emailId, emailEntity, true, true)

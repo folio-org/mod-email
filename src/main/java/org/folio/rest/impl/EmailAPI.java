@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
+import io.vertx.core.json.Json;
 import org.folio.rest.impl.base.AbstractEmail;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.resource.Email;
@@ -25,7 +26,7 @@ public class EmailAPI extends AbstractEmail implements Email {
   public void postEmail(EmailEntity email, Map<String, String> requestHeaders,
     Handler<AsyncResult<Response>> resultHandler, Context vertxContext) {
 
-    logger.debug("postEmail:: parameters: email={}, requestHeaders={}", email.getId(), requestHeaders);
+    logger.debug("postEmail:: parameters: email={}, requestHeaders={}", Json.encode(email), requestHeaders);
     succeededFuture()
       .compose(v -> processEmail(email, requestHeaders))
       .map(EmailEntity::getMessage)
