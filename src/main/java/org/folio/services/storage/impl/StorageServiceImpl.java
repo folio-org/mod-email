@@ -4,7 +4,6 @@ import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.persist.PostgresClient.convertToPsqlStandard;
 import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
 
-import io.vertx.core.json.Json;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

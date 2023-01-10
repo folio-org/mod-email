@@ -6,7 +6,6 @@ import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.json.Json;
 import org.folio.rest.impl.base.AbstractEmail;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.resource.Email;
