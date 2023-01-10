@@ -17,7 +17,9 @@ import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.persist.interfaces.Results;
 import org.folio.services.storage.StorageService;
+
 import static org.folio.util.LogUtil.logAsJson;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -46,7 +48,7 @@ public class StorageServiceImpl implements StorageService {
       () -> tenantId, () -> logAsJson(emailJson));
     try {
       EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
-      logger.debug("saveEmailEntity:: parameter emailEntity: {}",() -> logAsJson(emailEntity));
+      logger.debug("saveEmailEntity:: parameter emailEntity: {}", () -> logAsJson(emailEntity));
       String emailId = emailEntity.getId();
       PostgresClient.getInstance(vertx, tenantId)
         .save(EMAIL_STATISTICS_TABLE_NAME, emailId, emailEntity, true, true)
@@ -88,7 +90,7 @@ public class StorageServiceImpl implements StorageService {
           resultHandler.handle(succeededFuture(entries));
         });
     } catch (Exception ex) {
-      logger.warn("findEmailEntries:: Failed to get email entries",ex);
+      logger.warn("findEmailEntries:: Failed to get email entries", ex);
       errorHandler(ex, resultHandler);
     }
   }

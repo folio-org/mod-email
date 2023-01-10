@@ -22,6 +22,7 @@ import io.vertx.core.json.JsonObject;
 public class LogUtil {
   private static final Logger log = LogManager.getLogger(LogUtil.class);
   private static final int MAX_OBJECT_JSON_LENGTH = 10 * 1024;
+
   private LogUtil() {
     throw new IllegalStateException("Utility class");
   }
@@ -43,39 +44,33 @@ public class LogUtil {
     try {
       return crop(PostgresClient.pojo2JsonObject(object).encode());
     } catch (JsonProcessingException jsonProcessingException) {
-      log.warn("logAsJson:: Error while logging an object of type {}",
-        object.getClass().getCanonicalName(), jsonProcessingException);
+      log.warn("logAsJson:: Error while logging an object of type {}", object.getClass().getCanonicalName(), jsonProcessingException);
       return null;
     } catch (Exception ex) {
-      log.warn("logAsJson:: Unexpected error while logging an object of type {}",
-        object.getClass().getCanonicalName(), ex);
+      log.warn("logAsJson:: Unexpected error while logging an object of type {}", object.getClass().getCanonicalName(), ex);
       return null;
     }
   }
 
   public static String logOkapiHeaders(Map<String, String> okapiHeaders) {
     try {
-      return logAsJson(new JsonObject(okapiHeaders.keySet().stream()
-        .filter(not("x-okapi-token"::equalsIgnoreCase))
-        .collect(Collectors.toMap(identity(), okapiHeaders::get))));
+      return logAsJson(new JsonObject(okapiHeaders.keySet().stream().filter(not("x-okapi-token"::equalsIgnoreCase)).collect(Collectors.toMap(identity(), okapiHeaders::get))));
     } catch (Exception ex) {
       log.warn("logOkapiHeaders:: Failed to log Okapi headers", ex);
       return null;
     }
   }
-  public static Handler<AsyncResult<Response>> loggingResponseHandler(String methodName,
-                                                                      Handler<AsyncResult<Response>> asyncResultHandler, Logger logger) {
+
+  public static Handler<AsyncResult<Response>> loggingResponseHandler(String methodName, Handler<AsyncResult<Response>> asyncResultHandler, Logger logger) {
 
     try {
       return responseAsyncResult -> {
         Response response = responseAsyncResult.result();
-        logger.info("{}:: result: HTTP response (code: {}, body: {})", () -> methodName,
-          response::getStatus, () -> logAsJson(response.getEntity()));
+        logger.info("{}:: result: HTTP response (code: {}, body: {})", () -> methodName, response::getStatus, () -> logAsJson(response.getEntity()));
         asyncResultHandler.handle(responseAsyncResult);
       };
     } catch (Exception ex) {
-      log.warn("loggingResponseHandler:: Failed to create a logging HTTP response " +
-        "handler", ex);
+      log.warn("loggingResponseHandler:: Failed to create a logging HTTP response " + "handler", ex);
       return null;
     }
   }
