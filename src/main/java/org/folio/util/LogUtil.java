@@ -1,11 +1,9 @@
 package org.folio.util;
 
 import static com.google.common.primitives.Ints.min;
-import static java.lang.String.format;
 import static java.util.function.Predicate.not;
 import static java.util.function.UnaryOperator.identity;
 
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -19,17 +17,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.HttpResponse;
 
 public class LogUtil {
   private static final Logger log = LogManager.getLogger(LogUtil.class);
-  public static final String R_N_LINE_SEPARATOR = "[\\r\\n]";
-  public static final String R_LINE_SEPARATOR = "\\r";
   private static final int MAX_OBJECT_JSON_LENGTH = 10 * 1024;
-  private static final int DEFAULT_NUM_OF_LIST_ELEMENTS_TO_LOG = 10;
-
   private LogUtil() {
     throw new IllegalStateException("Utility class");
   }
