@@ -3,6 +3,8 @@ package org.folio.rest.impl;
 import static io.vertx.core.Future.succeededFuture;
 import static java.lang.System.currentTimeMillis;
 import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME;
+import static org.folio.util.LogUtil.logOkapiHeaders;
+import static org.folio.util.LogUtil.loggingResponseHandler;
 
 import java.util.Collection;
 import java.util.List;
@@ -37,7 +39,8 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   public void deleteDelayedTaskExpiredMessages(String expirationDate, String status,
     Map<String, String> headers, Handler<AsyncResult<Response>> resultHandler, Context context) {
 
-    logger.debug("deleteDelayedTaskExpiredMessages:: parameters: expirationDate={}, status={}, headers={}", expirationDate, status, headers);
+    logger.debug("deleteDelayedTaskExpiredMessages:: parameters: expirationDate={}, status={}, headers={}",
+      () -> expirationDate,() -> status,() -> logOkapiHeaders(headers));
 
     succeededFuture()
       .compose(v -> checkExpirationDate(expirationDate))
@@ -53,9 +56,16 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   public void postDelayedTaskRetryFailedEmails(Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
 
-    logger.debug("postDelayedTaskRetryFailedEmails:: parameters: okapiHeaders={}, asyncResultHandler={}, vertxContext={}", okapiHeaders, asyncResultHandler, vertxContext);
-    asyncResultHandler.handle(succeededFuture(
-      PostDelayedTaskRetryFailedEmailsResponse.respond202()));
+    logger.debug("postDelayedTaskRetryFailedEmails:: parameters: okapiHeaders={}",
+      () -> logOkapiHeaders(okapiHeaders));
+
+    Handler<AsyncResult<Response>> loggingResponseHandler =
+      loggingResponseHandler("getAutomatedPatronBlocksByUserId", asyncResultHandler, logger);
+
+    if (loggingResponseHandler != null) {
+      loggingResponseHandler.handle(succeededFuture(
+        PostDelayedTaskRetryFailedEmailsResponse.respond202()));
+    }
 
     final long startTimeMillis = currentTimeMillis();
 

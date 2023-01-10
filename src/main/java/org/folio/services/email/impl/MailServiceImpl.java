@@ -8,7 +8,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 import static org.folio.rest.impl.base.AbstractEmail.RETRY_MAX_ATTEMPTS;
 import static org.folio.util.EmailUtils.getMessageConfig;
-
+import static org.folio.util.LogUtil.logAsJson;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +59,8 @@ public class MailServiceImpl implements MailService {
   public void sendEmail(JsonObject smtpConfigurationJson, JsonObject emailJson,
     Handler<AsyncResult<JsonObject>> resultHandler) {
 
+    logger.debug("sendEmail:: parameters: smtpConfigurationJson: {}, emailJson: {}",
+      () -> logAsJson(smtpConfigurationJson), () -> logAsJson(emailJson));
     SmtpConfiguration smtpConfiguration = smtpConfigurationJson.mapTo(SmtpConfiguration.class);
 
     try {
@@ -78,7 +80,7 @@ public class MailServiceImpl implements MailService {
         .map(emailJson)
         .onComplete(resultHandler);
     } catch (Exception ex) {
-      logger.warn(format(ERROR_SENDING_EMAIL, ex.getMessage()));
+      logger.warn(format(ERROR_SENDING_EMAIL, ex));
       resultHandler.handle(failedFuture(ex.getMessage()));
     }
   }
@@ -171,11 +173,14 @@ public class MailServiceImpl implements MailService {
   }
 
   public static void addHeadersFromConfiguration(MailMessage message, SmtpConfiguration smtpConfiguration) {
+    logger.debug("addHeadersFromConfiguration:: parameters: message: {}, smtpConfiguration: {}",
+      () -> logAsJson(message), () -> logAsJson(smtpConfiguration));
     Map<String, String> headers = smtpConfiguration.getEmailHeaders().stream()
       .filter(header -> isNoneBlank(header.getName(), header.getValue()))
       .collect(toMap(EmailHeader::getName, EmailHeader::getValue));
 
     if (headers.isEmpty()) {
+      logger.warn("addHeadersFromConfiguration:: No headers were found in configuration");
       return;
     }
 

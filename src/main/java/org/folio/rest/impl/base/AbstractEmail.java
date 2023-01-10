@@ -18,6 +18,8 @@ import static org.folio.util.AsyncUtil.mapInOrder;
 import static org.folio.util.EmailUtils.MAIL_SERVICE_ADDRESS;
 import static org.folio.util.EmailUtils.STORAGE_SERVICE_ADDRESS;
 import static org.folio.util.EmailUtils.findStatusByName;
+import static org.folio.util.LogUtil.logAsJson;
+import static org.folio.util.LogUtil.logOkapiHeaders;
 
 import java.util.Collection;
 import java.util.Date;
@@ -103,7 +105,9 @@ public abstract class AbstractEmail {
 
   protected Future<EmailEntity> processEmail(EmailEntity email,
     Map<String, String> okapiHeaders) {
-    logger.debug("processEmail:: parameter email: {}", Json.encode(email));
+    logger.debug("processEmail:: parameter email: {},requestHeaders={}",
+      () -> logAsJson(email),() -> logOkapiHeaders(okapiHeaders));
+
     return processEmails(singletonList(email), okapiHeaders)
       .map(emails -> emails.stream().findFirst().orElseThrow());
   }
@@ -123,7 +127,8 @@ public abstract class AbstractEmail {
   }
 
   protected Future<EmailEntity> processEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
-    logger.debug("processEmail:: parameters email: {}, smtpConfiguration: {}", Json.encode(email), smtpConfiguration);
+    logger.debug("processEmail:: parameters email: {}, smtpConfiguration: {}",
+      () -> logAsJson(email),() -> logAsJson(smtpConfiguration));
     applyConfiguration(email, smtpConfiguration);
 
     return sendEmail(email, smtpConfiguration)
@@ -135,25 +140,25 @@ public abstract class AbstractEmail {
 
   protected EmailEntity handleSuccess(EmailEntity email) {
     String message = format(SUCCESS_SEND_EMAIL, join(",", email.getTo()));
-    logger.debug("handleSuccess:: parameter email: {}", Json.encode(email));
+    logger.debug("handleSuccess:: parameter email: {}", () -> logAsJson(email));
 
     EmailEntity emailEntity = updateEmail(email, DELIVERED, message);
-    logger.info("handleSuccess:: result: {}", emailEntity.getId());
+    logger.info("handleSuccess:: result: {}", logAsJson(email));
     return emailEntity;
   }
 
   protected EmailEntity handleFailure(EmailEntity email, Throwable throwable) {
     String errorMessage = format(ERROR_SENDING_EMAIL, throwable.getMessage());
-    logger.debug("handleFailure:: parameters email: {}, throwable: {}", email.getId(), throwable.getMessage());
+    logger.debug("handleFailure:: parameters email: {}, exception: {}", logAsJson(email), throwable);
 
     EmailEntity emailEntity = updateEmail(email, FAILURE, errorMessage);
-    logger.info("handleFailure:: result: {}", Json.encode(emailEntity));
+    logger.info("handleFailure:: result: {}", () -> logAsJson(email));
     return emailEntity;
   }
 
   private static EmailEntity updateEmail(EmailEntity email, Status status, String message) {
     int newAttemptCount = email.getAttemptCount() + 1;
-    logger.debug("updateEmail:: parameters emailId: {}, status: {}, message: {}", Json.encode(email), status, message);
+    logger.debug("updateEmail:: parameters emailId: {}, status: {}, message: {}", logAsJson(email), status, message);
     return email
       .withStatus(status)
       .withMessage(message)
@@ -165,7 +170,7 @@ public abstract class AbstractEmail {
   protected Future<Collection<EmailEntity>> handleFailure(Collection<EmailEntity> emails,
     Throwable throwable) {
 
-    logger.error("handleFailure:: Failed to process batch of {} emails: {}", emails.size(), throwable.getMessage());
+    logger.error("handleFailure:: Failed to process batch of {} emails: {}", emails.size(), throwable);
 
     return CompositeFuture.all(
         emails.stream()
@@ -176,6 +181,7 @@ public abstract class AbstractEmail {
   }
 
   private Future<SmtpConfiguration> lookupSmtpConfiguration(Map<String, String> requestHeaders) {
+    logger.debug("lookupSmtpConfiguration:: requestHeaders={}", () -> logOkapiHeaders(requestHeaders));
     return smtpConfigurationService.getSmtpConfiguration()
       .compose(EmailUtils::validateSmtpConfiguration)
       .recover(throwable -> moveConfigsFromModConfigurationToLocalDb(requestHeaders));
@@ -184,6 +190,7 @@ public abstract class AbstractEmail {
   private Future<SmtpConfiguration> moveConfigsFromModConfigurationToLocalDb(
     Map<String, String> requestHeaders) {
 
+    logger.debug("moveConfigsFromModConfigurationToLocalDb:: requestHeaders={}", () -> logOkapiHeaders(requestHeaders));
     OkapiClient okapiClient = new OkapiClient(vertx, requestHeaders, webClientOptions);
 
     return fetchSmtpConfigurationFromModConfig(okapiClient)
@@ -245,7 +252,8 @@ public abstract class AbstractEmail {
 
   protected Future<EmailEntity> sendEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
     Promise<JsonObject> promise = Promise.promise();
-    logger.debug("sendEmail:: parameters email: {}, smtpConfiguration: {}", Json.encode(email), smtpConfiguration);
+    logger.debug("sendEmail:: parameters email: {}, smtpConfiguration: {}",
+      () -> logAsJson(email), () -> logAsJson(smtpConfiguration));
     mailService.sendEmail(mapFrom(smtpConfiguration), mapFrom(email), promise);
 
     return promise.future().map(email);
@@ -253,7 +261,7 @@ public abstract class AbstractEmail {
 
   protected Future<EmailEntity> saveEmail(EmailEntity email) {
     Promise<JsonObject> promise = Promise.promise();
-    logger.debug("saveEmail:: parameter email: {}", Json.encode(email));
+    logger.debug("saveEmail:: parameter email: {}", () -> logAsJson(email));
     storageService.saveEmailEntity(tenantId, JsonObject.mapFrom(email), promise);
 
     return promise.future().map(email);
