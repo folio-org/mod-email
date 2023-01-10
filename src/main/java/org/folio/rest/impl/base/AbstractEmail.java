@@ -28,7 +28,6 @@ import java.util.regex.Pattern;
 
 import javax.ws.rs.core.Response;
 
-import io.vertx.core.json.Json;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -143,13 +142,13 @@ public abstract class AbstractEmail {
     logger.debug("handleSuccess:: parameter email: {}", () -> logAsJson(email));
 
     EmailEntity emailEntity = updateEmail(email, DELIVERED, message);
-    logger.info("handleSuccess:: result: {}", logAsJson(email));
+    logger.info("handleSuccess:: result: {}", () -> logAsJson(email));
     return emailEntity;
   }
 
   protected EmailEntity handleFailure(EmailEntity email, Throwable throwable) {
     String errorMessage = format(ERROR_SENDING_EMAIL, throwable.getMessage());
-    logger.debug("handleFailure:: parameters email: {}, exception: {}", logAsJson(email), throwable);
+    logger.debug("handleFailure:: parameters email: {}, exception: {}", () -> logAsJson(email),() -> throwable);
 
     EmailEntity emailEntity = updateEmail(email, FAILURE, errorMessage);
     logger.info("handleFailure:: result: {}", () -> logAsJson(email));
@@ -158,7 +157,7 @@ public abstract class AbstractEmail {
 
   private static EmailEntity updateEmail(EmailEntity email, Status status, String message) {
     int newAttemptCount = email.getAttemptCount() + 1;
-    logger.debug("updateEmail:: parameters emailId: {}, status: {}, message: {}", logAsJson(email), status, message);
+    logger.debug("updateEmail:: parameters emailId: {}, status: {}, message: {}",() -> logAsJson(email), () -> status, () -> message);
     return email
       .withStatus(status)
       .withMessage(message)

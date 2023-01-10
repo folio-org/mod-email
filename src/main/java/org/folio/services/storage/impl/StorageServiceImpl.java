@@ -55,7 +55,7 @@ public class StorageServiceImpl implements StorageService {
         .map(emailJson)
         .onComplete(resultHandler);
     } catch (Exception ex) {
-      logger.warn("saveEmailEntity:: Failed to save email: {}", ex);
+      logger.warn("saveEmailEntity:: Failed to save email", ex);
       errorHandler(ex, resultHandler);
     }
   }
@@ -73,7 +73,7 @@ public class StorageServiceImpl implements StorageService {
       pgClient.get(EMAIL_STATISTICS_TABLE_NAME, EmailEntity.class, fieldList, cql, true, false,
         getReply -> {
           if (getReply.failed()) {
-            logger.warn("findEmailEntries:: Failed to get email entries: {}", getReply.cause());
+            logger.warn("findEmailEntries:: Failed to get email entries: {}", getReply::cause);
             errorHandler(getReply.cause(), resultHandler);
             return;
           }
@@ -88,7 +88,7 @@ public class StorageServiceImpl implements StorageService {
           resultHandler.handle(succeededFuture(entries));
         });
     } catch (Exception ex) {
-      logger.warn("findEmailEntries:: Failed to get email entries: {}", ex);
+      logger.warn("findEmailEntries:: Failed to get email entries",ex);
       errorHandler(ex, resultHandler);
     }
   }
@@ -113,7 +113,7 @@ public class StorageServiceImpl implements StorageService {
         resultHandler.handle(succeededFuture());
       });
     } catch (Exception ex) {
-      logger.warn("deleteEmailEntriesByExpirationDateAndStatus:: Failed to delete email entries: {}", ex);
+      logger.warn("deleteEmailEntriesByExpirationDateAndStatus:: Failed to delete email entries", ex);
       errorHandler(ex, resultHandler);
     }
   }
