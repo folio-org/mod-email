@@ -40,7 +40,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
     Map<String, String> headers, Handler<AsyncResult<Response>> resultHandler, Context context) {
 
     logger.debug("deleteDelayedTaskExpiredMessages:: parameters: expirationDate={}, status={}, headers={}",
-      () -> expirationDate,() -> status,() -> logOkapiHeaders(headers));
+      () -> expirationDate, () -> status, () -> logOkapiHeaders(headers));
 
     succeededFuture()
       .compose(v -> checkExpirationDate(expirationDate))
@@ -60,7 +60,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
       () -> logOkapiHeaders(okapiHeaders));
 
     Handler<AsyncResult<Response>> loggingResponseHandler =
-      loggingResponseHandler("getAutomatedPatronBlocksByUserId", asyncResultHandler, logger);
+      loggingResponseHandler("postDelayedTaskRetryFailedEmails", asyncResultHandler, logger);
 
     if (loggingResponseHandler != null) {
       loggingResponseHandler.handle(succeededFuture(

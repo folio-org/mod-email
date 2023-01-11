@@ -80,7 +80,7 @@ public class MailServiceImpl implements MailService {
         .map(emailJson)
         .onComplete(resultHandler);
     } catch (Exception ex) {
-      logger.warn(format(ERROR_SENDING_EMAIL, ex));
+      logger.warn("sendEmail:: {}", format(ERROR_SENDING_EMAIL, ex));
       resultHandler.handle(failedFuture(ex.getMessage()));
     }
   }

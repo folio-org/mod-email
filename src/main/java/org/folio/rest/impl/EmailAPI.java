@@ -28,7 +28,7 @@ public class EmailAPI extends AbstractEmail implements Email {
     Handler<AsyncResult<Response>> resultHandler, Context vertxContext) {
 
     logger.debug("postEmail:: parameters: email={}, requestHeaders={}",
-      () -> logAsJson(email),() -> logOkapiHeaders(requestHeaders));
+      () -> logAsJson(email), () -> logOkapiHeaders(requestHeaders));
 
     succeededFuture()
       .compose(v -> processEmail(email, requestHeaders))
@@ -43,7 +43,8 @@ public class EmailAPI extends AbstractEmail implements Email {
   public void getEmail(String query, int offset, int limit, String lang,
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> resultHandler,
     Context context) {
-    logger.debug("getEmail:: parameters: query={}, offset={}, limit={}, lang={}", query, offset, limit, lang);
+    logger.debug("getEmail:: parameters: query={}, offset={}, limit={}, lang={}, okapiHeaders={}",
+      () -> query, () -> offset, () -> limit, () -> lang, () -> logOkapiHeaders(okapiHeaders));
     succeededFuture()
       .compose(v -> findEmailEntries(limit, offset, query))
       .map(GetEmailResponse::respond200WithApplicationJson)

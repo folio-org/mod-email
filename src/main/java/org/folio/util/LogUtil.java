@@ -1,9 +1,11 @@
 package org.folio.util;
 
 import static com.google.common.primitives.Ints.min;
+import static java.lang.String.format;
 import static java.util.function.Predicate.not;
 import static java.util.function.UnaryOperator.identity;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -22,6 +24,7 @@ import io.vertx.core.json.JsonObject;
 public class LogUtil {
   private static final Logger log = LogManager.getLogger(LogUtil.class);
   private static final int MAX_OBJECT_JSON_LENGTH = 10 * 1024;
+  private static final int DEFAULT_NUM_OF_LIST_ELEMENTS_TO_LOG = 10;
 
   private LogUtil() {
     throw new IllegalStateException("Utility class");
@@ -52,6 +55,32 @@ public class LogUtil {
     }
   }
 
+  public static String logList(List<?> list) {
+    return logList(list, DEFAULT_NUM_OF_LIST_ELEMENTS_TO_LOG);
+  }
+
+  public static String logList(List<?> list, int maxNumberOfElementsToLog) {
+    try {
+      if (list == null) {
+        return null;
+      } else {
+        int numberOfElementsToLog = min(list.size(), maxNumberOfElementsToLog);
+        return format("list(size: %d, %s: [%s])", list.size(),
+          numberOfElementsToLog == list.size() ? "elements"
+            : format("first %d element%s", numberOfElementsToLog, plural(numberOfElementsToLog)),
+          list.subList(0, numberOfElementsToLog).stream()
+            .map(LogUtil::logAsJson)
+            .collect(Collectors.joining(", ")));
+      }
+    } catch (Exception ex) {
+      log.warn("logList:: Failed to log a list", ex);
+      return null;
+    }
+  }
+
+  private static String plural(int number) {
+    return number == 1 ? "" : "s";
+  }
   public static String logOkapiHeaders(Map<String, String> okapiHeaders) {
     try {
       return logAsJson(new JsonObject(okapiHeaders.keySet().stream().filter(not("x-okapi-token"::equalsIgnoreCase)).collect(Collectors.toMap(identity(), okapiHeaders::get))));
