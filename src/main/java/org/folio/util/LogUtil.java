@@ -2,8 +2,6 @@ package org.folio.util;
 
 import static com.google.common.primitives.Ints.min;
 import static java.lang.String.format;
-import static java.util.function.Predicate.not;
-import static java.util.function.UnaryOperator.identity;
 
 import java.util.List;
 import java.util.Map;
@@ -11,6 +9,7 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.rest.persist.PostgresClient;
@@ -30,7 +29,7 @@ public class LogUtil {
     throw new IllegalStateException("Utility class");
   }
 
-  public static String logAsJson(Object object) {
+  public static String asJson(Object object) {
     if (object == null) {
       return null;
     }
@@ -47,19 +46,21 @@ public class LogUtil {
     try {
       return crop(PostgresClient.pojo2JsonObject(object).encode());
     } catch (JsonProcessingException jsonProcessingException) {
-      log.warn("logAsJson:: Error while logging an object of type {}", object.getClass().getCanonicalName(), jsonProcessingException);
+      log.warn("logAsJson:: Error while logging an object of type {}",
+        object.getClass().getCanonicalName(), jsonProcessingException);
       return null;
     } catch (Exception ex) {
-      log.warn("logAsJson:: Unexpected error while logging an object of type {}", object.getClass().getCanonicalName(), ex);
+      log.warn("logAsJson:: Unexpected error while logging an object of type {}",
+        object.getClass().getCanonicalName(), ex);
       return null;
     }
   }
 
-  public static String logList(List<?> list) {
-    return logList(list, DEFAULT_NUM_OF_LIST_ELEMENTS_TO_LOG);
+  public static String asJson(List<?> list) {
+    return asJson(list, DEFAULT_NUM_OF_LIST_ELEMENTS_TO_LOG);
   }
 
-  public static String logList(List<?> list, int maxNumberOfElementsToLog) {
+  public static String asJson(List<?> list, int maxNumberOfElementsToLog) {
     try {
       if (list == null) {
         return null;
@@ -69,7 +70,7 @@ public class LogUtil {
           numberOfElementsToLog == list.size() ? "elements"
             : format("first %d element%s", numberOfElementsToLog, plural(numberOfElementsToLog)),
           list.subList(0, numberOfElementsToLog).stream()
-            .map(LogUtil::logAsJson)
+            .map(LogUtil::asJson)
             .collect(Collectors.joining(", ")));
       }
     } catch (Exception ex) {
@@ -81,26 +82,41 @@ public class LogUtil {
   private static String plural(int number) {
     return number == 1 ? "" : "s";
   }
-  public static String logOkapiHeaders(Map<String, String> okapiHeaders) {
+
+  public static String headersAsString(Map<String, String> okapiHeaders) {
     try {
-      return logAsJson(new JsonObject(okapiHeaders.keySet().stream().filter(not("x-okapi-token"::equalsIgnoreCase)).collect(Collectors.toMap(identity(), okapiHeaders::get))));
+      Map<String, String> headersCopy = new CaseInsensitiveMap<>(okapiHeaders);
+      headersCopy.remove("x-okapi-token");
+      return headersCopy.toString();
     } catch (Exception ex) {
       log.warn("logOkapiHeaders:: Failed to log Okapi headers", ex);
       return null;
     }
   }
 
-  public static Handler<AsyncResult<Response>> loggingResponseHandler(String methodName, Handler<AsyncResult<Response>> asyncResultHandler, Logger logger) {
+//  public static String bodyAsString(HttpResponse<Buffer> response) {
+//    try {
+//      return crop(response.bodyAsString().replaceAll(R_N_LINE_SEPARATOR, R_LINE_SEPARATOR));
+//    } catch (Exception ex) {
+//      log.warn("logResponseBody:: Failed to log an HTTP response", ex);
+//      return null;
+//    }
+//  }
+
+  public static Handler<AsyncResult<Response>> loggingResponseHandler(String methodName,
+                                                                      Handler<AsyncResult<Response>> asyncResultHandler, Logger logger) {
 
     try {
       return responseAsyncResult -> {
         Response response = responseAsyncResult.result();
-        logger.info("{}:: result: HTTP response (code: {}, body: {})", () -> methodName, response::getStatus, () -> logAsJson(response.getEntity()));
+        logger.info("{}:: result: HTTP response (code: {}, body: {})", () -> methodName,
+          response::getStatus, () -> asJson(response.getEntity()));
         asyncResultHandler.handle(responseAsyncResult);
       };
     } catch (Exception ex) {
-      log.warn("loggingResponseHandler:: Failed to create a logging HTTP response " + "handler", ex);
-      return null;
+      log.warn("loggingResponseHandler:: Failed to create a logging HTTP response " +
+        "handler", ex);
+      return asyncResultHandler;
     }
   }
 
@@ -113,3 +129,4 @@ public class LogUtil {
     }
   }
 }
+

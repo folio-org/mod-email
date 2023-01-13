@@ -3,7 +3,7 @@ package org.folio.rest.impl;
 import static io.vertx.core.Future.succeededFuture;
 import static java.lang.System.currentTimeMillis;
 import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME;
-import static org.folio.util.LogUtil.logOkapiHeaders;
+import static org.folio.util.LogUtil.headersAsString;
 import static org.folio.util.LogUtil.loggingResponseHandler;
 
 import java.util.Collection;
@@ -40,7 +40,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
     Map<String, String> headers, Handler<AsyncResult<Response>> resultHandler, Context context) {
 
     logger.debug("deleteDelayedTaskExpiredMessages:: parameters: expirationDate={}, status={}, headers={}",
-      () -> expirationDate, () -> status, () -> logOkapiHeaders(headers));
+      () -> expirationDate, () -> status, () -> headersAsString(headers));
 
     succeededFuture()
       .compose(v -> checkExpirationDate(expirationDate))
@@ -57,7 +57,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
 
     logger.debug("postDelayedTaskRetryFailedEmails:: parameters: okapiHeaders={}",
-      () -> logOkapiHeaders(okapiHeaders));
+      () -> headersAsString(okapiHeaders));
 
     Handler<AsyncResult<Response>> loggingResponseHandler =
       loggingResponseHandler("postDelayedTaskRetryFailedEmails", asyncResultHandler, logger);

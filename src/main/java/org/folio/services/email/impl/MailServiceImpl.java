@@ -8,7 +8,8 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 import static org.folio.rest.impl.base.AbstractEmail.RETRY_MAX_ATTEMPTS;
 import static org.folio.util.EmailUtils.getMessageConfig;
-import static org.folio.util.LogUtil.logAsJson;
+import static org.folio.util.LogUtil.asJson;
+
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,7 @@ public class MailServiceImpl implements MailService {
     Handler<AsyncResult<JsonObject>> resultHandler) {
 
     logger.debug("sendEmail:: parameters: smtpConfigurationJson: {}, emailJson: {}",
-      () -> logAsJson(smtpConfigurationJson), () -> logAsJson(emailJson));
+      () -> asJson(smtpConfigurationJson), () -> asJson(emailJson));
     SmtpConfiguration smtpConfiguration = smtpConfigurationJson.mapTo(SmtpConfiguration.class);
 
     try {
@@ -164,7 +165,7 @@ public class MailServiceImpl implements MailService {
   private Buffer getAttachmentData(Attachment data) {
     String file = data.getData();
     if (StringUtils.isEmpty(file)) {
-      logger.error(format(ERROR_ATTACHMENT_DATA, data.getName()));
+      logger.warn("getAttachmentData:: {}", format(ERROR_ATTACHMENT_DATA, data.getName()));
       return Buffer.buffer();
     }
     // Decode incoming data from JSON
@@ -174,7 +175,7 @@ public class MailServiceImpl implements MailService {
 
   public static void addHeadersFromConfiguration(MailMessage message, SmtpConfiguration smtpConfiguration) {
     logger.debug("addHeadersFromConfiguration:: parameters: message: {}, smtpConfiguration: {}",
-      () -> logAsJson(message), () -> logAsJson(smtpConfiguration));
+      () -> asJson(message), () -> asJson(smtpConfiguration));
     Map<String, String> headers = smtpConfiguration.getEmailHeaders().stream()
       .filter(header -> isNoneBlank(header.getName(), header.getValue()))
       .collect(toMap(EmailHeader::getName, EmailHeader::getValue));

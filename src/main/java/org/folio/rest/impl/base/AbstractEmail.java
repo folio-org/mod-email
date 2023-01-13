@@ -104,12 +104,12 @@ public abstract class AbstractEmail {
   protected Future<EmailEntity> processEmail(EmailEntity email,
     Map<String, String> okapiHeaders) {
     logger.debug("processEmail:: parameter email: {}, requestHeaders={}",
-      () -> logAsJson(email), () -> logOkapiHeaders(okapiHeaders));
+      () -> asJson(email), () -> headersAsString(okapiHeaders));
 
     return processEmails(singletonList(email), okapiHeaders)
       .map(emails -> emails.stream().findFirst().orElseThrow())
       .onSuccess(result -> logger.info("processEmail:: result: {}",
-        () -> logAsJson(result)));
+        () -> asJson(result)));
   }
 
   protected Future<Collection<EmailEntity>> processEmails(Collection<EmailEntity> emails,
@@ -125,12 +125,12 @@ public abstract class AbstractEmail {
       .compose(config -> mapInOrder(emails, email -> processEmail(email, config)))
       .recover(t -> handleFailure(emails, t))
       .onSuccess(result -> logger.info("processEmails:: result: {}",
-        () -> logAsJson(result)));
+        () -> asJson(result)));
   }
 
   protected Future<EmailEntity> processEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
     logger.debug("processEmail:: parameters email: {}, smtpConfiguration: {}",
-      () -> logAsJson(email), () -> logAsJson(smtpConfiguration));
+      () -> asJson(email), () -> asJson(smtpConfiguration));
     applyConfiguration(email, smtpConfiguration);
 
     return sendEmail(email, smtpConfiguration)
@@ -141,25 +141,25 @@ public abstract class AbstractEmail {
   }
 
   protected EmailEntity handleSuccess(EmailEntity email) {
-    logger.debug("handleSuccess:: parameter email: {}", () -> logAsJson(email));
+    logger.debug("handleSuccess:: parameter email: {}", () -> asJson(email));
     String message = format(SUCCESS_SEND_EMAIL, join(",", email.getTo()));
     EmailEntity emailEntity = updateEmail(email, DELIVERED, message);
-    logger.info("handleSuccess:: result: {}", () -> logAsJson(email));
+    logger.info("handleSuccess:: result: {}", () -> asJson(email));
     return emailEntity;
   }
 
   protected EmailEntity handleFailure(EmailEntity email, Throwable throwable) {
     String errorMessage = format(ERROR_SENDING_EMAIL, throwable.getMessage());
-    logger.debug("handleFailure:: parameters email: {}, exception: {}", () -> logAsJson(email), () -> throwable);
+    logger.debug("handleFailure:: parameters email: {}, exception: {}", () -> asJson(email), () -> throwable);
 
     EmailEntity emailEntity = updateEmail(email, FAILURE, errorMessage);
-    logger.info("handleFailure:: result: {}", () -> logAsJson(email));
+    logger.info("handleFailure:: result: {}", () -> asJson(email));
     return emailEntity;
   }
 
   private static EmailEntity updateEmail(EmailEntity email, Status status, String message) {
     int newAttemptCount = email.getAttemptCount() + 1;
-    logger.debug("updateEmail:: parameters emailId: {}, status: {}, message: {}", () -> logAsJson(email), () -> status, () -> message);
+    logger.debug("updateEmail:: parameters emailId: {}, status: {}, message: {}", () -> asJson(email), () -> status, () -> message);
     return email
       .withStatus(status)
       .withMessage(message)
@@ -182,22 +182,22 @@ public abstract class AbstractEmail {
   }
 
   private Future<SmtpConfiguration> lookupSmtpConfiguration(Map<String, String> requestHeaders) {
-    logger.debug("lookupSmtpConfiguration:: requestHeaders={}", () -> logOkapiHeaders(requestHeaders));
+    logger.debug("lookupSmtpConfiguration:: requestHeaders={}", () -> headersAsString(requestHeaders));
     return smtpConfigurationService.getSmtpConfiguration()
       .compose(EmailUtils::validateSmtpConfiguration)
       .recover(throwable -> moveConfigsFromModConfigurationToLocalDb(requestHeaders))
-      .onSuccess(result -> logger.info("lookupSmtpConfiguration:: result: {}", () -> logAsJson(result)));
+      .onSuccess(result -> logger.info("lookupSmtpConfiguration:: result: {}", () -> asJson(result)));
   }
 
   private Future<SmtpConfiguration> moveConfigsFromModConfigurationToLocalDb(
     Map<String, String> requestHeaders) {
 
-    logger.debug("moveConfigsFromModConfigurationToLocalDb:: requestHeaders={}", () -> logOkapiHeaders(requestHeaders));
+    logger.debug("moveConfigsFromModConfigurationToLocalDb:: requestHeaders={}", () -> headersAsString(requestHeaders));
     OkapiClient okapiClient = new OkapiClient(vertx, requestHeaders, webClientOptions);
 
     return fetchSmtpConfigurationFromModConfig(okapiClient)
       .compose(configs -> copyConfigurationAndDeleteFromModConfig(configs, okapiClient))
-      .onSuccess(result -> logger.info("moveConfigsFromModConfigurationToLocalDb:: result: {}", () -> logAsJson(result)));
+      .onSuccess(result -> logger.info("moveConfigsFromModConfigurationToLocalDb:: result: {}", () -> asJson(result)));
   }
 
   private Future<Configurations> fetchSmtpConfigurationFromModConfig(OkapiClient okapiClient) {
@@ -210,7 +210,7 @@ public abstract class AbstractEmail {
       .compose(response -> {
         if (response.statusCode() == HTTP_OK.toInt()) {
           Configurations config = response.bodyAsJsonObject().mapTo(Configurations.class);
-          logger.info("fetchSmtpConfigurationFromModConfig:: Successfully fetched {} configuration entries", () -> logList(config.getConfigs()));
+          logger.info("fetchSmtpConfigurationFromModConfig:: Successfully fetched {} configuration entries", () -> asJson(config.getConfigs()));
           return succeededFuture(config);
         }
         String errorMessage = String.format(ERROR_LOOKING_UP_MOD_CONFIG,
@@ -256,7 +256,7 @@ public abstract class AbstractEmail {
   protected Future<EmailEntity> sendEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
     Promise<JsonObject> promise = Promise.promise();
     logger.debug("sendEmail:: parameters email: {}, smtpConfiguration: {}",
-      () -> logAsJson(email), () -> logAsJson(smtpConfiguration));
+      () -> asJson(email), () -> asJson(smtpConfiguration));
     mailService.sendEmail(mapFrom(smtpConfiguration), mapFrom(email), promise);
 
     return promise.future().map(email);
@@ -264,7 +264,7 @@ public abstract class AbstractEmail {
 
   protected Future<EmailEntity> saveEmail(EmailEntity email) {
     Promise<JsonObject> promise = Promise.promise();
-    logger.debug("saveEmail:: parameter email: {}", () -> logAsJson(email));
+    logger.debug("saveEmail:: parameter email: {}", () -> asJson(email));
     storageService.saveEmailEntity(tenantId, JsonObject.mapFrom(email), promise);
 
     return promise.future().map(email);

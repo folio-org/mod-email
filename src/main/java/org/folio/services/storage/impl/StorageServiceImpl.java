@@ -3,6 +3,7 @@ package org.folio.services.storage.impl;
 import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.persist.PostgresClient.convertToPsqlStandard;
 import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
+import static org.folio.util.LogUtil.asJson;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -18,7 +19,6 @@ import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.persist.interfaces.Results;
 import org.folio.services.storage.StorageService;
 
-import static org.folio.util.LogUtil.logAsJson;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -45,10 +45,10 @@ public class StorageServiceImpl implements StorageService {
     Handler<AsyncResult<JsonObject>> resultHandler) {
 
     logger.debug("saveEmailEntity:: parameters: tenantId: {}, emailJson: {}",
-      () -> tenantId, () -> logAsJson(emailJson));
+      () -> tenantId, () -> asJson(emailJson));
     try {
       EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
-      logger.debug("saveEmailEntity:: parameter emailEntity: {}", () -> logAsJson(emailEntity));
+      logger.debug("saveEmailEntity:: parameter emailEntity: {}", () -> asJson(emailEntity));
       String emailId = emailEntity.getId();
       PostgresClient.getInstance(vertx, tenantId)
         .save(EMAIL_STATISTICS_TABLE_NAME, emailId, emailEntity, true, true)
