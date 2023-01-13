@@ -94,15 +94,6 @@ public class LogUtil {
     }
   }
 
-//  public static String bodyAsString(HttpResponse<Buffer> response) {
-//    try {
-//      return crop(response.bodyAsString().replaceAll(R_N_LINE_SEPARATOR, R_LINE_SEPARATOR));
-//    } catch (Exception ex) {
-//      log.warn("logResponseBody:: Failed to log an HTTP response", ex);
-//      return null;
-//    }
-//  }
-
   public static Handler<AsyncResult<Response>> loggingResponseHandler(String methodName,
                                                                       Handler<AsyncResult<Response>> asyncResultHandler, Logger logger) {
 

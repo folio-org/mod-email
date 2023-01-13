@@ -165,7 +165,7 @@ public class MailServiceImpl implements MailService {
   private Buffer getAttachmentData(Attachment data) {
     String file = data.getData();
     if (StringUtils.isEmpty(file)) {
-      logger.warn("getAttachmentData:: {}", format(ERROR_ATTACHMENT_DATA, data.getName()));
+      logger.warn("getAttachmentData:: {}", ERROR_ATTACHMENT_DATA);
       return Buffer.buffer();
     }
     // Decode incoming data from JSON
