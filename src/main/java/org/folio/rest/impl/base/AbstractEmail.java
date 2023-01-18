@@ -103,7 +103,8 @@ public abstract class AbstractEmail {
 
   protected Future<EmailEntity> processEmail(EmailEntity email,
     Map<String, String> okapiHeaders) {
-    logger.debug("processEmail:: parameter email: {}, requestHeaders={}",
+
+    logger.debug("processEmail:: parameters email: {}, requestHeaders={}",
       () -> asJson(email), () -> headersAsString(okapiHeaders));
 
     return processEmails(singletonList(email), okapiHeaders)
@@ -171,7 +172,7 @@ public abstract class AbstractEmail {
   protected Future<Collection<EmailEntity>> handleFailure(Collection<EmailEntity> emails,
     Throwable throwable) {
 
-    logger.error("handleFailure:: Failed to process batch of {} emails: {}", emails.size(), throwable);
+    logger.debug("handleFailure:: Failed to process batch of {} emails: ", emails.size(), throwable);
 
     return CompositeFuture.all(
         emails.stream()
@@ -215,7 +216,7 @@ public abstract class AbstractEmail {
         }
         String errorMessage = String.format(ERROR_LOOKING_UP_MOD_CONFIG,
           path, response.statusCode(), response.bodyAsString());
-        logger.error("fetchSmtpConfigurationFromModConfig:: {}", errorMessage);
+        logger.warn("fetchSmtpConfigurationFromModConfig:: {}", errorMessage);
         return failedFuture(new ConfigurationException(errorMessage));
       });
   }
@@ -302,7 +303,7 @@ public abstract class AbstractEmail {
       ? DELIVERED.value()
       : findStatusByName(emailStatus);
     promise.complete(status);
-    logger.info("deleteEmailsByExpirationDate:: Successfully determinated email status {}", status);
+    logger.info("determinateEmailStatus:: Successfully determinated email status {}", status);
     return promise.future();
   }
 
@@ -319,10 +320,12 @@ public abstract class AbstractEmail {
   }
 
   protected Response mapExceptionToResponse(Throwable t) {
+    logger.debug("mapExceptionToResponse:: parameter", t);
     String errMsg = t.getMessage();
-    logger.error(errMsg, t);
 
+    logger.info("mapExceptionToResponse:: exception class is {}", t.getClass());
     if (t.getClass() == ConfigurationException.class) {
+      logger.warn("mapExceptionToResponse:: exception class is {}", t.getClass());
       return Response.status(400)
         .header(CONTENT_TYPE, TEXT_PLAIN)
         .entity(errMsg)

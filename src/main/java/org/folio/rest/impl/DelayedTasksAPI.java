@@ -93,7 +93,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
     if (result.succeeded()) {
       logger.info("logRetryResult:: Email retry job took {} ms and finished successfully", duration);
     } else {
-      logger.error("logRetryResult:: Email retry job took {} ms and failed: {}", duration,result.cause());
+      logger.error("logRetryResult:: Email retry job took {} ms and failed: {}", duration, result.cause());
     }
   }
 
