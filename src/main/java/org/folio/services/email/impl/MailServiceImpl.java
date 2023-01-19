@@ -60,8 +60,7 @@ public class MailServiceImpl implements MailService {
   public void sendEmail(JsonObject smtpConfigurationJson, JsonObject emailJson,
     Handler<AsyncResult<JsonObject>> resultHandler) {
 
-    logger.debug("sendEmail:: parameters: smtpConfigurationJson: {}, emailJson: {}",
-      () -> asJson(smtpConfigurationJson), () -> asJson(emailJson));
+    logger.debug("sendEmail:: ");
     SmtpConfiguration smtpConfiguration = smtpConfigurationJson.mapTo(SmtpConfiguration.class);
 
     try {
