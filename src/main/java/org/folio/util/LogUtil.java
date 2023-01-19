@@ -18,9 +18,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.HttpResponse;
 
 public class LogUtil {
   private static final Logger log = LogManager.getLogger(LogUtil.class);
