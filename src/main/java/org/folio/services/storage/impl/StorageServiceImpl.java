@@ -64,7 +64,7 @@ public class StorageServiceImpl implements StorageService {
 
   @Override
   public void findEmailEntries(String tenantId, int limit, int offset, String query,
-                               Handler<AsyncResult<JsonObject>> resultHandler) {
+    Handler<AsyncResult<JsonObject>> resultHandler) {
 
     logger.debug("findEmailEntries:: parameters: tenantId: {}, limit: {}, offset: {}, query: {}",
       () -> tenantId, () -> limit, () -> offset, () -> query);
@@ -97,7 +97,8 @@ public class StorageServiceImpl implements StorageService {
 
   @Override
   public void deleteEmailEntriesByExpirationDateAndStatus(String tenantId, String expirationDate, String status,
-                                                          Handler<AsyncResult<JsonObject>> resultHandler) {
+    Handler<AsyncResult<JsonObject>> resultHandler) {
+
     logger.debug("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {}", expirationDate, status);
     try {
       String fullTableName = getFullTableName(EMAIL_STATISTICS_TABLE_NAME, tenantId);

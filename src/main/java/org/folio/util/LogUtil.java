@@ -24,8 +24,6 @@ import io.vertx.ext.web.client.HttpResponse;
 
 public class LogUtil {
   private static final Logger log = LogManager.getLogger(LogUtil.class);
-  public static final String R_N_LINE_SEPARATOR = "[\\r\\n]";
-  public static final String R_LINE_SEPARATOR = "\\r";
   private static final int MAX_OBJECT_JSON_LENGTH = 10 * 1024;
   private static final int DEFAULT_NUM_OF_LIST_ELEMENTS_TO_LOG = 10;
 
@@ -94,15 +92,6 @@ public class LogUtil {
       return headersCopy.toString();
     } catch (Exception ex) {
       log.warn("logOkapiHeaders:: Failed to log Okapi headers", ex);
-      return null;
-    }
-  }
-
-  public static String bodyAsString(HttpResponse<Buffer> response) {
-    try {
-      return crop(response.bodyAsString().replaceAll(R_N_LINE_SEPARATOR, R_LINE_SEPARATOR));
-    } catch (Exception ex) {
-      log.warn("logResponseBody:: Failed to log an HTTP response", ex);
       return null;
     }
   }
