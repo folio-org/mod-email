@@ -1,7 +1,8 @@
 package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
-import static org.folio.util.LogUtil.*;
+import static org.folio.util.LogUtil.asJson;
+import static org.folio.util.LogUtil.headersAsString;
 
 import java.util.Map;
 

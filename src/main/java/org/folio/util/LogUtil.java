@@ -18,7 +18,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.HttpResponse;
 
 public class LogUtil {
   private static final Logger log = LogManager.getLogger(LogUtil.class);
@@ -85,7 +87,7 @@ public class LogUtil {
 
   public static String headersAsString(Map<String, String> okapiHeaders) {
     try {
-      Map<String, String> headersCopy = new CaseInsensitiveMap<>(okapiHeaders);
+      Map<String, String> headersCopy= new CaseInsensitiveMap<>(okapiHeaders);
       headersCopy.remove("x-okapi-token");
       return headersCopy.toString();
     } catch (Exception ex) {
@@ -95,13 +97,19 @@ public class LogUtil {
   }
 
   public static Handler<AsyncResult<Response>> loggingResponseHandler(String methodName,
-                                                                      Handler<AsyncResult<Response>> asyncResultHandler, Logger logger) {
+    Handler<AsyncResult<Response>> asyncResultHandler, Logger logger) {
 
     try {
       return responseAsyncResult -> {
         Response response = responseAsyncResult.result();
-        logger.info("{}:: result: HTTP response (code: {}, body: {})", () -> methodName,
-          response::getStatus, () -> asJson(response.getEntity()));
+        Object entity = response.getEntity();
+        String template = "{}:: result: HTTP response (code: {}, body: {})";
+        if (entity instanceof String) {
+          logger.info(template, methodName, response.getStatus(), crop((String) entity));
+        } else {
+          logger.info(template, () -> methodName, response::getStatus,
+            () -> asJson(response.getEntity()));
+        }
         asyncResultHandler.handle(responseAsyncResult);
       };
     } catch (Exception ex) {
