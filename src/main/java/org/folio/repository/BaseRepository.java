@@ -1,7 +1,5 @@
 package org.folio.repository;
 
-import static org.folio.util.LogUtil.asJson;
-
 import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
@@ -61,7 +59,6 @@ public class BaseRepository<T> {
   }
 
   public Future<List<T>> getAllWithLimit(int limit) {
-    log.debug("getAllWithLimit:: parameters limit: {}", limit);
     return get(null, 0, limit);
   }
 
@@ -79,24 +76,19 @@ public class BaseRepository<T> {
   }
 
   public Future<Boolean> delete(String id) {
-    log.debug("delete:: parameters id: {}", id);
     return pgClient.delete(tableName, id)
-      .map(updateResult -> updateResult.rowCount() == 1)
-      .onSuccess(result -> log.info("delete:: result: {}", () -> asJson(result)));
+      .map(updateResult -> updateResult.rowCount() == 1);
   }
 
   public Future<Boolean> delete(Criterion criterion) {
-    log.debug("delete:: parameters criterion: {}", criterion);
     return pgClient.delete(tableName, criterion)
       .map(RowSet::rowCount)
       .onSuccess(rowCount -> log.info("Deleted {} record(s) from table {} using query: {}",
         rowCount, tableName, criterion))
-      .map(rowCount -> rowCount > 0)
-      .onSuccess(result -> log.info("delete:: result: {}", () -> asJson(result)));
+      .map(rowCount -> rowCount > 0);
   }
 
   public Future<Void> removeAll(String tenantId) {
-    log.debug("removeAll:: parameters tenantId: {}", tenantId);
     String deleteAllQuery = String.format("DELETE FROM %s_%s.%s", tenantId,
       ModuleName.getModuleName(), tableName);
     return pgClient.execute(deleteAllQuery).mapEmpty();
