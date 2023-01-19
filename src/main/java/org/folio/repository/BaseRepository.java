@@ -42,24 +42,18 @@ public class BaseRepository<T> {
   }
 
   public Future<List<T>> get(String query, int offset, int limit) {
-    log.debug("get:: parameters query: {}, offset: {}, limit: {}", query, offset, limit);
     CQLWrapper cql = new CQLWrapper(cql2pgJson, query, limit, offset);
     return pgClient.get(tableName, entityType, cql, true)
-      .map(Results::getResults)
-      .onSuccess(result -> log.info("get:: result: {}", () -> asJson(result)));
+      .map(Results::getResults);
   }
 
   public Future<List<T>> get(Criterion criterion) {
-    log.debug("get:: parameters criterion: {}", criterion);
     return pgClient.get(tableName, entityType, criterion, true)
-      .map(Results::getResults)
-      .onSuccess(result -> log.info("get:: result: {}", () -> asJson(result)));
+      .map(Results::getResults);
   }
 
   public Future<T> get(String id) {
-    log.debug("get:: parameters id: {}", id);
-    return pgClient.getById(tableName, id, entityType)
-      .onSuccess(result -> log.info("get:: result: {}", () -> asJson(result)));
+    return pgClient.getById(tableName, id, entityType);
   }
 
   public Future<List<T>> getAllWithDefaultLimit() {
@@ -72,22 +66,16 @@ public class BaseRepository<T> {
   }
 
   public Future<String> save(T entity, String id) {
-    log.debug("save:: parameters entity: {}, id: {}", () -> asJson(entity), () -> id);
-    return pgClient.save(tableName, id, entity)
-      .onSuccess(result -> log.info("save:: result: {}", () -> asJson(result)));
+    return pgClient.save(tableName, id, entity);
   }
 
   public Future<String> upsert(T entity, String id) {
-    log.debug("upsert:: parameters entity: {}, id: {}", () -> asJson(entity), () -> id);
-    return pgClient.upsert(tableName, id, entity)
-      .onSuccess(result -> log.info("upsert:: result: {}", () -> asJson(result)));
+    return pgClient.upsert(tableName, id, entity);
   }
 
   public Future<Boolean> update(T entity, String id) {
-    log.debug("update:: parameters entity: {}, id: {}", () -> asJson(entity), () -> id);
     return pgClient.update(tableName, entity, id)
-      .map(updateResult -> updateResult.rowCount() == 1)
-      .onSuccess(result -> log.info("update:: result: {}", () -> asJson(result)));
+      .map(updateResult -> updateResult.rowCount() == 1);
   }
 
   public Future<Boolean> delete(String id) {
