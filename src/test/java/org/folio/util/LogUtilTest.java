@@ -27,13 +27,13 @@ public class LogUtilTest {
 
     @Test
     public void asJsonShouldReturnStringValueOfNumbers() {
-      assertEquals(LogUtil.asJson(1), "1");
-      assertEquals(LogUtil.asJson(1.123), "1.123");
+      assertEquals("1", LogUtil.asJson(1));
+      assertEquals("1.123", LogUtil.asJson(1.123));
     }
 
     @Test
     public void asJsonShouldReturnStringValueOfString() {
-      assertEquals(LogUtil.asJson("string"), "string");
+      assertEquals("string", LogUtil.asJson("string"));
     }
 
     @Test
