@@ -20,6 +20,7 @@
     <rest-assured.version>4.3.0</rest-assured.version>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <sonar.exclusions>**/LogUtil.java</sonar.exclusions>
   </properties>
 
   <dependencies>
