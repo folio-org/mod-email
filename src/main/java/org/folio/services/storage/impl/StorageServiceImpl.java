@@ -67,7 +67,7 @@ public class StorageServiceImpl implements StorageService {
     Handler<AsyncResult<JsonObject>> resultHandler) {
 
     logger.debug("findEmailEntries:: parameters: tenantId: {}, limit: {}, offset: {}, query: {}",
-      () -> tenantId, () -> limit, () -> offset, () -> query);
+      tenantId, limit, offset, query);
     try {
       String[] fieldList = {"*"};
       CQLWrapper cql = getCQL(query, limit, offset);

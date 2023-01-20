@@ -18,7 +18,8 @@ import static org.folio.util.AsyncUtil.mapInOrder;
 import static org.folio.util.EmailUtils.MAIL_SERVICE_ADDRESS;
 import static org.folio.util.EmailUtils.STORAGE_SERVICE_ADDRESS;
 import static org.folio.util.EmailUtils.findStatusByName;
-import static org.folio.util.LogUtil.*;
+import static org.folio.util.LogUtil.asJson;
+import static org.folio.util.LogUtil.headersAsString;
 
 import java.util.Collection;
 import java.util.Date;
@@ -143,7 +144,7 @@ public abstract class AbstractEmail {
   }
 
   protected EmailEntity handleSuccess(EmailEntity email) {
-    logger.debug("handleSuccess:: ");
+    logger.debug("handleSuccess:: parameters email: {}", email.getId());
     String message = format(SUCCESS_SEND_EMAIL, join(",", email.getTo()));
     EmailEntity emailEntity = updateEmail(email, DELIVERED, message);
     logger.info("handleSuccess:: result: {}", () -> asJson(emailEntity));
