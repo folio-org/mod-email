@@ -4,7 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -55,5 +57,14 @@ public class LogUtilTest {
       list.add(2.2);
       list.add("string");
       assertEquals("list(size: 3, elements: [1, 2.2, string])", LogUtil.asJson(list));
+    }
+
+    @Test
+    public void headersAsStringShouldRemoveOkapiTokenAndReturnRepresentation() {
+      Map<String, String> okapiHeaders = new HashMap<>();
+      okapiHeaders.put("X-Okapi-Tenant", "testTenant");
+      okapiHeaders.put("X-Okapi-Token", "token");
+      okapiHeaders.put("X-Okapi-Url", "url");
+      assertEquals("{x-okapi-tenant=testTenant, x-okapi-url=url}", LogUtil.headersAsString(okapiHeaders));
     }
 }
