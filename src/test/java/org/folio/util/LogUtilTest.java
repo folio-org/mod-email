@@ -22,7 +22,7 @@ public class LogUtilTest {
     public void asJsonShouldReturnStringValueOfJson() {
       JsonObject json = new JsonObject()
         .put("key", "value");
-      assertEquals(LogUtil.asJson(json), "{\"key\":\"value\"}");
+      assertEquals("{\"key\":\"value\"}", LogUtil.asJson(json));
     }
 
     @Test
