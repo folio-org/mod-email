@@ -44,11 +44,11 @@ public class StorageServiceImpl implements StorageService {
   public void saveEmailEntity(String tenantId, JsonObject emailJson,
     Handler<AsyncResult<JsonObject>> resultHandler) {
 
-    logger.debug("saveEmailEntity:: parameters: tenantId: {}, emailJson: {}",
+    logger.debug("saveEmailEntity:: parameters tenantId: {}, emailJson: {}",
       () -> tenantId, () -> asJson(emailJson));
     try {
       EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
-      logger.debug("saveEmailEntity:: parameter emailEntity: {}", () -> asJson(emailEntity));
+      logger.debug("saveEmailEntity:: parameters emailEntity: {}", () -> asJson(emailEntity));
       String emailId = emailEntity.getId();
       PostgresClient.getInstance(vertx, tenantId)
         .save(EMAIL_STATISTICS_TABLE_NAME, emailId, emailEntity, true, true)
@@ -66,7 +66,7 @@ public class StorageServiceImpl implements StorageService {
   public void findEmailEntries(String tenantId, int limit, int offset, String query,
     Handler<AsyncResult<JsonObject>> resultHandler) {
 
-    logger.debug("findEmailEntries:: parameters: tenantId: {}, limit: {}, offset: {}, query: {}",
+    logger.debug("findEmailEntries:: parameters tenantId: {}, limit: {}, offset: {}, query: {}",
       tenantId, limit, offset, query);
     try {
       String[] fieldList = {"*"};

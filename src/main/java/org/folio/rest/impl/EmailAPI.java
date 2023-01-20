@@ -27,7 +27,7 @@ public class EmailAPI extends AbstractEmail implements Email {
   public void postEmail(EmailEntity email, Map<String, String> requestHeaders,
     Handler<AsyncResult<Response>> resultHandler, Context vertxContext) {
 
-    logger.debug("postEmail:: parameters: emailId={}, requestHeaders={}",
+    logger.debug("postEmail:: parameters emailId={}, requestHeaders={}",
       () -> asJson(email.getId()), () -> headersAsString(requestHeaders));
 
     succeededFuture()
@@ -44,7 +44,7 @@ public class EmailAPI extends AbstractEmail implements Email {
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> resultHandler,
     Context context) {
 
-    logger.debug("getEmail:: parameters: query={}, offset={}, limit={}, lang={}, okapiHeaders={}",
+    logger.debug("getEmail:: parameters query={}, offset={}, limit={}, lang={}, okapiHeaders={}",
       () -> query, () -> offset, () -> limit, () -> lang, () -> headersAsString(okapiHeaders));
 
     succeededFuture()

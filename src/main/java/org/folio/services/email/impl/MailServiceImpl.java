@@ -173,7 +173,7 @@ public class MailServiceImpl implements MailService {
   }
 
   public static void addHeadersFromConfiguration(MailMessage message, SmtpConfiguration smtpConfiguration) {
-    logger.debug("addHeadersFromConfiguration:: parameters: message: {}, smtpConfiguration: {}",
+    logger.debug("addHeadersFromConfiguration:: parameters message: {}, smtpConfiguration: {}",
       () -> asJson(message), () -> asJson(smtpConfiguration));
     Map<String, String> headers = smtpConfiguration.getEmailHeaders().stream()
       .filter(header -> isNoneBlank(header.getName(), header.getValue()))

@@ -39,7 +39,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   public void deleteDelayedTaskExpiredMessages(String expirationDate, String status,
     Map<String, String> headers, Handler<AsyncResult<Response>> resultHandler, Context context) {
 
-    logger.debug("deleteDelayedTaskExpiredMessages:: parameters: expirationDate={}, status={}, headers={}",
+    logger.debug("deleteDelayedTaskExpiredMessages:: parameters expirationDate={}, status={}, headers={}",
       () -> expirationDate, () -> status, () -> headersAsString(headers));
 
     succeededFuture()
@@ -56,7 +56,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   public void postDelayedTaskRetryFailedEmails(Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
 
-    logger.debug("postDelayedTaskRetryFailedEmails:: parameters: okapiHeaders={}",
+    logger.debug("postDelayedTaskRetryFailedEmails:: parameters okapiHeaders={}",
       () -> headersAsString(okapiHeaders));
 
     Handler<AsyncResult<Response>> loggingResponseHandler =

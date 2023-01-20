@@ -268,7 +268,7 @@ public abstract class AbstractEmail {
 
   protected Future<EmailEntity> saveEmail(EmailEntity email) {
     Promise<JsonObject> promise = Promise.promise();
-    logger.debug("saveEmail:: parameter email: {}", () -> asJson(email));
+    logger.debug("saveEmail:: parameters email: {}", () -> asJson(email));
     storageService.saveEmailEntity(tenantId, JsonObject.mapFrom(email), promise);
 
     return promise.future().map(email);
@@ -300,7 +300,7 @@ public abstract class AbstractEmail {
   }
 
   protected Future<String> determinateEmailStatus(String emailStatus) {
-    logger.debug("determinateEmailStatus:: parameter emailStatus: {}", emailStatus);
+    logger.debug("determinateEmailStatus:: parameters emailStatus: {}", emailStatus);
     Promise<String> promise = Promise.promise();
     String status = StringUtils.isBlank(emailStatus)
       ? DELIVERED.value()
@@ -311,7 +311,7 @@ public abstract class AbstractEmail {
   }
 
   protected Future<Void> checkExpirationDate(String expirationDate) {
-    logger.debug("checkExpirationDate:: parameter expirationDate: {}", expirationDate);
+    logger.debug("checkExpirationDate:: parameters expirationDate: {}", expirationDate);
     Promise<Void> promise = Promise.promise();
     if (StringUtils.isBlank(expirationDate) || isCorrectDateFormat(expirationDate)) {
       promise.complete();
@@ -323,7 +323,7 @@ public abstract class AbstractEmail {
   }
 
   protected Response mapExceptionToResponse(Throwable t) {
-    logger.debug("mapExceptionToResponse:: parameter", t);
+    logger.debug("mapExceptionToResponse:: parameters", t);
     String errMsg = t.getMessage();
 
     logger.info("mapExceptionToResponse:: exception class is {}", t.getClass());
