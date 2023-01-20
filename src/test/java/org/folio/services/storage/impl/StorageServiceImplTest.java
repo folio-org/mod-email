@@ -11,11 +11,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
 public class StorageServiceImplTest {
-  private StorageService storageService;
-  @Before
-  public void setup() {
-    storageService = new StorageServiceImpl(Vertx.vertx());
-  }
+  private StorageService storageService = new StorageServiceImpl(Vertx.vertx());
 
   @Test
   public void saveEmailEntityShouldFail() {
