@@ -76,7 +76,7 @@ public class MailServiceImpl implements MailService {
       defineMailClient(mailConfig)
         .sendMail(mailMessage)
         .onSuccess(r -> logger.info("sendEmail:: Email {} sent in {} ms", emailId, currentTimeMillis() - start))
-        .onFailure(t -> logger.error("sendEmail:: Failed to send email {}: ", emailId, t))
+        .onFailure(t -> logger.warn("sendEmail:: Failed to send email {}: ", emailId, t))
         .map(emailJson)
         .onComplete(resultHandler);
     } catch (Exception ex) {
