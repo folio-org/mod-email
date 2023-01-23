@@ -173,7 +173,7 @@ public abstract class AbstractEmail {
   protected Future<Collection<EmailEntity>> handleFailure(Collection<EmailEntity> emails,
     Throwable throwable) {
 
-    logger.debug("handleFailure:: Failed to process batch of {} emails: ", emails.size(), throwable);
+    logger.warn("handleFailure:: Failed to process batch of {} emails: ", emails.size(), throwable);
 
     return CompositeFuture.all(
         emails.stream()
@@ -259,16 +259,16 @@ public abstract class AbstractEmail {
   }
 
   protected Future<EmailEntity> sendEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
-    Promise<JsonObject> promise = Promise.promise();
     logger.debug("sendEmail:: ");
+    Promise<JsonObject> promise = Promise.promise();
     mailService.sendEmail(mapFrom(smtpConfiguration), mapFrom(email), promise);
 
     return promise.future().map(email);
   }
 
   protected Future<EmailEntity> saveEmail(EmailEntity email) {
-    Promise<JsonObject> promise = Promise.promise();
     logger.debug("saveEmail:: parameters email: {}", () -> asJson(email));
+    Promise<JsonObject> promise = Promise.promise();
     storageService.saveEmailEntity(tenantId, JsonObject.mapFrom(email), promise);
 
     return promise.future().map(email);
@@ -284,8 +284,8 @@ public abstract class AbstractEmail {
   }
 
   protected Future<Void> deleteEmailsByExpirationDate(String expirationDate, String emailStatus) {
-    Promise<Void> promise = Promise.promise();
     logger.debug("deleteEmailsByExpirationDate:: parameters expirationDate: {}, emailStatus: {}", expirationDate, emailStatus);
+    Promise<Void> promise = Promise.promise();
     storageService.deleteEmailEntriesByExpirationDateAndStatus(tenantId, expirationDate, emailStatus,
       result -> {
         if (result.failed()) {
