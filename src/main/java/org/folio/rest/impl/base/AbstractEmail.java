@@ -289,11 +289,13 @@ public abstract class AbstractEmail {
     storageService.deleteEmailEntriesByExpirationDateAndStatus(tenantId, expirationDate, emailStatus,
       result -> {
         if (result.failed()) {
-          logger.warn("deleteEmailsByExpirationDate:: Failed to delete emails with expiration date {}", expirationDate);
+          logger.warn("deleteEmailsByExpirationDate:: Failed to delete emails with expiration date {}",
+            expirationDate, result.cause());
           promise.fail(result.cause());
           return;
         }
-        logger.info("deleteEmailsByExpirationDate:: Successfully deleted emails with expiration date {}", expirationDate);
+        logger.info("deleteEmailsByExpirationDate:: Successfully deleted emails with expiration date {}",
+          expirationDate);
         promise.complete();
       });
     return promise.future();

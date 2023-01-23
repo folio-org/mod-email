@@ -1,6 +1,7 @@
 package org.folio.services.email.impl;
 
 import static io.vertx.core.Future.failedFuture;
+import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
@@ -42,6 +43,7 @@ import io.vertx.ext.mail.StartTLSOptions;
 public class MailServiceImpl implements MailService {
 
   private static final Logger logger = LogManager.getLogger(MailServiceImpl.class);
+  private static final String ERROR_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message: %s";
   private static final String ERROR_ATTACHMENT_DATA = "Error attaching the `%s` file to email!";
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
 
@@ -78,7 +80,7 @@ public class MailServiceImpl implements MailService {
         .map(emailJson)
         .onComplete(resultHandler);
     } catch (Exception ex) {
-      logger.warn("sendEmail:: ", ex);
+      logger.warn("sendEmail:: {}", format(ERROR_SENDING_EMAIL, ex), ex);
       resultHandler.handle(failedFuture(ex.getMessage()));
     }
   }
