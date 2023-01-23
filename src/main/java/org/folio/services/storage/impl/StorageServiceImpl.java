@@ -19,7 +19,6 @@ import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.persist.interfaces.Results;
 import org.folio.services.storage.StorageService;
 
-
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -75,7 +74,7 @@ public class StorageServiceImpl implements StorageService {
       pgClient.get(EMAIL_STATISTICS_TABLE_NAME, EmailEntity.class, fieldList, cql, true, false,
         getReply -> {
           if (getReply.failed()) {
-            logger.warn("findEmailEntries:: Failed to get email entries: {}", getReply::cause);
+            logger.warn("findEmailEntries:: Failed to get email entries: ", getReply.cause());
             errorHandler(getReply.cause(), resultHandler);
             return;
           }

@@ -3,7 +3,6 @@ package org.folio.util;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,20 +42,12 @@ public class LogUtilTest {
 
     @Test
     public void asJsonShouldReturnStringRepresentationOfListOfIntegers() {
-      List<Integer> list = new ArrayList<>();
-      list.add(1);
-      list.add(2);
-      list.add(3);
-      assertEquals("list(size: 3, elements: [1, 2, 3])", LogUtil.asJson(list));
+      assertEquals("list(size: 3, elements: [1, 2, 3])", LogUtil.asJson(List.of(1, 2, 3)));
     }
 
     @Test
     public void asJsonShouldReturnStringRepresentationOfListOfObjects() {
-      List<Object> list = new ArrayList<>();
-      list.add(1);
-      list.add(2.2);
-      list.add("string");
-      assertEquals("list(size: 3, elements: [1, 2.2, string])", LogUtil.asJson(list));
+      assertEquals("list(size: 3, elements: [1, 2.2, string])", LogUtil.asJson(List.of(1, 2.2, "string")));
     }
 
     @Test
