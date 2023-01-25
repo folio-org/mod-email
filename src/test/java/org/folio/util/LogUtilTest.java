@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNull;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,6 +43,11 @@ public class LogUtilTest {
   @Test
   public void asJsonShouldReturnNullIfCallWithNullAndSizeValue() {
     assertNull(LogUtil.asJson(null, 10));
+  }
+
+  @Test
+  public void asJsonShouldReturnNullWhenObjectIsNotSerializable() {
+    assertNull(LogUtil.asJson(new HashSet<>()));
   }
 
   @Test
@@ -101,4 +107,5 @@ public class LogUtilTest {
   public void emailAsJsonShouldReturnNullIfEmailIsNull() {
     assertNull(LogUtil.emailAsJson(null));
   }
+
 }
