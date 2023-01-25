@@ -3,6 +3,7 @@ package org.folio.util;
 import static com.google.common.primitives.Ints.min;
 import static java.lang.String.format;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -12,6 +13,9 @@ import javax.ws.rs.core.Response;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.rest.jaxrs.model.EmailEntries;
+import org.folio.rest.jaxrs.model.SmtpConfiguration;
 import org.folio.rest.persist.PostgresClient;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -132,6 +136,63 @@ public class LogUtil {
       log.warn("crop:: Failed to crop a string", ex);
       return null;
     }
+  }
+
+  public static String emailAsJson(EmailEntity emailEntity) {
+    if (emailEntity == null) {
+      return null;
+    }
+
+    return asJson(new EmailEntity()
+      .withId(emailEntity.getId())
+      .withNotificationId(emailEntity.getNotificationId())
+      .withOutputFormat(emailEntity.getOutputFormat())
+      .withStatus(emailEntity.getStatus())
+      .withShouldRetry(emailEntity.getShouldRetry())
+      .withAttemptCount(emailEntity.getAttemptCount())
+      .withMessage(emailEntity.getMessage())
+      .withDate(emailEntity.getDate())
+      .withMetadata(emailEntity.getMetadata()));
+  }
+
+  public static String emailIdsAsString(EmailEntries emailEntries) {
+    if (emailEntries == null) {
+      return null;
+    }
+
+    return emailIdsAsString(emailEntries.getEmailEntity());
+  }
+
+  public static String emailIdsAsString(Collection<EmailEntity> emails) {
+    if (emails == null) {
+      return null;
+    }
+
+    return emails.stream()
+      .map(EmailEntity::getId)
+      .limit(min(emails.size(), DEFAULT_NUM_OF_LIST_ELEMENTS_TO_LOG))
+      .collect(Collectors.joining(", "));
+  }
+
+  public static String smtpConfigAsJson(SmtpConfiguration smtpConfiguration) {
+    if (smtpConfiguration == null) {
+      return null;
+    }
+
+    return asJson(new SmtpConfiguration()
+      .withId(smtpConfiguration.getId())
+      .withHost(smtpConfiguration.getHost())
+      .withPort(smtpConfiguration.getPort())
+      .withUsername("...")
+      .withPassword("...")
+      .withSsl(smtpConfiguration.getSsl())
+      .withTrustAll(smtpConfiguration.getTrustAll())
+      .withLoginOption(smtpConfiguration.getLoginOption())
+      .withStartTlsOptions(smtpConfiguration.getStartTlsOptions())
+      .withAuthMethods(smtpConfiguration.getAuthMethods())
+      .withFrom(smtpConfiguration.getFrom())
+      .withEmailHeaders(smtpConfiguration.getEmailHeaders())
+      .withMetadata(smtpConfiguration.getMetadata()));
   }
 }
 

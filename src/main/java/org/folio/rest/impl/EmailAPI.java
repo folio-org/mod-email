@@ -3,6 +3,7 @@ package org.folio.rest.impl;
 import static io.vertx.core.Future.succeededFuture;
 import static org.folio.util.LogUtil.asJson;
 import static org.folio.util.LogUtil.headersAsString;
+import static org.folio.util.LogUtil.loggingResponseHandler;
 
 import java.util.Map;
 
@@ -27,7 +28,7 @@ public class EmailAPI extends AbstractEmail implements Email {
   public void postEmail(EmailEntity email, Map<String, String> requestHeaders,
     Handler<AsyncResult<Response>> resultHandler, Context vertxContext) {
 
-    logger.debug("postEmail:: parameters emailId={}, requestHeaders={}",
+    log.debug("postEmail:: parameters emailId: {}, requestHeaders: {}",
       () -> asJson(email.getId()), () -> headersAsString(requestHeaders));
 
     succeededFuture()
@@ -36,7 +37,7 @@ public class EmailAPI extends AbstractEmail implements Email {
       .map(PostEmailResponse::respond200WithTextPlain)
       .map(Response.class::cast)
       .otherwise(this::mapExceptionToResponse)
-      .onComplete(resultHandler);
+      .onComplete(loggingResponseHandler("postEmail", resultHandler, log));
   }
 
   @Override
@@ -44,7 +45,7 @@ public class EmailAPI extends AbstractEmail implements Email {
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> resultHandler,
     Context context) {
 
-    logger.debug("getEmail:: parameters query={}, offset={}, limit={}, lang={}, okapiHeaders={}",
+    log.debug("getEmail:: parameters query: {}, offset: {}, limit: {}, lang: {}, okapiHeaders: {}",
       () -> query, () -> offset, () -> limit, () -> lang, () -> headersAsString(okapiHeaders));
 
     succeededFuture()
@@ -52,7 +53,7 @@ public class EmailAPI extends AbstractEmail implements Email {
       .map(GetEmailResponse::respond200WithApplicationJson)
       .map(Response.class::cast)
       .otherwise(this::mapExceptionToResponse)
-      .onComplete(resultHandler);
+      .onComplete(loggingResponseHandler("getEmail", resultHandler, log));
   }
 
 }

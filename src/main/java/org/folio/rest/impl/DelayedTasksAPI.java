@@ -3,6 +3,7 @@ package org.folio.rest.impl;
 import static io.vertx.core.Future.succeededFuture;
 import static java.lang.System.currentTimeMillis;
 import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME;
+import static org.folio.util.LogUtil.emailIdsAsString;
 import static org.folio.util.LogUtil.headersAsString;
 import static org.folio.util.LogUtil.loggingResponseHandler;
 
@@ -39,8 +40,8 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   public void deleteDelayedTaskExpiredMessages(String expirationDate, String status,
     Map<String, String> headers, Handler<AsyncResult<Response>> resultHandler, Context context) {
 
-    logger.debug("deleteDelayedTaskExpiredMessages:: parameters expirationDate={}, status={}, headers={}",
-      () -> expirationDate, () -> status, () -> headersAsString(headers));
+    log.debug("deleteDelayedTaskExpiredMessages:: parameters expirationDate: {}, status: {}, " +
+        "headers: {}", () -> expirationDate, () -> status, () -> headersAsString(headers));
 
     succeededFuture()
       .compose(v -> checkExpirationDate(expirationDate))
@@ -49,18 +50,18 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
       .map(v -> DeleteDelayedTaskExpiredMessagesResponse.respond204())
       .map(Response.class::cast)
       .otherwise(this::mapExceptionToResponse)
-      .onComplete(resultHandler);
+      .onComplete(loggingResponseHandler("postEmail", resultHandler, log));
   }
 
   @Override
   public void postDelayedTaskRetryFailedEmails(Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
 
-    logger.debug("postDelayedTaskRetryFailedEmails:: parameters okapiHeaders={}",
+    log.debug("postDelayedTaskRetryFailedEmails:: parameters okapiHeaders: {}",
       () -> headersAsString(okapiHeaders));
 
     Handler<AsyncResult<Response>> loggingResponseHandler =
-      loggingResponseHandler("postDelayedTaskRetryFailedEmails", asyncResultHandler, logger);
+      loggingResponseHandler("postDelayedTaskRetryFailedEmails", asyncResultHandler, log);
 
     if (loggingResponseHandler != null) {
       loggingResponseHandler.handle(succeededFuture(
@@ -76,7 +77,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   }
 
   private Future<List<EmailEntity>> findEmailsForRetry() {
-    logger.debug("findEmailsForRetry::");
+    log.debug("findEmailsForRetry::");
     String thresholdDate = ClockUtil.getZonedDateTime()
       .minusMinutes(RETRY_AGE_THRESHOLD_MINUTES)
       .format(ISO_ZONED_DATE_TIME);
@@ -85,15 +86,22 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
 
     return findEmailEntries(RETRY_BATCH_SIZE, 0, query)
       .map(EmailEntries::getEmailEntity)
-      .onSuccess(emails -> logger.info("findEmailsForRetry:: Found {} emails for retry", emails.size()));
+      .onSuccess(emails -> log.info("findEmailsForRetry:: result: {}",
+        () -> emailIdsAsString(emails)));
   }
 
-  private static void logRetryResult(AsyncResult<Collection<EmailEntity>> result, long startTimeMillis) {
+  private static void logRetryResult(AsyncResult<Collection<EmailEntity>> result,
+    long startTimeMillis) {
+
+    log.debug("logRetryResult:: parameters result: Future(succeeded={}), startTimeMillis: {}",
+      result.succeeded(), startTimeMillis);
+
     long duration = currentTimeMillis() - startTimeMillis;
     if (result.succeeded()) {
-      logger.info("logRetryResult:: Email retry job took {} ms and finished successfully", duration);
+      log.info("logRetryResult:: Email retry job took {} ms and finished successfully", duration);
     } else {
-      logger.warn("logRetryResult:: Email retry job took {} ms and failed: ", duration, result.cause());
+      log.warn("logRetryResult:: Email retry job took {} ms and failed: ", duration,
+        result.cause());
     }
   }
 
