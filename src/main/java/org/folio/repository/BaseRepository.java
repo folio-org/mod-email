@@ -20,7 +20,7 @@ import io.vertx.sqlclient.RowSet;
 public class BaseRepository<T> {
 
   private static final Logger log = LogManager.getLogger(BaseRepository.class);
-  public static final String GET_RESULT_LOG = "get:: result: {}";
+  private static final String GET_RESULT_LOG = "get:: result: {}";
 
   protected final PostgresClient pgClient;
   protected final String tableName;
