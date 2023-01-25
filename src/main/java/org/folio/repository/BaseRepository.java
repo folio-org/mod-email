@@ -20,6 +20,7 @@ import io.vertx.sqlclient.RowSet;
 public class BaseRepository<T> {
 
   private static final Logger log = LogManager.getLogger(BaseRepository.class);
+  public static final String GET_RESULT_LOG = "get:: result: {}";
 
   protected final PostgresClient pgClient;
   protected final String tableName;
@@ -42,20 +43,20 @@ public class BaseRepository<T> {
     CQLWrapper cql = new CQLWrapper(cql2pgJson, query, limit, offset);
     return pgClient.get(tableName, entityType, cql, true)
       .map(Results::getResults)
-      .onSuccess(result -> log.debug("get:: result: {}", () -> asJson(result)));
+      .onSuccess(result -> log.debug(GET_RESULT_LOG, () -> asJson(result)));
   }
 
   public Future<List<T>> get(Criterion criterion) {
     log.debug("get:: parameters criterion: {}", criterion);
     return pgClient.get(tableName, entityType, criterion, true)
       .map(Results::getResults)
-      .onSuccess(result -> log.debug("get:: result: {}", () -> asJson(result)));
+      .onSuccess(result -> log.debug(GET_RESULT_LOG, () -> asJson(result)));
   }
 
   public Future<T> get(String id) {
     log.debug("get:: parameters id: {}", id);
     return pgClient.getById(tableName, id, entityType)
-      .onSuccess(result -> log.debug("get:: result: {}", () -> asJson(result)));
+      .onSuccess(result -> log.debug(GET_RESULT_LOG, () -> asJson(result)));
   }
 
   public Future<List<T>> getAllWithLimit(int limit) {
