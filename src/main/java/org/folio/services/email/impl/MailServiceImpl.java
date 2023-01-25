@@ -101,7 +101,7 @@ public class MailServiceImpl implements MailService {
 
   private MailConfig getMailConfig(SmtpConfiguration smtpConfiguration) {
     log.debug("getMailConfig:: parameters smtpConfiguration: {}",
-      smtpConfigAsJson(smtpConfiguration));
+      () -> smtpConfigAsJson(smtpConfiguration));
     boolean ssl = ofNullable(smtpConfiguration.getSsl()).orElse(false);
 
     StartTLSOptions startTLSOptions = StartTLSOptions.valueOf(

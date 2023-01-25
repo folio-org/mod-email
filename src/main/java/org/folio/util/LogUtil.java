@@ -115,7 +115,7 @@ public class LogUtil {
         Object entity = response.getEntity();
         String template = "{}:: result: HTTP response (code: {}, body: {})";
         if (entity instanceof String) {
-          logger.info(template, methodName, response.getStatus(), crop((String) entity));
+          logger.info(template, () -> methodName, response::getStatus, () -> crop((String) entity));
         } else {
           logger.info(template, () -> methodName, response::getStatus,
             () -> asJson(response.getEntity()));

@@ -22,8 +22,6 @@ import io.vertx.sqlclient.RowSet;
 public class BaseRepository<T> {
 
   private static final Logger log = LogManager.getLogger(BaseRepository.class);
-  private static final String OPERATION_EQUALS = "=";
-  private static final int DEFAULT_LIMIT = 100;
 
   protected final PostgresClient pgClient;
   protected final String tableName;

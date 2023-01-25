@@ -165,7 +165,7 @@ public abstract class AbstractEmail {
     }
     String errorMessage = format(ERROR_SENDING_EMAIL, throwable.getMessage());
     EmailEntity emailEntity = updateEmail(email, FAILURE, errorMessage);
-    log.info("handleFailure:: result: {}", emailAsJson(emailEntity));
+    log.info("handleFailure:: result: {}", () -> emailAsJson(emailEntity));
     return emailEntity;
   }
 
@@ -179,7 +179,7 @@ public abstract class AbstractEmail {
       .withDate(Date.from(ClockUtil.getZonedDateTime().toInstant()))
       .withAttemptCount(newAttemptCount)
       .withShouldRetry(status == FAILURE && newAttemptCount < RETRY_MAX_ATTEMPTS);
-    log.info("updateEmail:: result: {}", emailAsJson(result));
+    log.info("updateEmail:: result: {}", () -> emailAsJson(result));
     return result;
   }
 
@@ -286,8 +286,8 @@ public abstract class AbstractEmail {
   }
 
   protected Future<EmailEntity> sendEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
-    log.debug("sendEmail:: email: {}, smtpConfiguration: {}", emailAsJson(email),
-      smtpConfigAsJson(smtpConfiguration));
+    log.debug("sendEmail:: email: {}, smtpConfiguration: {}", () -> emailAsJson(email),
+      () -> smtpConfigAsJson(smtpConfiguration));
     Promise<JsonObject> promise = Promise.promise();
     mailService.sendEmail(mapFrom(smtpConfiguration), mapFrom(email), promise);
 
@@ -391,8 +391,8 @@ public abstract class AbstractEmail {
   }
 
   private static void applyConfiguration(EmailEntity email, SmtpConfiguration smtpConfiguration) {
-    log.debug("applyConfiguration:: email: {}, smtpConfiguration: {}", emailAsJson(email),
-      smtpConfigAsJson(smtpConfiguration));
+    log.debug("applyConfiguration:: email: {}, smtpConfiguration: {}", () -> emailAsJson(email),
+      () -> smtpConfigAsJson(smtpConfiguration));
     if (StringUtils.isBlank(email.getFrom())) {
       log.debug("applyConfiguration:: 'from' field is blank, copying it from SMTP configuration");
       email.withFrom(smtpConfiguration.getFrom());
