@@ -91,4 +91,9 @@ public class LogUtilTest {
   public void smtpConfigAsJsonShouldReturnNullIfConfigNull() {
     assertNull(LogUtil.smtpConfigAsJson(null));
   }
+
+  @Test
+  public void emailAsJsonShouldReturnNullIfEmailIsNull() {
+    assertNull(LogUtil.emailAsJson(null));
+  }
 }
