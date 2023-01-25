@@ -64,6 +64,11 @@ public class LogUtilTest {
   }
 
   @Test
+  public void headersAsStringShouldReturnNullIfHeadersNull() {
+    assertNull(LogUtil.headersAsString(null));
+  }
+
+  @Test
   public void emailIdsAsStringShouldReturnEmailsRepresentationOfEmailEntries() {
     String emailId = UUID.randomUUID().toString();
     EmailEntity emailEntity = new EmailEntity()
