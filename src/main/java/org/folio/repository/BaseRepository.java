@@ -62,11 +62,6 @@ public class BaseRepository<T> {
       .onSuccess(result -> log.debug("get:: result: {}", () -> asJson(result)));
   }
 
-  public Future<List<T>> getAllWithDefaultLimit() {
-    log.debug("getAllWithDefaultLimit::");
-    return getAllWithLimit(DEFAULT_LIMIT);
-  }
-
   public Future<List<T>> getAllWithLimit(int limit) {
     log.debug("getAllWithLimit:: parameters limit: {}", limit);
     return get(null, 0, limit);
@@ -76,19 +71,6 @@ public class BaseRepository<T> {
     log.debug("save:: parameters entity: {}, id: {}", () -> asJson(entity), () -> id);
     return pgClient.save(tableName, id, entity)
       .onSuccess(result -> log.debug("save:: result: {}", result));
-  }
-
-  public Future<String> upsert(T entity, String id) {
-    log.debug("upsert:: parameters entity: {}, id: {}", () -> asJson(entity), () -> id);
-    return pgClient.upsert(tableName, id, entity)
-      .onSuccess(result -> log.debug("upsert:: result: {}", result));
-  }
-
-  public Future<Boolean> update(T entity, String id) {
-    log.debug("update:: parameters entity: {}, id: {}", () -> asJson(entity), () -> id);
-    return pgClient.update(tableName, entity, id)
-      .map(updateResult -> updateResult.rowCount() == 1)
-      .onSuccess(result -> log.debug("update:: result: {}", result));
   }
 
   public Future<Boolean> delete(String id) {
