@@ -1,9 +1,14 @@
 package org.folio.rest.impl;
 
+import static org.folio.util.LogUtil.headersAsString;
+import static org.folio.util.LogUtil.smtpConfigAsJson;
+
 import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.SmtpConfiguration;
 import org.folio.rest.jaxrs.model.SmtpConfigurations;
 import org.folio.rest.persist.PgUtil;
@@ -14,11 +19,16 @@ import io.vertx.core.Handler;
 
 public class SmtpConfigurationApi implements org.folio.rest.jaxrs.resource.SmtpConfiguration {
   public static final String SMTP_CONFIGURATION_TABLE_NAME = "smtp_configuration";
+  private static final Logger log = LogManager.getLogger(SmtpConfigurationApi.class);
 
   @Override
   public void getSmtpConfiguration(int offset, int limit, String query, String lang,
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
+
+    log.debug("getSmtpConfiguration:: parameters offset: {}, limit: {}, query: {}, lang: {}, " +
+        "okapiHeaders: {}", () -> offset, () -> limit, () -> query, () -> lang,
+      () -> headersAsString(okapiHeaders));
 
     PgUtil.get(SMTP_CONFIGURATION_TABLE_NAME, SmtpConfiguration.class, SmtpConfigurations.class,
       query, offset, limit, okapiHeaders, vertxContext, GetSmtpConfigurationResponse.class)
@@ -30,6 +40,9 @@ public class SmtpConfigurationApi implements org.folio.rest.jaxrs.resource.SmtpC
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
 
+    log.debug("postSmtpConfiguration:: parameters lang: {}, entity: {}, okapiHeaders: {}",
+      () -> lang, () -> smtpConfigAsJson(entity), () -> headersAsString(okapiHeaders));
+
     PgUtil.post(SMTP_CONFIGURATION_TABLE_NAME, entity, okapiHeaders, vertxContext,
       PostSmtpConfigurationResponse.class)
       .onComplete(asyncResultHandler);
@@ -39,6 +52,10 @@ public class SmtpConfigurationApi implements org.folio.rest.jaxrs.resource.SmtpC
   public void getSmtpConfigurationBySmtpConfigurationId(String smtpConfigurationId, String lang,
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
+
+    log.debug("getSmtpConfigurationBySmtpConfigurationId:: parameters smtpConfigurationId: {}, " +
+        "lang: {}, okapiHeaders: {}", () -> smtpConfigurationId, () -> lang,
+      () -> headersAsString(okapiHeaders));
 
     PgUtil.getById(SMTP_CONFIGURATION_TABLE_NAME, SmtpConfiguration.class,
       smtpConfigurationId, okapiHeaders, vertxContext,
@@ -50,6 +67,10 @@ public class SmtpConfigurationApi implements org.folio.rest.jaxrs.resource.SmtpC
     SmtpConfiguration entity, Map<String, String> okapiHeaders,
     Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
 
+    log.debug("putSmtpConfigurationBySmtpConfigurationId:: parameters smtpConfigurationId: {}, " +
+      "lang: {}, entity: {}, okapiHeaders: {}", () -> smtpConfigurationId, () -> lang,
+      () -> smtpConfigAsJson(entity), () -> headersAsString(okapiHeaders));
+
     PgUtil.put(SMTP_CONFIGURATION_TABLE_NAME, entity, smtpConfigurationId, okapiHeaders,
       vertxContext, PutSmtpConfigurationBySmtpConfigurationIdResponse.class)
       .onComplete(asyncResultHandler);
@@ -59,6 +80,10 @@ public class SmtpConfigurationApi implements org.folio.rest.jaxrs.resource.SmtpC
   public void deleteSmtpConfigurationBySmtpConfigurationId(String smtpConfigurationId, String lang,
     Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
     Context vertxContext) {
+
+    log.debug("deleteSmtpConfigurationBySmtpConfigurationId:: parameters smtpConfigurationId: {}, " +
+      "lang: {}, okapiHeaders: {}", () -> smtpConfigurationId, () -> lang, 
+      () -> headersAsString(okapiHeaders));
 
     PgUtil.deleteById(SMTP_CONFIGURATION_TABLE_NAME, smtpConfigurationId, okapiHeaders,
       vertxContext, DeleteSmtpConfigurationBySmtpConfigurationIdResponse.class)

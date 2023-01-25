@@ -24,13 +24,15 @@ import io.vertx.serviceproxy.ServiceBinder;
  */
 public class InitAPIs implements InitAPI {
 
-  private final Logger logger = LogManager.getLogger(InitAPIs.class);
+  private final Logger log = LogManager.getLogger(InitAPIs.class);
 
   @Override
   public void init(Vertx vertx, Context context, Handler<AsyncResult<Boolean>> handler) {
+    log.debug("init:: ");
     final int port = Integer.parseInt(
       System.getProperty("http.port", System.getProperty("port", "8080")));
-    logger.info(ManagementFactory.getRuntimeMXBean().getName() + " on port " + port);
+    log.info("init:: {} on port {}", () -> ManagementFactory.getRuntimeMXBean().getName(),
+      () -> port);
     new ServiceBinder(vertx)
       .setAddress(MAIL_SERVICE_ADDRESS)
       .register(MailService.class, MailService.create(vertx));

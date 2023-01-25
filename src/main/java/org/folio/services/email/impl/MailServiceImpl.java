@@ -8,6 +8,9 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 import static org.folio.rest.impl.base.AbstractEmail.RETRY_MAX_ATTEMPTS;
 import static org.folio.util.EmailUtils.getMessageConfig;
+import static org.folio.util.LogUtil.asJson;
+import static org.folio.util.LogUtil.emailAsJson;
+import static org.folio.util.LogUtil.smtpConfigAsJson;
 
 import java.util.Base64;
 import java.util.List;
@@ -41,7 +44,7 @@ import io.vertx.ext.mail.StartTLSOptions;
 
 public class MailServiceImpl implements MailService {
 
-  private static final Logger logger = LogManager.getLogger(MailServiceImpl.class);
+  private static final Logger log = LogManager.getLogger(MailServiceImpl.class);
   private static final String ERROR_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message: %s";
   private static final String ERROR_ATTACHMENT_DATA = "Error attaching the `%s` file to email!";
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
@@ -59,7 +62,10 @@ public class MailServiceImpl implements MailService {
   public void sendEmail(JsonObject smtpConfigurationJson, JsonObject emailJson,
     Handler<AsyncResult<JsonObject>> resultHandler) {
 
+    log.debug("sendEmail:: parameters smtpConfigurationJson: JsonObject, emailJson: JsonObject");
     SmtpConfiguration smtpConfiguration = smtpConfigurationJson.mapTo(SmtpConfiguration.class);
+    log.debug("sendEmail:: converted SMTP configuration: {}",
+      () -> smtpConfigAsJson(smtpConfiguration));
 
     try {
       EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
@@ -68,23 +74,25 @@ public class MailServiceImpl implements MailService {
       String emailId = emailEntity.getId();
       long start = currentTimeMillis();
 
-      logger.info("Sending email {}: attempt {}/{}",
+      log.info("sendEmail:: Sending email {}: attempt {}/{}",
         emailId, emailEntity.getAttemptCount() + 1, RETRY_MAX_ATTEMPTS);
 
       defineMailClient(mailConfig)
         .sendMail(mailMessage)
-        .onSuccess(r -> logger.info("Email {} sent in {} ms", emailId, currentTimeMillis() - start))
-        .onFailure(t -> logger.error("Failed to send email {}: {}", emailId, t.getMessage()))
+        .onSuccess(r -> log.info("sendEmail:: Email {} sent in {} ms", emailId, currentTimeMillis() - start))
+        .onFailure(t -> log.warn("sendEmail:: Failed to send email {}: ", emailId, t))
         .map(emailJson)
         .onComplete(resultHandler);
     } catch (Exception ex) {
-      logger.error(format(ERROR_SENDING_EMAIL, ex.getMessage()));
+      log.warn("sendEmail:: {}", format(ERROR_SENDING_EMAIL, ex), ex);
       resultHandler.handle(failedFuture(ex.getMessage()));
     }
   }
 
   private MailClient defineMailClient(MailConfig mailConfig) {
+    log.debug("defineMailClient:: ");
     if (Objects.isNull(config) || !config.equals(mailConfig)) {
+      log.info("defineMailClient:: Creating new mail client");
       config = mailConfig;
       client = MailClient.create(vertx, mailConfig);
     }
@@ -92,6 +100,8 @@ public class MailServiceImpl implements MailService {
   }
 
   private MailConfig getMailConfig(SmtpConfiguration smtpConfiguration) {
+    log.debug("getMailConfig:: parameters smtpConfiguration: {}",
+      () -> smtpConfigAsJson(smtpConfiguration));
     boolean ssl = ofNullable(smtpConfiguration.getSsl()).orElse(false);
 
     StartTLSOptions startTLSOptions = StartTLSOptions.valueOf(
@@ -121,6 +131,9 @@ public class MailServiceImpl implements MailService {
   }
 
   private MailMessage getMailMessage(EmailEntity emailEntity, SmtpConfiguration smtpConfiguration) {
+    log.debug("getMailMessage:: email: {}, smtpConfiguration: {}", () -> emailAsJson(emailEntity),
+      () -> asJson(smtpConfiguration));
+
     MailMessage mailMessage = new MailMessage()
       .setFrom(getMessageConfig(emailEntity.getFrom()))
       .setTo(getMessageConfig(emailEntity.getTo()))
@@ -129,25 +142,30 @@ public class MailServiceImpl implements MailService {
 
     String outputFormat = emailEntity.getOutputFormat();
     if (StringUtils.isNoneBlank(outputFormat) && outputFormat.trim().equalsIgnoreCase(MediaType.TEXT_HTML)) {
+      log.info("getMailMessage:: Email {} is not text/html", emailEntity.getId());
       mailMessage.setHtml(getMessageConfig(emailEntity.getBody()));
     } else {
+      log.info("getMailMessage:: Email {} is text/html", emailEntity.getId());
       mailMessage.setText(getMessageConfig(emailEntity.getBody()));
     }
 
     addHeadersFromConfiguration(mailMessage, smtpConfiguration);
 
+    log.info("getMailMessage:: result: MailMessage");
     return mailMessage;
   }
 
   private List<MailAttachment> getMailAttachments(List<Attachment> attachments) {
+    log.debug("getMailAttachments:: parameters attachments: list of {}", attachments::size);
     return attachments.stream()
       .map(this::getMailAttachment)
       .collect(Collectors.toList());
   }
 
   private MailAttachment getMailAttachment(Attachment data) {
+    log.debug("getMailAttachments:: parameters data: Attachment");
     if (Objects.isNull(data) || StringUtils.isEmpty(data.getData())) {
-      logger.error(INCORRECT_ATTACHMENT_DATA);
+      log.warn("getMailAttachment:: {}", INCORRECT_ATTACHMENT_DATA);
       return MailAttachment.create().setData(Buffer.buffer());
     }
     return MailAttachment.create()
@@ -160,9 +178,10 @@ public class MailServiceImpl implements MailService {
   }
 
   private Buffer getAttachmentData(Attachment data) {
+    log.debug("getAttachmentData:: parameters data: Attachment");
     String file = data.getData();
     if (StringUtils.isEmpty(file)) {
-      logger.error(format(ERROR_ATTACHMENT_DATA, data.getName()));
+      log.warn("getAttachmentData:: {}", ERROR_ATTACHMENT_DATA);
       return Buffer.buffer();
     }
     // Decode incoming data from JSON
@@ -171,18 +190,23 @@ public class MailServiceImpl implements MailService {
   }
 
   public static void addHeadersFromConfiguration(MailMessage message, SmtpConfiguration smtpConfiguration) {
+    log.debug("addHeadersFromConfiguration:: parameters message: MailMessage, " +
+        "smtpConfiguration: {}", () -> smtpConfigAsJson(smtpConfiguration));
     Map<String, String> headers = smtpConfiguration.getEmailHeaders().stream()
       .filter(header -> isNoneBlank(header.getName(), header.getValue()))
       .collect(toMap(EmailHeader::getName, EmailHeader::getValue));
 
     if (headers.isEmpty()) {
+      log.warn("addHeadersFromConfiguration:: No headers found in configuration");
       return;
     }
 
     if (message.getHeaders() == null) {
+      log.warn("addHeadersFromConfiguration:: No headers found in the mail message");
       message.setHeaders(new HeadersMultiMap());
     }
 
+    log.debug("addHeadersFromConfiguration:: Adding headers");
     message.getHeaders().addAll(headers);
   }
 }

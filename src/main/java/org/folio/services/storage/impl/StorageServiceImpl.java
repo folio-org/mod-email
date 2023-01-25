@@ -3,6 +3,7 @@ package org.folio.services.storage.impl;
 import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.persist.PostgresClient.convertToPsqlStandard;
 import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
+import static org.folio.util.LogUtil.asJson;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -42,8 +43,11 @@ public class StorageServiceImpl implements StorageService {
   public void saveEmailEntity(String tenantId, JsonObject emailJson,
     Handler<AsyncResult<JsonObject>> resultHandler) {
 
+    logger.debug("saveEmailEntity:: parameters tenantId: {}, emailJson: {}",
+      () -> tenantId, () -> asJson(emailJson));
     try {
       EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
+      logger.debug("saveEmailEntity:: parameters emailEntity: {}", () -> asJson(emailEntity));
       String emailId = emailEntity.getId();
       PostgresClient.getInstance(vertx, tenantId)
         .save(EMAIL_STATISTICS_TABLE_NAME, emailId, emailEntity, true, true)
@@ -52,13 +56,17 @@ public class StorageServiceImpl implements StorageService {
         .map(emailJson)
         .onComplete(resultHandler);
     } catch (Exception ex) {
+      logger.warn("saveEmailEntity:: Failed to save email", ex);
       errorHandler(ex, resultHandler);
     }
   }
 
   @Override
   public void findEmailEntries(String tenantId, int limit, int offset, String query,
-                               Handler<AsyncResult<JsonObject>> resultHandler) {
+    Handler<AsyncResult<JsonObject>> resultHandler) {
+
+    logger.debug("findEmailEntries:: parameters tenantId: {}, limit: {}, offset: {}, query: {}",
+      tenantId, limit, offset, query);
     try {
       String[] fieldList = {"*"};
       CQLWrapper cql = getCQL(query, limit, offset);
@@ -66,6 +74,7 @@ public class StorageServiceImpl implements StorageService {
       pgClient.get(EMAIL_STATISTICS_TABLE_NAME, EmailEntity.class, fieldList, cql, true, false,
         getReply -> {
           if (getReply.failed()) {
+            logger.warn("findEmailEntries:: Failed to get email entries: ", getReply.cause());
             errorHandler(getReply.cause(), resultHandler);
             return;
           }
@@ -80,13 +89,16 @@ public class StorageServiceImpl implements StorageService {
           resultHandler.handle(succeededFuture(entries));
         });
     } catch (Exception ex) {
+      logger.warn("findEmailEntries:: Failed to get email entries", ex);
       errorHandler(ex, resultHandler);
     }
   }
 
   @Override
   public void deleteEmailEntriesByExpirationDateAndStatus(String tenantId, String expirationDate, String status,
-                                                          Handler<AsyncResult<JsonObject>> resultHandler) {
+    Handler<AsyncResult<JsonObject>> resultHandler) {
+
+    logger.debug("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {}", expirationDate, status);
     try {
       String fullTableName = getFullTableName(EMAIL_STATISTICS_TABLE_NAME, tenantId);
       String query = StringUtils.isBlank(expirationDate)
@@ -98,9 +110,12 @@ public class StorageServiceImpl implements StorageService {
           errorHandler(result.cause(), resultHandler);
           return;
         }
+        logger.info("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {} - deleted {} entries",
+          expirationDate, status, result.result().rowCount());
         resultHandler.handle(succeededFuture());
       });
     } catch (Exception ex) {
+      logger.warn("deleteEmailEntriesByExpirationDateAndStatus:: Failed to delete email entries", ex);
       errorHandler(ex, resultHandler);
     }
   }

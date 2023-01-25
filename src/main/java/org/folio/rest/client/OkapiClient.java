@@ -11,6 +11,8 @@ import static org.folio.rest.client.WebClientProvider.getWebClient;
 import java.util.Map;
 
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -24,6 +26,7 @@ public class OkapiClient {
   private final String okapiUrl;
   private final String tenant;
   private final String token;
+  private static final Logger log = LogManager.getLogger(OkapiClient.class);
 
   public OkapiClient(Vertx vertx, Map<String, String> okapiHeaders, WebClientOptions options) {
     CaseInsensitiveMap<String, String> headers = new CaseInsensitiveMap<>(okapiHeaders);
@@ -34,6 +37,7 @@ public class OkapiClient {
   }
 
   public HttpRequest<Buffer> getAbs(String path) {
+    log.debug("getAbs:: parameters path: {}", path);
     return webClient.requestAbs(HttpMethod.GET, okapiUrl + path)
       .putHeader(ACCEPT, APPLICATION_JSON)
       .putHeader(URL, okapiUrl)
@@ -42,6 +46,7 @@ public class OkapiClient {
   }
 
   public HttpRequest<Buffer> deleteAbs(String path) {
+    log.debug("deleteAbs:: parameters path: {}", path);
     return webClient.requestAbs(HttpMethod.DELETE, okapiUrl + path)
       .putHeader(ACCEPT, TEXT_PLAIN)
       .putHeader(URL, okapiUrl)
