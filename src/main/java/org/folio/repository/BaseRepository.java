@@ -9,12 +9,10 @@ import org.apache.logging.log4j.Logger;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.exceptions.FailedToCreateRepositoryException;
-import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.persist.interfaces.Results;
-import org.folio.rest.tools.utils.ModuleName;
 
 import io.vertx.core.Future;
 import io.vertx.sqlclient.RowSet;
