@@ -90,20 +90,5 @@ public class BaseRepository<T> {
       .onSuccess(result -> log.debug("delete:: result: {}", result));
   }
 
-  public Future<Void> removeAll(String tenantId) {
-    log.debug("removeAll:: parameters tenantId: {}", tenantId);
-    String deleteAllQuery = String.format("DELETE FROM %s_%s.%s", tenantId,
-      ModuleName.getModuleName(), tableName);
-    return pgClient.execute(deleteAllQuery).mapEmpty();
-  }
-
-  static Criterion buildCriterion(String key, String value) {
-    return new Criterion(new Criteria()
-      .addField(key)
-      .setOperation(OPERATION_EQUALS)
-      .setVal(value)
-      .setJSONB(true));
-  }
-
 }
 
