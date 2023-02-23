@@ -1,3 +1,8 @@
+## 2023-02-23 v1.15.3
+* Move sensitive SMTP information out of mod-configuration (MODEMAIL-70)
+* Upgrade to RMB 35.0.0 and Vertx 4.3.3 (MODEMAIL-76)
+* Logging improvement - check log4j configuration (MODEMAIL-90)
+* 
 ## 2022-10-18 v1.15.0
 * Update copyright year (FOLIO-1021)
 * Upgrade to RMB 35.0.0 and Vertx 4.3.3 (MODEMAIL-78)
