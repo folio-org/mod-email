@@ -130,6 +130,10 @@ public class MailServiceImpl implements MailService {
       .setAuthMethods(authMethods);
   }
 
+  MailConfig getMailConfig() {
+    return config;
+  }
+
   private MailMessage getMailMessage(EmailEntity emailEntity, SmtpConfiguration smtpConfiguration) {
     log.debug("getMailMessage:: email: {}, smtpConfiguration: {}", () -> emailAsJson(emailEntity),
       () -> asJson(smtpConfiguration));
