@@ -14,6 +14,7 @@
   </licenses>
 
   <properties>
+    <aspectj.version>1.9.19</aspectj.version>
     <raml-module-builder.version>35.0.0</raml-module-builder.version>
     <vertx.version>4.3.3</vertx.version>
     <subethasmtp.version>3.1.7</subethasmtp.version>
@@ -81,24 +82,6 @@
       <version>${raml-module-builder.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <version>3.11.2</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.powermock</groupId>
-      <artifactId>powermock-module-junit4</artifactId>
-      <version>2.0.9</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.powermock</groupId>
-      <artifactId>powermock-api-mockito2</artifactId>
-      <version>2.0.9</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <version>1.18.24</version>
@@ -132,7 +115,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.8.1</version>
         <configuration>
-          <release>11</release>
+          <release>17</release>
           <encoding>UTF-8</encoding>
           <useIncrementalCompilation>false</useIncrementalCompilation>
           <annotationProcessors>
@@ -200,12 +183,12 @@
       </plugin>
 
       <plugin>
-        <groupId>com.nickwongdev</groupId>
+        <groupId>dev.aspectj</groupId>
         <artifactId>aspectj-maven-plugin</artifactId>
-        <version>1.12.6</version>
+        <version>1.13.1</version>
         <configuration>
           <verbose>true</verbose>
-          <complianceLevel>11</complianceLevel>
+          <release>17</release>
           <includes>
             <include>**/impl/*.java</include>
             <include>**/*.aj</include>
@@ -231,12 +214,12 @@
           <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjrt</artifactId>
-            <version>1.9.6</version>
+            <version>${aspectj.version}</version>
           </dependency>
           <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjtools</artifactId>
-            <version>1.9.6</version>
+            <version>${aspectj.version}</version>
           </dependency>
         </dependencies>
       </plugin>
