@@ -1,3 +1,8 @@
+## 2023-10-11 v1.16.0
+* Use GitHub Workflows api-lint and api-schema-lint and api-doc (MODEMAIL-92)
+* Update to Java 17 (MODEMAIL-93)
+
+
 ## 2023-02-23 v1.15.3
 * Move sensitive SMTP information out of mod-configuration (MODEMAIL-70)
 * Upgrade to RMB 35.0.0 and Vertx 4.3.3 (MODEMAIL-76)
