@@ -51,6 +51,10 @@
         "REQUIRED"
       ]
     },
+    "expirationHours": {
+      "description": "Action expiration time",
+      "type": "integer"
+    },
     "authMethods": {
       "description": "Authentication methods",
       "type": "string"
