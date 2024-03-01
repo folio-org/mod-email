@@ -8,6 +8,7 @@
   "trustAll": false,
   "loginOption": "REQUIRED",
   "startTlsOptions": "DISABLED",
+  "expirationHours": 24,
   "authMethods": "CRAM-MD5 LOGIN PLAIN",
   "from": "noreply@folio.org",
   "emailHeaders": [
