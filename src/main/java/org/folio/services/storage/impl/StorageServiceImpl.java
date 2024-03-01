@@ -24,13 +24,15 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import org.folio.rest.jaxrs.model.SmtpConfiguration;
+import io.vertx.core.Promise;
 
 public class StorageServiceImpl implements StorageService {
 
   private static final Logger logger = LogManager.getLogger(StorageServiceImpl.class);
 
   private static final String DELETE_QUERY_BY_DATE = "DELETE FROM %1$s WHERE (jsonb->>'date')::date <= ('%2$s')::date AND jsonb->>'status' = '%3$s'";
-  private static final String DELETE_QUERY_INTERVAL_ONE_DAY = "DELETE FROM %1$s WHERE (jsonb->>'date')::date < CURRENT_DATE - INTERVAL '1' DAY AND jsonb->>'status' = '%2$s'";
+  private static final String DELETE_QUERY_INTERVAL_ONE_DAY = "DELETE FROM %1$s WHERE (jsonb->>'date')::date < CURRENT_DATE - INTERVAL '%3$s HOURS' AND jsonb->>'status' = '%2$s'";
   private static final String COLUMN_EXTENSION = ".jsonb";
 
   private final Vertx vertx;
@@ -100,9 +102,11 @@ public class StorageServiceImpl implements StorageService {
 
     logger.debug("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {}", expirationDate, status);
     try {
+      Future<Integer> expirationHourFuture = getExpirationHoursFromConfig(tenantId);
+      expirationHourFuture.onSuccess(expirationHours -> {
       String fullTableName = getFullTableName(EMAIL_STATISTICS_TABLE_NAME, tenantId);
       String query = StringUtils.isBlank(expirationDate)
-        ? String.format(DELETE_QUERY_INTERVAL_ONE_DAY, fullTableName, status)
+        ? String.format(DELETE_QUERY_INTERVAL_ONE_DAY, fullTableName, status, expirationHours)
         : String.format(DELETE_QUERY_BY_DATE, fullTableName, expirationDate, status);
 
       PostgresClient.getInstance(vertx, tenantId).execute(query, result -> {
@@ -113,11 +117,30 @@ public class StorageServiceImpl implements StorageService {
         logger.info("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {} - deleted {} entries",
           expirationDate, status, result.result().rowCount());
         resultHandler.handle(succeededFuture());
+        });
       });
     } catch (Exception ex) {
       logger.warn("deleteEmailEntriesByExpirationDateAndStatus:: Failed to delete email entries", ex);
       errorHandler(ex, resultHandler);
     }
+  }
+
+  private Future<Integer> getExpirationHoursFromConfig(String tenantId) {
+    Promise<Integer> promise = Promise.promise();
+    String[] fieldList = {"*"};
+    PostgresClient pgClient = PostgresClient.getInstance(vertx, tenantId);
+    pgClient.get("smtp_configuration", SmtpConfiguration.class, fieldList, null, true, false,
+      getReply -> {
+        if (getReply.failed()) {
+          logger.warn("getExpirationHoursFromConfig:: Failed to get expirationHours from smtp_configuration: ", getReply.cause());
+          promise.fail("getExpirationHoursFromConfig:: Failed to get getExpirationHoursFromConfig from smtp_configuration");
+        }
+
+        Results<SmtpConfiguration> result = getReply.result();
+        SmtpConfiguration smtpConfiguration = result.getResults().get(0);
+        promise.complete(smtpConfiguration.getExpirationHours());
+      });
+    return promise.future();
   }
 
   private void errorHandler(Throwable ex, Handler<AsyncResult<JsonObject>> asyncResultHandler) {
