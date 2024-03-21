@@ -32,7 +32,7 @@ public class StorageServiceImpl implements StorageService {
   private static final Logger logger = LogManager.getLogger(StorageServiceImpl.class);
 
   private static final String DELETE_QUERY_BY_DATE = "DELETE FROM %1$s WHERE (jsonb->>'date')::date <= ('%2$s')::date AND jsonb->>'status' = '%3$s'";
-  private static final String DELETE_QUERY_INTERVAL_ONE_DAY = "DELETE FROM %1$s WHERE (jsonb->>'date')::date < CURRENT_DATE - INTERVAL '%3$s HOURS' AND jsonb->>'status' = '%2$s'";
+  private static final String DELETE_QUERY_INTERVAL_BY_HOURS = "DELETE FROM %1$s WHERE (jsonb->>'date')::date < CURRENT_DATE - INTERVAL '%3$s HOURS' AND jsonb->>'status' = '%2$s'";
   private static final String COLUMN_EXTENSION = ".jsonb";
 
   private final Vertx vertx;
@@ -99,26 +99,28 @@ public class StorageServiceImpl implements StorageService {
   @Override
   public void deleteEmailEntriesByExpirationDateAndStatus(String tenantId, String expirationDate, String status,
     Handler<AsyncResult<JsonObject>> resultHandler) {
-
     logger.debug("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {}", expirationDate, status);
     try {
-      Future<Integer> expirationHourFuture = getExpirationHoursFromConfig(tenantId);
-      expirationHourFuture.onSuccess(expirationHours -> {
-      String fullTableName = getFullTableName(EMAIL_STATISTICS_TABLE_NAME, tenantId);
-      String query = StringUtils.isBlank(expirationDate)
-        ? String.format(DELETE_QUERY_INTERVAL_ONE_DAY, fullTableName, status, expirationHours)
-        : String.format(DELETE_QUERY_BY_DATE, fullTableName, expirationDate, status);
+      getExpirationHoursFromConfig(tenantId)
+        .onSuccess(expirationHours -> {
+          String fullTableName = getFullTableName(EMAIL_STATISTICS_TABLE_NAME, tenantId);
+          String query = StringUtils.isBlank(expirationDate)
+            ? String.format(DELETE_QUERY_INTERVAL_BY_HOURS, fullTableName, status, expirationHours)
+            : String.format(DELETE_QUERY_BY_DATE, fullTableName, expirationDate, status);
 
-      PostgresClient.getInstance(vertx, tenantId).execute(query, result -> {
-        if (result.failed()) {
-          errorHandler(result.cause(), resultHandler);
-          return;
-        }
-        logger.info("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {} - deleted {} entries",
-          expirationDate, status, result.result().rowCount());
-        resultHandler.handle(succeededFuture());
+          PostgresClient.getInstance(vertx, tenantId).execute(query, result -> {
+            if (result.failed()) {
+              errorHandler(result.cause(), resultHandler);
+              return;
+            }
+            logger.info("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {} - deleted {} entries",
+              expirationDate, status, result.result().rowCount());
+            resultHandler.handle(succeededFuture());
+          });
+        }).onFailure(err -> {
+          logger.warn("deleteEmailEntriesByExpirationDateAndStatus:: Error while retrieving expiration hours ", err);
+          errorHandler(err, resultHandler);
         });
-      });
     } catch (Exception ex) {
       logger.warn("deleteEmailEntriesByExpirationDateAndStatus:: Failed to delete email entries", ex);
       errorHandler(ex, resultHandler);
@@ -135,10 +137,9 @@ public class StorageServiceImpl implements StorageService {
           logger.warn("getExpirationHoursFromConfig:: Failed to get expirationHours from smtp_configuration: ", getReply.cause());
           promise.fail("getExpirationHoursFromConfig:: Failed to get getExpirationHoursFromConfig from smtp_configuration");
         }
-
-        Results<SmtpConfiguration> result = getReply.result();
-        SmtpConfiguration smtpConfiguration = result.getResults().get(0);
-        promise.complete(smtpConfiguration.getExpirationHours());
+        promise.complete((getReply.result() != null && getReply.result().getResultInfo().getTotalRecords() > 0
+          && getReply.result().getResults().get(0).getExpirationHours() != null) ?
+          getReply.result().getResults().get(0).getExpirationHours() : 24);
       });
     return promise.future();
   }
