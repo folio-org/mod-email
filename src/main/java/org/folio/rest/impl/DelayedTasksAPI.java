@@ -40,7 +40,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
   public void deleteDelayedTaskExpiredMessages(String expirationDate, String status,
     Map<String, String> headers, Handler<AsyncResult<Response>> resultHandler, Context context) {
 
-    log.debug("deleteDelayedTaskExpiredMessages:: parameters expirationDate: {}, status: {}, " +
+    log.info("deleteDelayedTaskExpiredMessages:: parameters expirationDate: {}, status: {}, " +
         "headers: {}", () -> expirationDate, () -> status, () -> headersAsString(headers));
 
     succeededFuture()
