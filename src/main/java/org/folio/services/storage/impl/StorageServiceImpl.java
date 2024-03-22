@@ -143,7 +143,7 @@ public class StorageServiceImpl implements StorageService {
 
   private Integer getExpirationHoursFromResult(Results<SmtpConfiguration> results) {
     return results != null && results.getResults() != null
-      && results.getResults().size() > 0
+      && !results.getResults().isEmpty()
       && results.getResults().get(0).getExpirationHours() != null
       ? results.getResults().get(0).getExpirationHours() : 24;
   }
