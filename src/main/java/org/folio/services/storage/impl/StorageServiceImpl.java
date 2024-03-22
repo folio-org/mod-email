@@ -32,7 +32,7 @@ public class StorageServiceImpl implements StorageService {
   private static final Logger logger = LogManager.getLogger(StorageServiceImpl.class);
 
   private static final String DELETE_QUERY_BY_DATE = "DELETE FROM %1$s WHERE (jsonb->>'date')::date <= ('%2$s')::date AND jsonb->>'status' = '%3$s'";
-  private static final String DELETE_QUERY_INTERVAL_BY_HOURS = "DELETE FROM %1$s WHERE (jsonb->>'date')::date < CURRENT_DATE - INTERVAL '%3$s HOURS' AND jsonb->>'status' = '%2$s'";
+  private static final String DELETE_QUERY_INTERVAL_BY_HOURS = "DELETE FROM %1$s WHERE (jsonb->>'date')::timestamp < CURRENT_TIMESTAMP - INTERVAL '%3$s HOURS' AND jsonb->>'status' = '%2$s'";
   private static final String COLUMN_EXTENSION = ".jsonb";
 
   private final Vertx vertx;
