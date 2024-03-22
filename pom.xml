@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.folio</groupId>
   <artifactId>mod-email</artifactId>
-  <version>1.16.1-SNAPSHOT</version>
+  <version>1.17.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <licenses>
@@ -14,11 +14,11 @@
   </licenses>
 
   <properties>
-    <aspectj.version>1.9.19</aspectj.version>
-    <raml-module-builder.version>35.0.0</raml-module-builder.version>
-    <vertx.version>4.3.3</vertx.version>
+    <aspectj.version>1.9.21.1</aspectj.version>
+    <raml-module-builder.version>35.2.0</raml-module-builder.version>
+    <vertx.version>4.5.4</vertx.version>
     <subethasmtp.version>3.1.7</subethasmtp.version>
-    <rest-assured.version>4.3.0</rest-assured.version>
+    <rest-assured.version>5.4.0</rest-assured.version>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -92,6 +92,13 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-bom</artifactId>
+        <version>2.23.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
         <groupId>io.vertx</groupId>
         <artifactId>vertx-stack-depchain</artifactId>
         <version>${vertx.version}</version>
@@ -113,7 +120,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.1</version>
+        <version>3.12.1</version>
         <configuration>
           <release>17</release>
           <encoding>UTF-8</encoding>
@@ -142,7 +149,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.0.0-M5</version>
+        <version>3.2.5</version>
         <configuration>
           <useSystemClassLoader>false</useSystemClassLoader>
         </configuration>
@@ -185,7 +192,7 @@
       <plugin>
         <groupId>dev.aspectj</groupId>
         <artifactId>aspectj-maven-plugin</artifactId>
-        <version>1.13.1</version>
+        <version>1.14</version>
         <configuration>
           <verbose>true</verbose>
           <release>17</release>
@@ -227,7 +234,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>3.1.0</version>
+        <version>3.3.1</version>
         <executions>
           <execution>
             <id>copy-resources</id>
@@ -268,7 +275,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.8</version>
+        <version>3.1.0</version>
         <executions>
           <execution>
             <!-- Replace the baseUri in the RAMLs that have been copied to
@@ -291,7 +298,7 @@
       <plugin>
         <groupId>com.coderplus.maven.plugins</groupId>
         <artifactId>copy-rename-maven-plugin</artifactId>
-        <version>1.0</version>
+        <version>1.0.1</version>
         <executions>
           <execution>
             <id>rename-descriptor-outputs</id>
@@ -318,7 +325,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.2.4</version>
+        <version>3.5.2</version>
         <configuration>
           <filters>
             <filter>
@@ -363,7 +370,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
-        <version>2.5.3</version>
+        <version>3.0.1</version>
         <configuration>
           <preparationGoals>clean verify</preparationGoals>
           <tagNameFormat>v@{project.version}</tagNameFormat>

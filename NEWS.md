@@ -1,3 +1,7 @@
+## 2024-03-19 v1.17.0
+* Upgrade Folio spring dependency version ([MODEMAIL-96](https://issues.folio.org/browse/MODEMAIL-96))
+
+
 ## 2023-10-11 v1.16.0
 * Use GitHub Workflows api-lint and api-schema-lint and api-doc (MODEMAIL-92)
 * Update to Java 17 (MODEMAIL-93)
