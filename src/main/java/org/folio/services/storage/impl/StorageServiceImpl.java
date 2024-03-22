@@ -129,19 +129,23 @@ public class StorageServiceImpl implements StorageService {
 
   private Future<Integer> getExpirationHoursFromConfig(String tenantId) {
     Promise<Integer> promise = Promise.promise();
-    String[] fieldList = {"*"};
-    PostgresClient pgClient = PostgresClient.getInstance(vertx, tenantId);
-    pgClient.get("smtp_configuration", SmtpConfiguration.class, fieldList, null, true, false,
-      getReply -> {
-        if (getReply.failed()) {
-          logger.warn("getExpirationHoursFromConfig:: Failed to get expirationHours from smtp_configuration: ", getReply.cause());
-          promise.fail("getExpirationHoursFromConfig:: Failed to get getExpirationHoursFromConfig from smtp_configuration");
-        }
-        promise.complete((getReply.result() != null && getReply.result().getResultInfo().getTotalRecords() > 0
-          && getReply.result().getResults().get(0).getExpirationHours() != null) ?
-          getReply.result().getResults().get(0).getExpirationHours() : 24);
-      });
+    try {
+      String[] fieldList = {"*"};
+      PostgresClient.getInstance(vertx, tenantId)
+        .get("smtp_configuration", SmtpConfiguration.class, fieldList, null, true, false,
+          result -> promise.complete(getExpirationHoursFromResult(result.result())));
+    } catch (Exception ex) {
+      logger.warn("getExpirationHoursFromConfig:: Failed to get expirationHours from smtp_configuration", ex);
+      promise.fail("getExpirationHoursFromConfig:: Failed to get expirationHours from smtp_configuration");
+    }
     return promise.future();
+  }
+
+  private Integer getExpirationHoursFromResult(Results<SmtpConfiguration> results) {
+    return results != null && results.getResults() != null
+      && results.getResults().size() > 0
+      && results.getResults().get(0).getExpirationHours() != null
+      ? results.getResults().get(0).getExpirationHours() : 24;
   }
 
   private void errorHandler(Throwable ex, Handler<AsyncResult<JsonObject>> asyncResultHandler) {
