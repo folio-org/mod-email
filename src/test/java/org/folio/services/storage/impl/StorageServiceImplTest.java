@@ -30,7 +30,7 @@ public class StorageServiceImplTest {
   public void deleteEmailEntriesByExpirationDateAndStatusEmailEntriesShouldFail() {
     Promise<JsonObject> promise = Promise.promise();
     new StorageServiceImpl(Vertx.vertx()).deleteEmailEntriesByExpirationDateAndStatus(
-      "public", null, null, promise);
+      null, null, null, promise);
     assertTrue(promise.future().failed());
   }
 
