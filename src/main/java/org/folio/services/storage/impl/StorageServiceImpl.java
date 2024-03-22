@@ -34,6 +34,7 @@ public class StorageServiceImpl implements StorageService {
   private static final String DELETE_QUERY_BY_DATE = "DELETE FROM %1$s WHERE (jsonb->>'date')::date <= ('%2$s')::date AND jsonb->>'status' = '%3$s'";
   private static final String DELETE_QUERY_INTERVAL_BY_HOURS = "DELETE FROM %1$s WHERE (jsonb->>'date')::timestamp < CURRENT_TIMESTAMP - INTERVAL '%3$s HOURS' AND jsonb->>'status' = '%2$s'";
   private static final String COLUMN_EXTENSION = ".jsonb";
+  private static final int DEFAULT_EXPIRATION_HOURS = 24;
 
   private final Vertx vertx;
 
@@ -133,10 +134,17 @@ public class StorageServiceImpl implements StorageService {
       String[] fieldList = {"*"};
       PostgresClient.getInstance(vertx, tenantId)
         .get("smtp_configuration", SmtpConfiguration.class, fieldList, null, true, false,
-          result -> promise.complete(getExpirationHoursFromResult(result.result())));
+          result -> {
+            if (result.failed()) {
+              logger.warn("getExpirationHoursFromConfig:: Failed to get expirationHours from smtp_configuration", result.cause());
+              promise.complete(DEFAULT_EXPIRATION_HOURS);
+            } else {
+              promise.complete(getExpirationHoursFromResult(result.result()));
+            }
+          });
     } catch (Exception ex) {
       logger.warn("getExpirationHoursFromConfig:: Failed to get expirationHours from smtp_configuration", ex);
-      promise.fail("getExpirationHoursFromConfig:: Failed to get expirationHours from smtp_configuration");
+      promise.fail("getExpirationHoursFromConfig:: Failed to retrieve expirationHours");
     }
     return promise.future();
   }
@@ -145,7 +153,7 @@ public class StorageServiceImpl implements StorageService {
     return results != null && results.getResults() != null
       && !results.getResults().isEmpty()
       && results.getResults().get(0).getExpirationHours() != null
-      ? results.getResults().get(0).getExpirationHours() : 24;
+      ? results.getResults().get(0).getExpirationHours() : DEFAULT_EXPIRATION_HOURS;
   }
 
   private void errorHandler(Throwable ex, Handler<AsyncResult<JsonObject>> asyncResultHandler) {
