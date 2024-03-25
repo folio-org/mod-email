@@ -21,18 +21,19 @@ fetch one from`mod-configuration`, copy it to the DB and then delete it from
 
 ### Supported configuration parameters
 
-| mod-email parameter | mod-configuration parameter | DESCRIPTION                           | EXAMPLES                        |
-|---------------------|---------------------------------------|-----------------------------|---------------------------------|
-| host                | EMAIL_SMTP_HOST             | the hostname of the smtp server       | 'localhost'                     |
-| port                | EMAIL_SMTP_PORT             | the port of the smtp server           | 502                             |
-| loginOption         | EMAIL_SMTP_LOGIN_OPTION     | the login mode for the connection     | DISABLED, OPTIONAL or REQUIRED  |
-| trustAll            | EMAIL_TRUST_ALL             | trust all certificates on ssl connect | true or false                   |
-| ssl                 | EMAIL_SMTP_SSL              | sslOnConnect mode for the connection  | true or false                   |
-| startTlsOptions     | EMAIL_START_TLS_OPTIONS     | TLS security mode for the connection  | DISABLED, OPTIONAL or REQUIRED  |
-| username            | EMAIL_USERNAME              | the username for the login            | 'login'                         |
-| password            | EMAIL_PASSWORD              | the password for the login            | 'password'                      |
-| from                | EMAIL_FROM                  | 'from' property of the email          | noreply@folio.org               |
-| authMethods         | AUTH_METHODS                | authentication methods                | 'CRAM-MD5 LOGIN PLAIN'          |
+| mod-email parameter | mod-configuration parameter | DESCRIPTION                                                                                                               | EXAMPLES                       |
+|---------------------|---------------------------------------|---------------------------------------------------------------------------------------------------------------------------|--------------------------------|
+| host                | EMAIL_SMTP_HOST             | the hostname of the smtp server                                                                                           | 'localhost'                    |
+| port                | EMAIL_SMTP_PORT             | the port of the smtp server                                                                                               | 502                            |
+| loginOption         | EMAIL_SMTP_LOGIN_OPTION     | the login mode for the connection                                                                                         | DISABLED, OPTIONAL or REQUIRED |
+| trustAll            | EMAIL_TRUST_ALL             | trust all certificates on ssl connect                                                                                     | true or false                  |
+| ssl                 | EMAIL_SMTP_SSL              | sslOnConnect mode for the connection                                                                                      | true or false                  |
+| startTlsOptions     | EMAIL_START_TLS_OPTIONS     | TLS security mode for the connection                                                                                      | DISABLED, OPTIONAL or REQUIRED |
+| username            | EMAIL_USERNAME              | the username for the login                                                                                                | 'login'                        |
+| password            | EMAIL_PASSWORD              | the password for the login                                                                                                | 'password'                     |
+| from                | EMAIL_FROM                  | 'from' property of the email                                                                                              | noreply@folio.org              |
+| authMethods         | AUTH_METHODS                | authentication methods                                                                                                    | 'CRAM-MD5 LOGIN PLAIN'         |
+| expirationHours         |                 | Messages which are older than expiration hours are considered as expired and gets deleted. Default value will be 24 hours | 12                             |
 
 ### Configuration using `mod-email`'s API
 
