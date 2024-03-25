@@ -52,7 +52,7 @@
       ]
     },
     "expirationHours": {
-      "description": "Action expiration time",
+      "description": "Email gets deleted after this time from DB",
       "type": "integer"
     },
     "authMethods": {
