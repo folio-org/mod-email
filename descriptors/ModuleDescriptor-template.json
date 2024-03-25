@@ -113,7 +113,7 @@
           ],
           "pathPattern": "/delayedTask/expiredMessages",
           "unit": "minute",
-          "delay": "7"
+          "delay": "30"
         },
         {
           "methods": [
