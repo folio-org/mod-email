@@ -3,7 +3,6 @@ package org.folio.services.storage.impl;
 import static org.junit.Assert.assertTrue;
 
 import org.folio.services.storage.StorageService;
-import org.junit.Before;
 import org.junit.Test;
 
 import io.vertx.core.Promise;
@@ -32,6 +31,15 @@ public class StorageServiceImplTest {
     Promise<JsonObject> promise = Promise.promise();
     new StorageServiceImpl(Vertx.vertx()).deleteEmailEntriesByExpirationDateAndStatus(
       null, null, null, promise);
+    assertTrue(promise.future().failed());
+  }
+
+  @Test
+  public void deleteEmailEntriesShouldFailWithInvalidTenant() {
+    Promise<JsonObject> promise = Promise.promise();
+    // setting the tenantId as public to simulate the error
+    new StorageServiceImpl(Vertx.vertx()).deleteEmailEntriesByExpirationDateAndStatus(
+      "public", null, null, promise);
     assertTrue(promise.future().failed());
   }
 }

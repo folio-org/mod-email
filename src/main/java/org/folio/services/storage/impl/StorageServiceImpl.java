@@ -5,6 +5,7 @@ import static org.folio.rest.persist.PostgresClient.convertToPsqlStandard;
 import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
 import static org.folio.util.LogUtil.asJson;
 
+import io.vertx.sqlclient.Tuple;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -12,6 +13,7 @@ import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntries;
+import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PostgresClient;
@@ -24,14 +26,16 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import org.folio.rest.jaxrs.model.SmtpConfiguration;
 
 public class StorageServiceImpl implements StorageService {
 
   private static final Logger logger = LogManager.getLogger(StorageServiceImpl.class);
 
-  private static final String DELETE_QUERY_BY_DATE = "DELETE FROM %1$s WHERE (jsonb->>'date')::date <= ('%2$s')::date AND jsonb->>'status' = '%3$s'";
-  private static final String DELETE_QUERY_INTERVAL_ONE_DAY = "DELETE FROM %1$s WHERE (jsonb->>'date')::date < CURRENT_DATE - INTERVAL '1' DAY AND jsonb->>'status' = '%2$s'";
+  private static final String DELETE_QUERY_BY_DATE = "DELETE FROM %s WHERE (jsonb->>'date')::date <= $1::text::date AND jsonb->>'status' = $2";
+  private static final String DELETE_QUERY_INTERVAL_BY_HOURS = "DELETE FROM %s WHERE (jsonb->>'date')::timestamp < CURRENT_TIMESTAMP - make_interval(hours => $1) AND jsonb->>'status' = $2";
   private static final String COLUMN_EXTENSION = ".jsonb";
+  private static final int DEFAULT_EXPIRATION_HOURS = 24;
 
   private final Vertx vertx;
 
@@ -96,28 +100,54 @@ public class StorageServiceImpl implements StorageService {
 
   @Override
   public void deleteEmailEntriesByExpirationDateAndStatus(String tenantId, String expirationDate, String status,
-    Handler<AsyncResult<JsonObject>> resultHandler) {
-
+                                                          Handler<AsyncResult<JsonObject>> resultHandler) {
     logger.debug("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {}", expirationDate, status);
     try {
-      String fullTableName = getFullTableName(EMAIL_STATISTICS_TABLE_NAME, tenantId);
-      String query = StringUtils.isBlank(expirationDate)
-        ? String.format(DELETE_QUERY_INTERVAL_ONE_DAY, fullTableName, status)
-        : String.format(DELETE_QUERY_BY_DATE, fullTableName, expirationDate, status);
-
-      PostgresClient.getInstance(vertx, tenantId).execute(query, result -> {
-        if (result.failed()) {
-          errorHandler(result.cause(), resultHandler);
-          return;
-        }
-        logger.info("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {} - deleted {} entries",
-          expirationDate, status, result.result().rowCount());
-        resultHandler.handle(succeededFuture());
-      });
+      getExpirationHoursFromConfig(tenantId)
+        .compose(expirationHours -> {
+          String fullTableName = getFullTableName(EMAIL_STATISTICS_TABLE_NAME, tenantId);
+          var pgClient = PostgresClient.getInstance(vertx, tenantId);
+          if (StringUtils.isBlank(expirationDate)) {
+            logger.info("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationHours: {}, status: {}",
+              expirationHours, status);
+            return pgClient.execute(String.format(DELETE_QUERY_INTERVAL_BY_HOURS, fullTableName),
+              Tuple.of(expirationHours, status));
+          } else {
+            logger.info("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {}",
+              expirationDate, status);
+            return pgClient.execute(String.format(DELETE_QUERY_BY_DATE, fullTableName),
+              Tuple.of(expirationDate, status));
+          }
+        })
+        .onSuccess(result -> {
+          logger.info("deleteEmailEntriesByExpirationDateAndStatus:: deleted {} entries", result.rowCount());
+          resultHandler.handle(succeededFuture());
+        })
+        .onFailure(err -> {
+          logger.warn("deleteEmailEntriesByExpirationDateAndStatus:: Error while deleting entries", err);
+          errorHandler(err, resultHandler);
+        });
     } catch (Exception ex) {
       logger.warn("deleteEmailEntriesByExpirationDateAndStatus:: Failed to delete email entries", ex);
       errorHandler(ex, resultHandler);
     }
+  }
+
+  private Future<Integer> getExpirationHoursFromConfig(String tenantId) {
+    return PostgresClient.getInstance(vertx, tenantId)
+      .get("smtp_configuration", SmtpConfiguration.class, new Criterion())
+      .map(this::getExpirationHoursFromResult)
+      .recover(e -> {
+        logger.warn("getExpirationHoursFromConfig:: Failed to get expirationHours from smtp_configuration", e);
+        return Future.succeededFuture(DEFAULT_EXPIRATION_HOURS);
+      });
+  }
+
+  private Integer getExpirationHoursFromResult(Results<SmtpConfiguration> results) {
+    return results != null && results.getResults() != null
+      && !results.getResults().isEmpty()
+      && results.getResults().get(0).getExpirationHours() != null
+      ? results.getResults().get(0).getExpirationHours() : DEFAULT_EXPIRATION_HOURS;
   }
 
   private void errorHandler(Throwable ex, Handler<AsyncResult<JsonObject>> asyncResultHandler) {

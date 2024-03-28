@@ -51,6 +51,10 @@
         "REQUIRED"
       ]
     },
+    "expirationHours": {
+      "description": "Email gets deleted after this time from DB",
+      "type": "integer"
+    },
     "authMethods": {
       "description": "Authentication methods",
       "type": "string"

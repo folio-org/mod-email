@@ -2,6 +2,8 @@ package org.folio.rest.impl;
 
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.FAILURE;
+import static org.folio.util.StubUtils.buildSmtpConfiguration;
+import static org.folio.util.StubUtils.buildWiserSmtpConfiguration;
 import static org.folio.util.StubUtils.getIncorrectConfigurations;
 import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
 import static org.folio.util.StubUtils.getWiserMockConfigurations;
@@ -10,6 +12,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 
+import io.vertx.core.json.JsonObject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.folio.rest.impl.base.AbstractAPITest;
@@ -179,5 +182,104 @@ public class GettingMetricsTest extends AbstractAPITest {
 
     List<EmailEntity> actualEntries = convertEntriesToJson(response).getEmailEntity();
     assertEquals(0, actualEntries.size());
+  }
+
+  @Test
+  public void testEmailExpiryWithExpirationTimeAndCorrectConfig() {
+    JsonObject smtpConfiguration = buildWiserSmtpConfiguration();
+    // For testing purpose, expiration hours set to 0. So that the email gets deleted immediately
+    smtpConfiguration.put("expirationHours", 0);
+
+    Response postResponse = post(REST_PATH_SMTP_CONFIGURATION, smtpConfiguration.encodePrettily())
+      .then()
+      .extract()
+      .response();
+
+    String postResponseId = new JsonObject(postResponse.body().asString()).getString("id");
+
+    int mockServerPort = userMockServer.port();
+    initModConfigStub(mockServerPort, getWiserMockConfigurations());
+
+    int statusCode = 200;
+    EmailEntity emailOne = sendEmail(statusCode);
+
+    // check email on DB
+    checkStoredEmailsInDb(emailOne, DELIVERED);
+
+    // This will delete the delivered email as the expiration hours set to 0
+    deleteEmailByDateAndStatus(StringUtils.EMPTY, StringUtils.EMPTY)
+      .then()
+      .statusCode(HttpStatus.SC_NO_CONTENT)
+      .extract()
+      .response();
+
+    // find all delivered email
+    Response response = getEmails(DELIVERED)
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+
+    List<EmailEntity> actualEntries = convertEntriesToJson(response).getEmailEntity();
+    assertEquals(0, actualEntries.size());
+
+    // For testing purpose, expiration hours set to 1. So that the email gets deleted only after 1 hour
+    smtpConfiguration.put("expirationHours", 1);
+    put(REST_PATH_SMTP_CONFIGURATION + "/" + postResponseId, smtpConfiguration.encodePrettily())
+      .then()
+      .statusCode(HttpStatus.SC_NO_CONTENT);
+
+    EmailEntity emailTwo = sendEmail(statusCode);
+    checkStoredEmailsInDb(emailTwo, DELIVERED);
+
+    // This will delete the delivered email only after 1 hour
+    deleteEmailByDateAndStatus(StringUtils.EMPTY, StringUtils.EMPTY)
+      .then()
+      .statusCode(HttpStatus.SC_NO_CONTENT)
+      .extract()
+      .response();
+
+    // find all delivered email
+    response = getEmails(DELIVERED)
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+
+    actualEntries = convertEntriesToJson(response).getEmailEntity();
+    assertEquals(1, actualEntries.size());
+  }
+
+  @Test
+  public void testEmailExpiryWithExpirationTimeAndInCorrectConfig() {
+    // For testing purpose, expiration hours set to 0. So that the email gets deleted immediately
+    JsonObject smtpConfiguration = buildSmtpConfiguration();
+    post(REST_PATH_SMTP_CONFIGURATION, smtpConfiguration.encodePrettily())
+      .then()
+      .statusCode(HttpStatus.SC_CREATED);
+
+    int mockServerPort = userMockServer.port();
+    int statusCode = 200;
+    initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
+
+    EmailEntity emailTwo0 = sendEmail(statusCode);
+    checkStoredEmailsInDb(emailTwo0, FAILURE);
+
+    // This will delete the delivered email
+    deleteEmailByDateAndStatus(StringUtils.EMPTY, StringUtils.EMPTY)
+      .then()
+      .statusCode(HttpStatus.SC_NO_CONTENT)
+      .extract()
+      .response();
+
+    // find all failure email
+    Response response = getEmails(FAILURE)
+      .then()
+      .statusCode(HttpStatus.SC_OK)
+      .extract()
+      .response();
+
+    List<EmailEntity> actualEntries = convertEntriesToJson(response).getEmailEntity();
+    assertEquals(1, actualEntries.size());
   }
 }
