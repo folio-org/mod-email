@@ -428,7 +428,7 @@ public abstract class AbstractAPITest {
   }
 
   protected Future<RowSet<Row>> updateEmail(EmailEntity email) {
-    return postgresClient.update(EMAIL_STATISTICS_TABLE_NAME, mapFrom(email), email.getId());
+    return postgresClient.update(EMAIL_STATISTICS_TABLE_NAME, email, email.getId());
   }
 
   protected void throwSmtpError(boolean throwError) {
