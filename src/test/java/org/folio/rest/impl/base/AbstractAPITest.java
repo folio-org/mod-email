@@ -208,7 +208,7 @@ public abstract class AbstractAPITest {
   }
 
   protected void deleteLocalConfigurationAndWait() {
-    Awaitility.await().until(deleteLocalConfiguration()::isComplete);;
+    Awaitility.await().until(deleteLocalConfiguration()::isComplete);
   }
 
   @After
@@ -377,9 +377,9 @@ public abstract class AbstractAPITest {
    * Send random email
    */
   protected EmailEntity sendEmail(int expectedStatusCode) {
-    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
-    String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
+    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.random(7, true, false));
+    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.random(5, true, false));
+    String msg = "Test text for the message. Random text: " + RandomStringUtils.random(20, true, false);
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")

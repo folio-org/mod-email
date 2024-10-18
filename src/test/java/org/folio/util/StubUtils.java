@@ -3,7 +3,6 @@ package org.folio.util;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.google.common.collect.Lists;
 
-import io.restassured.mapper.ObjectMapper;
 import io.vertx.core.json.JsonObject;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.dbschema.ObjectMapperTool;
@@ -12,6 +11,7 @@ import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.SmtpConfiguration;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -132,10 +132,12 @@ public class StubUtils {
   }
 
   public static List<Config> createConfigsForCustomHeaders(Map<String, String> headers) {
+    // Using Stream.toList()
     return headers.entrySet().stream()
       .map(header -> createConfig(CONFIG_NAME_EMAIL_HEADERS, header.getKey(), header.getValue()))
-      .collect(toList());
+      .toList();
   }
+
 
   public static Configurations createConfigurationsWithCustomHeaders(Map<String, String> headers) {
     Configurations configurations = getWiserMockConfigurations();
