@@ -11,14 +11,12 @@ import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.SmtpConfiguration;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static java.util.stream.Collectors.toList;
 import static org.folio.HttpStatus.HTTP_NO_CONTENT;
 import static org.folio.enums.SmtpEmail.AUTH_METHODS;
 import static org.folio.enums.SmtpEmail.EMAIL_PASSWORD;
@@ -132,7 +130,6 @@ public class StubUtils {
   }
 
   public static List<Config> createConfigsForCustomHeaders(Map<String, String> headers) {
-    // Using Stream.toList()
     return headers.entrySet().stream()
       .map(header -> createConfig(CONFIG_NAME_EMAIL_HEADERS, header.getKey(), header.getValue()))
       .toList();
