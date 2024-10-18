@@ -2,8 +2,10 @@ package org.folio.util;
 
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.google.common.collect.Lists;
+
 import io.vertx.core.json.JsonObject;
 import org.apache.commons.lang3.StringUtils;
+import org.folio.dbschema.ObjectMapperTool;
 import org.folio.enums.SmtpEmail;
 import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
@@ -15,7 +17,6 @@ import java.util.Random;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static java.util.stream.Collectors.toList;
 import static org.folio.HttpStatus.HTTP_NO_CONTENT;
 import static org.folio.enums.SmtpEmail.AUTH_METHODS;
 import static org.folio.enums.SmtpEmail.EMAIL_PASSWORD;
@@ -55,7 +56,7 @@ public class StubUtils {
         .withHeader("Content-Type", "application/json")
         .withHeader("x-okapi-token", "x-okapi-token-TEST")
         .withHeader("x-okapi-url", "http://localhost:" + port)
-        .withBody(JsonObject.mapFrom(configurations).toString())));
+        .withBody(ObjectMapperTool.valueAsString(configurations).toString())));
 
     stubFor(delete(urlMatching(URL_SINGLE_CONFIGURATION))
       .willReturn(aResponse()
@@ -131,8 +132,9 @@ public class StubUtils {
   public static List<Config> createConfigsForCustomHeaders(Map<String, String> headers) {
     return headers.entrySet().stream()
       .map(header -> createConfig(CONFIG_NAME_EMAIL_HEADERS, header.getKey(), header.getValue()))
-      .collect(toList());
+      .toList();
   }
+
 
   public static Configurations createConfigurationsWithCustomHeaders(Map<String, String> headers) {
     Configurations configurations = getWiserMockConfigurations();
