@@ -28,7 +28,7 @@ import io.restassured.specification.RequestSpecification;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.client.HttpResponse;
-import org.apache.commons.lang3.RandomStringUtils;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
@@ -53,6 +53,7 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
+import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
