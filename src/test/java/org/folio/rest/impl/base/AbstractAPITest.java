@@ -28,7 +28,7 @@ import io.restassured.specification.RequestSpecification;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.client.HttpResponse;
-import org.apache.commons.lang3.RandomStringUtils;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
@@ -53,6 +53,7 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
+import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
@@ -208,7 +209,7 @@ public abstract class AbstractAPITest {
   }
 
   protected void deleteLocalConfigurationAndWait() {
-    Awaitility.await().until(deleteLocalConfiguration()::isComplete);;
+    Awaitility.await().until(deleteLocalConfiguration()::isComplete);
   }
 
   @After
@@ -377,9 +378,9 @@ public abstract class AbstractAPITest {
    * Send random email
    */
   protected EmailEntity sendEmail(int expectedStatusCode) {
-    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
-    String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
+    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.random(7, true, false));
+    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.random(5, true, false));
+    String msg = "Test text for the message. Random text: " + RandomStringUtils.random(20, true, false);
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -428,7 +429,7 @@ public abstract class AbstractAPITest {
   }
 
   protected Future<RowSet<Row>> updateEmail(EmailEntity email) {
-    return postgresClient.update(EMAIL_STATISTICS_TABLE_NAME, mapFrom(email), email.getId());
+    return postgresClient.update(EMAIL_STATISTICS_TABLE_NAME, email, email.getId());
   }
 
   protected void throwSmtpError(boolean throwError) {
