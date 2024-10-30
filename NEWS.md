@@ -1,3 +1,8 @@
+## 2024-10-30 v1.18.0
+* Upgrade RMB version to V.35.3.0 [MODEMAIL-99](https://folio-org.atlassian.net/browse/MODEMAIL-99)
+* Configurable expiration time [MODEMAIL-81](https://folio-org.atlassian.net/browse/MODEMAIL-81) 
+
+
 ## 2024-03-19 v1.17.0
 * Upgrade Folio spring dependency version ([MODEMAIL-96](https://issues.folio.org/browse/MODEMAIL-96))
 
