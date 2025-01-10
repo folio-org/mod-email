@@ -113,7 +113,7 @@ public abstract class AbstractEmail {
 
     return processEmails(singletonList(email), okapiHeaders)
       .map(emails -> emails.stream().findFirst().orElseThrow())
-      .onSuccess(result -> log.info("processEmail:: result: {}", () -> emailAsJson(result)));
+      .onSuccess(result -> log.debug("processEmail:: result: {}", () -> emailAsJson(result)));
   }
 
   protected Future<Collection<EmailEntity>> processEmails(Collection<EmailEntity> emails,
@@ -131,7 +131,7 @@ public abstract class AbstractEmail {
     return lookupSmtpConfiguration(okapiHeaders)
       .compose(config -> mapInOrder(emails, email -> processEmail(email, config)))
       .recover(t -> handleFailure(emails, t))
-      .onSuccess(r -> log.info("processEmails:: result: Collection<EmailEntity>(ids={})",
+      .onSuccess(r -> log.debug("processEmails:: result: Collection<EmailEntity>(ids={})",
         () -> emailIdsAsString(r)));
   }
 
@@ -148,14 +148,14 @@ public abstract class AbstractEmail {
       .otherwise(t -> handleFailure(email, t))
       .compose(this::saveEmail)
       .otherwiseEmpty()
-      .onSuccess(result -> log.info("processEmail:: result: {}", () -> emailAsJson(email)));
+      .onSuccess(result -> log.debug("processEmail:: result: {}", () -> emailAsJson(email)));
   }
 
   protected EmailEntity handleSuccess(EmailEntity email) {
     log.debug("handleSuccess:: parameters email: {}", () -> emailAsJson(email));
     String message = format(SUCCESS_SEND_EMAIL, join(",", email.getTo()));
     EmailEntity emailEntity = updateEmail(email, DELIVERED, message);
-    log.info("handleSuccess:: result: {}", () -> emailAsJson(email));
+    log.debug("handleSuccess:: result: {}", () -> emailAsJson(email));
     return emailEntity;
   }
 
@@ -165,7 +165,7 @@ public abstract class AbstractEmail {
     }
     String errorMessage = format(ERROR_SENDING_EMAIL, throwable.getMessage());
     EmailEntity emailEntity = updateEmail(email, FAILURE, errorMessage);
-    log.info("handleFailure:: result: {}", () -> emailAsJson(emailEntity));
+    log.warn("handleFailure:: result: {}", () -> emailAsJson(emailEntity));
     return emailEntity;
   }
 
@@ -179,7 +179,7 @@ public abstract class AbstractEmail {
       .withDate(Date.from(ClockUtil.getZonedDateTime().toInstant()))
       .withAttemptCount(newAttemptCount)
       .withShouldRetry(status == FAILURE && newAttemptCount < RETRY_MAX_ATTEMPTS);
-    log.info("updateEmail:: result: {}", () -> emailAsJson(result));
+    log.debug("updateEmail:: result: {}", () -> emailAsJson(result));
     return result;
   }
 
@@ -212,13 +212,13 @@ public abstract class AbstractEmail {
   private Future<SmtpConfiguration> moveConfigsFromModConfigurationToLocalDb(
     Map<String, String> requestHeaders) {
 
-    log.info("moveConfigsFromModConfigurationToLocalDb:: requestHeaders: {}",
+    log.debug("moveConfigsFromModConfigurationToLocalDb:: requestHeaders: {}",
       () -> headersAsString(requestHeaders));
     OkapiClient okapiClient = new OkapiClient(vertx, requestHeaders, webClientOptions);
 
     return fetchSmtpConfigurationFromModConfig(okapiClient)
       .compose(configs -> copyConfigurationAndDeleteFromModConfig(configs, okapiClient))
-      .onSuccess(result -> log.info("moveConfigsFromModConfigurationToLocalDb:: result: {}",
+      .onSuccess(result -> log.debug("moveConfigsFromModConfigurationToLocalDb:: result: {}",
         () -> smtpConfigAsJson(result)));
   }
 
@@ -248,7 +248,7 @@ public abstract class AbstractEmail {
   private Future<SmtpConfiguration> copyConfigurationAndDeleteFromModConfig(
     Configurations configurations, OkapiClient okapiClient) {
 
-    log.info("copyConfigurationAndDeleteFromModConfig:: configurations: " +
+    log.debug("copyConfigurationAndDeleteFromModConfig:: configurations: " +
       "Configurations(totalRecords={})", configurations::getTotalRecords);
 
     return succeededFuture(configurations)
@@ -256,26 +256,26 @@ public abstract class AbstractEmail {
       .compose(EmailUtils::validateSmtpConfiguration)
       .compose(smtpConfigurationService::createSmtpConfiguration)
       .onSuccess(smtpConfig -> deleteEntriesFromModConfig(configurations, okapiClient))
-      .onSuccess(result -> log.info("copyConfigurationAndDeleteFromModConfig:: result: {}",
+      .onSuccess(result -> log.debug("copyConfigurationAndDeleteFromModConfig:: result: {}",
         smtpConfigAsJson(result)));
   }
 
   private void deleteEntriesFromModConfig(Configurations configurationsToDelete,
     OkapiClient okapiClient) {
 
-    log.info("deleteEntriesFromModConfig:: configurations: Configurations(totalRecords={})",
+    log.debug("deleteEntriesFromModConfig:: configurations: Configurations(totalRecords={})",
       configurationsToDelete::getTotalRecords);
 
     configurationsToDelete.getConfigs().stream()
       .map(Config::getId)
       .forEach(id -> {
-        log.info("deleteEntriesFromModConfig:: Deleting configuration entry {}", id);
+        log.debug("deleteEntriesFromModConfig:: Deleting configuration entry {}", id);
         String path = format(DELETE_CONFIG_PATH_TEMPLATE, CONFIG_BASE_PATH, id);
         okapiClient.deleteAbs(path)
           .send()
           .onSuccess(response -> {
             if (response.statusCode() == HTTP_NO_CONTENT.toInt()) {
-              log.info("deleteEntriesFromModConfig:: Successfully deleted configuration entry {}",
+              log.debug("deleteEntriesFromModConfig:: Successfully deleted configuration entry {}",
                 id);
               return;
             }
