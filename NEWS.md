@@ -1,3 +1,7 @@
+## 2025-01-10 v1.18.1
+* Remove PII from mod-email [MODEMAIL-104](https://folio-org.atlassian.net/browse/MODEMAIL-104)
+
+
 ## 2024-10-30 v1.18.0
 * Upgrade RMB version to V.35.3.0 [MODEMAIL-99](https://folio-org.atlassian.net/browse/MODEMAIL-99)
 * Configurable expiration time [MODEMAIL-81](https://folio-org.atlassian.net/browse/MODEMAIL-81) 
