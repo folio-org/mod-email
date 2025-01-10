@@ -86,7 +86,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
 
     return findEmailEntries(RETRY_BATCH_SIZE, 0, query)
       .map(EmailEntries::getEmailEntity)
-      .onSuccess(emails -> log.info("findEmailsForRetry:: result: {}",
+      .onSuccess(emails -> log.debug("findEmailsForRetry:: result: {}",
         () -> emailIdsAsString(emails)));
   }
 
