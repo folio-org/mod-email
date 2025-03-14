@@ -1,3 +1,6 @@
+## 2025-03-14 v1.19.0
+* Update mod-email to Java 21 [FOLIO-4225](https://folio-org.atlassian.net/browse/FOLIO-4225)
+
 ## 2025-01-10 v1.18.1
 * Remove PII from mod-email [MODEMAIL-104](https://folio-org.atlassian.net/browse/MODEMAIL-104)
 
