@@ -18,12 +18,12 @@
     <raml-module-builder.version>35.4.0</raml-module-builder.version>
     <vertx.version>4.5.13</vertx.version>
     <subethasmtp.version>3.1.7</subethasmtp.version>
-    <rest-assured.version>5.5.0</rest-assured.version>
+    <rest-assured.version>5.5.1</rest-assured.version>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
-    <maven-surefire-plugin.version>3.5.1</maven-surefire-plugin.version>
+    <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
+    <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
     <build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
     <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
     <maven-antrun-plugin.version>3.1.0</maven-antrun-plugin.version>
