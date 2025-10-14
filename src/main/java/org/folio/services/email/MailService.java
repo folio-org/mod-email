@@ -1,5 +1,6 @@
 package org.folio.services.email;
 
+import io.vertx.core.eventbus.DeliveryOptions;
 import org.folio.services.email.impl.MailServiceImpl;
 
 import io.vertx.codegen.annotations.ProxyGen;
@@ -26,7 +27,8 @@ public interface MailService {
    * @return ValidationEngineService instance
    */
   static MailService createProxy(Vertx vertx, String address) {
-    return new MailServiceVertxEBProxy(vertx, address);
+    var sentTimeout = new DeliveryOptions().setSendTimeout(5000);
+    return new MailServiceVertxEBProxy(vertx, address, sentTimeout);
   }
 
   /**

@@ -11,6 +11,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.lang.module.ResolutionException;
 import java.text.SimpleDateFormat;
 import java.time.ZoneOffset;
 import java.util.Arrays;
@@ -84,7 +85,7 @@ public abstract class AbstractAPITest {
   private static final String HTTP_PORT = "http.port";
   private static final String TENANT_CLIENT_HOST = " http://%s:%s";
 
-  private static final String OKAPI_TENANT = "test_tenant";
+  protected static final String OKAPI_TENANT = "test_tenant";
   private static final String OKAPI_URL_HEADER = "x-okapi-url";
   private static final String OKAPI_HOST = "localhost";
   private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
@@ -292,6 +293,11 @@ public abstract class AbstractAPITest {
       })
       .findFirst()
       .orElseThrow(() -> throwAssertionFailedError(sender));
+  }
+
+  // Added helper to retrieve all messages (used by duplication reproduction tests)
+  protected List<WiserMessage> getAllMessages() {
+    return wiser.getMessages();
   }
 
   private AssertionFailedError throwAssertionFailedError(String sender) {

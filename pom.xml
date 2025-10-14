@@ -19,6 +19,7 @@
     <vertx.version>4.5.13</vertx.version>
     <subethasmtp.version>3.1.7</subethasmtp.version>
     <rest-assured.version>5.5.1</rest-assured.version>
+    <testcontainers.version>1.20.3</testcontainers.version>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
@@ -95,6 +96,26 @@
       <artifactId>lombok</artifactId>
       <version>1.18.36</version>
       <scope>provided</scope>
+    </dependency>
+
+    <!-- Testcontainers dependencies for toxiproxy and MailHog -->
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${testcontainers.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>toxiproxy</artifactId>
+      <version>${testcontainers.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>eu.rekawek.toxiproxy</groupId>
+      <artifactId>toxiproxy-java</artifactId>
+      <version>2.1.7</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

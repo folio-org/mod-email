@@ -95,7 +95,7 @@ public class StubUtils {
     return get(urlEqualTo(URL_CONFIGURATIONS_TO_SMTP_SERVER));
   }
 
-  private static Configurations createConfigurations(String user, String password, String host, String port) {
+  public static Configurations createConfigurations(String user, String password, String host, String port) {
     return new Configurations().withConfigs(Lists.newArrayList(
       createSmtpConfig(EMAIL_USERNAME, user),
       createSmtpConfig(EMAIL_PASSWORD, password),
