@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "A setting for organization",
+  "type": "object",
+  "properties": {
+    "id": {
+      "description": "The unique id of this setting",
+      "$ref": "uuid.json"
+    },
+    "_version": {
+      "type": "integer",
+      "description": "Record version for optimistic locking"
+    },
+    "key": {
+      "description": "The key of this setting",
+      "type": "string"
+    },
+    "value": {
+      "description": "The value of this setting",
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object",
+      "$ref": "raml-util/schemas/metadata.schema",
+      "readonly": true
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "key",
+    "value"
+  ]
+}

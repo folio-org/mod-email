@@ -91,6 +91,7 @@ public abstract class AbstractAPITest {
 
   protected static final String REST_PATH_EMAIL = "/email";
   protected static final String REST_PATH_SMTP_CONFIGURATION = "/smtp-configuration";
+  protected static final String REST_PATH_EMAIL_SETTINGS = "/email/settings";
   private static final String PATH_WITH_QUERY_TEMPLATE = "%s?query=%s&limit=%s";
   protected static final String ADDRESS_TEMPLATE = "%s@localhost";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";

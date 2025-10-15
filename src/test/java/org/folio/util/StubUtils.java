@@ -203,4 +203,20 @@ public class StubUtils {
       .withAuthMethods(authMethods);
   }
 
+  public static JsonObject buildEmailSetting() {
+    return new JsonObject()
+      .put("id", UUID.randomUUID().toString())
+      .put("key", "reply-to")
+      .put("value", "noreply@folio.org")
+      .put("_version", 1);
+  }
+
+  public static JsonObject buildEmailSetting(String id, String key, String value, int version) {
+    return new JsonObject()
+      .put("id", id)
+      .put("key", key)
+      .put("value", value)
+      .put("_version", version);
+  }
+
 }
