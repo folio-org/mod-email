@@ -17,7 +17,7 @@ public class EmailSettingsAPITest extends AbstractAPITest {
   public static final String ITEM_PATH_TEMPLATE = "%s/%s";
 
   @Test
-  public void emailSettingsPost() {
+  public void postEmailSettings_positive() {
     JsonObject emailSetting = buildEmailSetting();
 
     post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily())
@@ -27,7 +27,7 @@ public class EmailSettingsAPITest extends AbstractAPITest {
   }
 
   @Test
-  public void emailSettingGetAll() {
+  public void getEmailSettings_positive() {
     JsonObject emailSetting = buildEmailSetting();
 
     Response postResponse = post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily())
@@ -47,7 +47,7 @@ public class EmailSettingsAPITest extends AbstractAPITest {
   }
 
   @Test
-  public void emailSettingGetById() {
+  public void getById_positive() {
     JsonObject emailSetting = buildEmailSetting();
 
     Response postResponse = post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily())
@@ -64,7 +64,7 @@ public class EmailSettingsAPITest extends AbstractAPITest {
   }
 
   @Test
-  public void emailSettingGetByIdShouldReturn404WhenIdIsWrong() {
+  public void getById_negative_idPathParameterIsWrong() {
     JsonObject emailSetting = buildEmailSetting();
 
     post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily());
@@ -75,7 +75,7 @@ public class EmailSettingsAPITest extends AbstractAPITest {
   }
 
   @Test
-  public void emailSettingPut() {
+  public void putById_positive() {
     JsonObject emailSetting = buildEmailSetting();
 
     Response postResponse = post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily())
@@ -97,11 +97,11 @@ public class EmailSettingsAPITest extends AbstractAPITest {
     get(pathToEmailSettingById(postResponseId))
       .then()
       .statusCode(HttpStatus.SC_OK)
-      .body(matchesJson(emailSettingToPut, List.of("metadata", "_version")));
+      .body(matchesJson(emailSettingToPut, List.of("metadata")));
   }
 
   @Test
-  public void emailSettingPutShouldReturn404WhenIdPathParameterIsWrong() {
+  public void putById_negative_idPathParameterIsWrong() {
     JsonObject emailSetting = buildEmailSetting();
 
     Response postResponse = post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily())
@@ -124,7 +124,7 @@ public class EmailSettingsAPITest extends AbstractAPITest {
   }
 
   @Test
-  public void emailSettingDelete() {
+  public void deleteById_positive() {
     JsonObject emailSetting = buildEmailSetting();
 
     Response postResponse = post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily())
@@ -144,7 +144,7 @@ public class EmailSettingsAPITest extends AbstractAPITest {
   }
 
   @Test
-  public void emailSettingDeleteShouldReturn404WhenIdPathParameterIsWrong() {
+  public void deleteById_negative_idPathParameterIsWrong() {
     JsonObject emailSetting = buildEmailSetting();
 
     Response postResponse = post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily())
@@ -167,9 +167,9 @@ public class EmailSettingsAPITest extends AbstractAPITest {
   }
 
   @Test
-  public void emailSettingsQueryByScope() {
-    JsonObject emailSetting1 = buildEmailSetting( "reply-to", "noreply@folio.org", "Reply-To address", 1);
-    JsonObject emailSetting2 = buildEmailSetting("sender", "admin@folio.org", "Sender address", 1);
+  public void getEmailSettings_positive_queryByScope() {
+    JsonObject emailSetting1 = buildEmailSetting( "reply-to", "noreply@folio.org", "Reply-To address");
+    JsonObject emailSetting2 = buildEmailSetting("sender", "admin@folio.org", "Sender address");
 
     post(REST_PATH_EMAIL_SETTINGS, emailSetting1.encodePrettily());
     post(REST_PATH_EMAIL_SETTINGS, emailSetting2.encodePrettily());
@@ -182,9 +182,9 @@ public class EmailSettingsAPITest extends AbstractAPITest {
   }
 
   @Test
-  public void emailSettingsQueryByKey() {
-    JsonObject emailSetting1 = buildEmailSetting("reply-to", "noreply@folio.org", "Reply-To address", 1);
-    JsonObject emailSetting2 = buildEmailSetting("sender", "admin@folio.org", "Sender address", 1);
+  public void getEmailSettings_positive_queryByKey() {
+    JsonObject emailSetting1 = buildEmailSetting("reply-to", "noreply@folio.org", "Reply-To address");
+    JsonObject emailSetting2 = buildEmailSetting("sender", "admin@folio.org", "Sender address");
 
     post(REST_PATH_EMAIL_SETTINGS, emailSetting1.encodePrettily());
     post(REST_PATH_EMAIL_SETTINGS, emailSetting2.encodePrettily());
@@ -197,7 +197,7 @@ public class EmailSettingsAPITest extends AbstractAPITest {
   }
 
   @Test
-  public void emailSettingsPostWithInvalidData() {
+  public void postEmailSettings_negative_withInvalidData() {
     JsonObject invalidEmailSetting = new JsonObject()
       .put("scope", "")  // Empty scope should be invalid
       .put("key", "test-key")

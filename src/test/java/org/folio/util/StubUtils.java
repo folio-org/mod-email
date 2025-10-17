@@ -206,17 +206,17 @@ public class StubUtils {
   public static JsonObject buildEmailSetting() {
     return new JsonObject()
       .put("id", UUID.randomUUID().toString())
-      .put("key", "reply-to")
+      .put("key", "smtp-configuration")
       .put("value", "noreply@folio.org")
-      .put("_version", 1);
+      .put("scope", "mod-email");
   }
 
-  public static JsonObject buildEmailSetting(String id, String key, String value, int version) {
+  public static JsonObject buildEmailSetting(String id, String key, String value) {
     return new JsonObject()
       .put("id", id)
       .put("key", key)
       .put("value", value)
-      .put("_version", version);
+      .put("scope", "mod-email");
   }
 
 }

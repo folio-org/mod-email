@@ -1,32 +1,34 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "description": "A setting for organization",
+  "description": "Setting",
   "type": "object",
   "properties": {
     "id": {
-      "description": "The unique id of this setting",
-      "$ref": "uuid.json"
+      "description": "Identifier",
+      "type": "string",
+      "format": "uuid"
     },
-    "_version": {
-      "type": "integer",
-      "description": "Record version for optimistic locking"
+    "scope": {
+      "type": "string",
+      "description": "Scope for this entry (normally a module)"
     },
     "key": {
-      "description": "The key of this setting",
-      "type": "string"
+      "type": "string",
+      "description": "Key within scope for this setting"
     },
     "value": {
-      "description": "The value of this setting",
-      "type": "string"
+      "description": "Settings value (any type)"
     },
-    "metadata": {
-      "type": "object",
-      "$ref": "raml-util/schemas/metadata.schema",
-      "readonly": true
+    "userId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Owner of this setting (optional)"
     }
   },
   "additionalProperties": false,
   "required": [
+    "id",
+    "scope",
     "key",
     "value"
   ]
