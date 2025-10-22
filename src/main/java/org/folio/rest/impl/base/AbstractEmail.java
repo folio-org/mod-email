@@ -1,5 +1,36 @@
 package org.folio.rest.impl.base;
 
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.folio.exceptions.ConfigurationException;
+import org.folio.exceptions.SmtpConfigurationException;
+import org.folio.exceptions.SmtpConfigurationNotFoundException;
+import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.rest.jaxrs.model.EmailEntity.Status;
+import org.folio.rest.jaxrs.model.EmailEntries;
+import org.folio.rest.jaxrs.model.Setting;
+import org.folio.rest.jaxrs.model.SmtpConfiguration;
+import org.folio.rest.persist.Conn;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.services.EmailSettingsService;
+import org.folio.services.SmtpConfigurationService;
+import org.folio.services.email.MailService;
+import org.folio.services.storage.StorageService;
+import org.folio.util.ClockUtil;
+import org.folio.util.EmailUtils;
+
+import javax.ws.rs.core.Response;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
 import static io.vertx.core.json.JsonObject.mapFrom;
@@ -9,14 +40,13 @@ import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
-import static org.folio.HttpStatus.HTTP_NO_CONTENT;
-import static org.folio.HttpStatus.HTTP_OK;
-import static org.folio.rest.RestVerticle.MODULE_SPECIFIC_ARGS;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.FAILURE;
+import static org.folio.services.EmailSettingsService.emailSettingsAsJson;
 import static org.folio.util.AsyncUtil.mapInOrder;
 import static org.folio.util.EmailUtils.MAIL_SERVICE_ADDRESS;
 import static org.folio.util.EmailUtils.STORAGE_SERVICE_ADDRESS;
+import static org.folio.util.EmailUtils.convertSettingToSmtpConfiguration;
 import static org.folio.util.EmailUtils.findStatusByName;
 import static org.folio.util.LogUtil.asJson;
 import static org.folio.util.LogUtil.emailAsJson;
@@ -24,50 +54,11 @@ import static org.folio.util.LogUtil.emailIdsAsString;
 import static org.folio.util.LogUtil.headersAsString;
 import static org.folio.util.LogUtil.smtpConfigAsJson;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
-import java.util.regex.Pattern;
-
-import javax.ws.rs.core.Response;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.folio.exceptions.ConfigurationException;
-import org.folio.exceptions.SmtpConfigurationException;
-import org.folio.rest.client.OkapiClient;
-import org.folio.rest.jaxrs.model.Config;
-import org.folio.rest.jaxrs.model.Configurations;
-import org.folio.rest.jaxrs.model.EmailEntity;
-import org.folio.rest.jaxrs.model.EmailEntity.Status;
-import org.folio.rest.jaxrs.model.EmailEntries;
-import org.folio.rest.jaxrs.model.SmtpConfiguration;
-import org.folio.services.SmtpConfigurationService;
-import org.folio.services.email.MailService;
-import org.folio.services.storage.StorageService;
-import org.folio.util.ClockUtil;
-import org.folio.util.EmailUtils;
-
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.WebClientOptions;
-
 public abstract class AbstractEmail {
 
-  private static final String CONFIG_BASE_PATH = "/configurations/entries";
-  private static final String GET_CONFIG_PATH_TEMPLATE = "%s?query=module==%s";
-  private static final String DELETE_CONFIG_PATH_TEMPLATE = "%s/%s";
-  private static final String MODULE_EMAIL_SMTP_SERVER = "SMTP_SERVER";
-  private static final String LOOKUP_TIMEOUT = "lookup.timeout";
-  private static final String LOOKUP_TIMEOUT_VAL = "1000";
   public static final int RETRY_MAX_ATTEMPTS = 3;
 
   private static final Pattern DATE_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
-  private static final String ERROR_LOOKING_UP_MOD_CONFIG = "Error looking up config at %s | Expected status code 200, got %s | error message: %s";
   private static final String ERROR_MESSAGE_INCORRECT_DATE_PARAMETER = "Invalid date value, the parameter must be in the format: yyyy-MM-dd";
   private static final String ERROR_SENDING_EMAIL = "Error in the 'mod-email' module, the module didn't send email | message: %s";
   private static final String SUCCESS_SEND_EMAIL = "The message has been delivered to %s";
@@ -75,23 +66,16 @@ public abstract class AbstractEmail {
   protected static final Logger log = LogManager.getLogger(AbstractEmail.class);
   protected final Vertx vertx;
   private final String tenantId;
-  private final WebClientOptions webClientOptions;
 
   private MailService mailService;
   private StorageService storageService;
   private SmtpConfigurationService smtpConfigurationService;
+  private EmailSettingsService emailSettingsService;
 
 
   public AbstractEmail(Vertx vertx, String tenantId) {
     this.vertx = vertx;
     this.tenantId = tenantId;
-
-    final int lookupTimeout = Integer.parseInt(
-      MODULE_SPECIFIC_ARGS.getOrDefault(LOOKUP_TIMEOUT, LOOKUP_TIMEOUT_VAL));
-
-    this.webClientOptions = new WebClientOptions();
-    this.webClientOptions.setConnectTimeout(lookupTimeout);
-    this.webClientOptions.setIdleTimeout(lookupTimeout);
 
     initServices();
   }
@@ -102,11 +86,12 @@ public abstract class AbstractEmail {
   private void initServices() {
     mailService = MailService.createProxy(vertx, MAIL_SERVICE_ADDRESS);
     storageService = StorageService.createProxy(vertx, STORAGE_SERVICE_ADDRESS);
-    smtpConfigurationService = new SmtpConfigurationService(vertx, tenantId);
+    smtpConfigurationService = new SmtpConfigurationService();
+    emailSettingsService = new EmailSettingsService();
   }
 
   protected Future<EmailEntity> processEmail(EmailEntity email,
-    Map<String, String> okapiHeaders) {
+                                             Map<String, String> okapiHeaders) {
 
     log.debug("processEmail:: parameters email: {}, requestHeaders={}", () -> emailAsJson(email),
       () -> headersAsString(okapiHeaders));
@@ -117,7 +102,7 @@ public abstract class AbstractEmail {
   }
 
   protected Future<Collection<EmailEntity>> processEmails(Collection<EmailEntity> emails,
-    Map<String, String> okapiHeaders) {
+                                                          Map<String, String> okapiHeaders) {
 
     log.debug("processEmails:: emails: Collection<EmailEntity>(ids={}), okapiHeaders: {}",
       () -> emailIdsAsString(emails), () -> headersAsString(okapiHeaders));
@@ -128,22 +113,22 @@ public abstract class AbstractEmail {
     }
     log.debug("processEmails:: Trying to process a batch of {} emails", emails.size());
 
-    return lookupSmtpConfiguration(okapiHeaders)
-      .compose(config -> mapInOrder(emails, email -> processEmail(email, config)))
+    return lookupEmailSettings(okapiHeaders)
+      .compose(config -> mapInOrder(emails, email ->
+        processEmail(email, config)))
       .recover(t -> handleFailure(emails, t))
       .onSuccess(r -> log.debug("processEmails:: result: Collection<EmailEntity>(ids={})",
         () -> emailIdsAsString(r)));
   }
 
-  protected Future<EmailEntity> processEmail(EmailEntity email,
-    SmtpConfiguration smtpConfiguration) {
+  protected Future<EmailEntity> processEmail(EmailEntity email, Setting emailSettings) {
 
-    log.debug("processEmail:: email: {}, smtpConfiguration: {}", () -> emailAsJson(email),
-      () -> asJson(smtpConfiguration));
+    log.debug("processEmail:: email: {}, emailSettings: {}", () -> emailAsJson(email),
+      () -> asJson(emailSettings));
 
-    applyConfiguration(email, smtpConfiguration);
+    applyConfiguration(email, convertSettingToSmtpConfiguration(emailSettings));
 
-    return sendEmail(email, smtpConfiguration)
+    return sendEmail(email, emailSettings)
       .map(this::handleSuccess)
       .otherwise(t -> handleFailure(email, t))
       .compose(this::saveEmail)
@@ -184,7 +169,7 @@ public abstract class AbstractEmail {
   }
 
   protected Future<Collection<EmailEntity>> handleFailure(Collection<EmailEntity> emails,
-    Throwable throwable) {
+                                                          Throwable throwable) {
 
     if (log.isWarnEnabled()) {
       log.warn("handleFailure:: Failed to process a batch of emails (ids={})",
@@ -199,97 +184,57 @@ public abstract class AbstractEmail {
       .compose(r -> failedFuture(throwable));
   }
 
-  private Future<SmtpConfiguration> lookupSmtpConfiguration(Map<String, String> requestHeaders) {
-    log.debug("lookupSmtpConfiguration:: parameters requestHeaders: {}",
+  private Future<Setting> lookupEmailSettings(Map<String, String> requestHeaders) {
+    log.debug("lookupEmailSettings:: parameters requestHeaders: {}",
       () -> headersAsString(requestHeaders));
-    return smtpConfigurationService.getSmtpConfiguration()
-      .compose(EmailUtils::validateSmtpConfiguration)
-      .recover(throwable -> moveConfigsFromModConfigurationToLocalDb(requestHeaders))
-      .onSuccess(result -> log.debug("lookupSmtpConfiguration:: result: {}",
-        () -> smtpConfigAsJson(result)));
+    PostgresClient pgClient = PostgresClient.getInstance(vertx, tenantId);
+
+    return pgClient.withTrans(conn -> emailSettingsService.getEmailSettings(conn)
+      .compose(EmailUtils::validateEmailSettings)
+      .recover(throwable -> {
+        log.debug("lookupEmailSettings:: Email settings not found, falling back to SMTP configuration");
+        return smtpConfigurationService.getSmtpConfiguration(conn)
+          .compose(EmailUtils::validateSmtpConfiguration)
+          .compose(smtpConfig -> migrateSmtpConfigToSettings(smtpConfig, conn))
+          .onFailure(t -> log.warn("lookupEmailSettings:: failed to fetch smtp configuration"));
+      })
+      .onSuccess(result -> log.debug("lookupEmailSettings:: result: {}",
+        () -> emailSettingsAsJson(result))));
   }
 
-  private Future<SmtpConfiguration> moveConfigsFromModConfigurationToLocalDb(
-    Map<String, String> requestHeaders) {
+  private Future<Setting> migrateSmtpConfigToSettings(SmtpConfiguration smtpConfig, Conn conn) {
+    log.debug("migrateSmtpConfigToSettings:: smtpConfiguration: {}", () -> smtpConfigAsJson(smtpConfig));
 
-    log.debug("moveConfigsFromModConfigurationToLocalDb:: requestHeaders: {}",
-      () -> headersAsString(requestHeaders));
-    OkapiClient okapiClient = new OkapiClient(vertx, requestHeaders, webClientOptions);
-
-    return fetchSmtpConfigurationFromModConfig(okapiClient)
-      .compose(configs -> copyConfigurationAndDeleteFromModConfig(configs, okapiClient))
-      .onSuccess(result -> log.debug("moveConfigsFromModConfigurationToLocalDb:: result: {}",
-        () -> smtpConfigAsJson(result)));
-  }
-
-  private Future<Configurations> fetchSmtpConfigurationFromModConfig(OkapiClient okapiClient) {
-    log.info("fetchSmtpConfigurationFromModConfig:: Failed to find SMTP configuration in the DB, " +
-      "fetching from mod-config");
-
-    String path = format(GET_CONFIG_PATH_TEMPLATE, CONFIG_BASE_PATH, MODULE_EMAIL_SMTP_SERVER);
-
-    return okapiClient.getAbs(path)
-      .send()
-      .compose(response -> {
-        if (response.statusCode() == HTTP_OK.toInt()) {
-          log.info("fetchSmtpConfigurationFromModConfig:: Successfully fetched configuration " +
-            "entries");
-          Configurations config = response.bodyAsJsonObject().mapTo(Configurations.class);
-          return succeededFuture(config);
-        }
-        String errorMessage = String.format(ERROR_LOOKING_UP_MOD_CONFIG,
-          path, response.statusCode(), response.bodyAsString());
-        log.warn("fetchSmtpConfigurationFromModConfig:: Failed to fetch SMTP configuration " +
-          "entries: {}", errorMessage);
-        return failedFuture(new ConfigurationException(errorMessage));
-      });
-  }
-
-  private Future<SmtpConfiguration> copyConfigurationAndDeleteFromModConfig(
-    Configurations configurations, OkapiClient okapiClient) {
-
-    log.debug("copyConfigurationAndDeleteFromModConfig:: configurations: " +
-      "Configurations(totalRecords={})", configurations::getTotalRecords);
-
-    return succeededFuture(configurations)
-      .map(EmailUtils::convertSmtpConfiguration)
-      .compose(EmailUtils::validateSmtpConfiguration)
-      .compose(smtpConfigurationService::createSmtpConfiguration)
-      .onSuccess(smtpConfig -> deleteEntriesFromModConfig(configurations, okapiClient))
-      .onSuccess(result -> log.debug("copyConfigurationAndDeleteFromModConfig:: result: {}",
-        smtpConfigAsJson(result)));
-  }
-
-  private void deleteEntriesFromModConfig(Configurations configurationsToDelete,
-    OkapiClient okapiClient) {
-
-    log.debug("deleteEntriesFromModConfig:: configurations: Configurations(totalRecords={})",
-      configurationsToDelete::getTotalRecords);
-
-    configurationsToDelete.getConfigs().stream()
-      .map(Config::getId)
-      .forEach(id -> {
-        log.debug("deleteEntriesFromModConfig:: Deleting configuration entry {}", id);
-        String path = format(DELETE_CONFIG_PATH_TEMPLATE, CONFIG_BASE_PATH, id);
-        okapiClient.deleteAbs(path)
-          .send()
-          .onSuccess(response -> {
-            if (response.statusCode() == HTTP_NO_CONTENT.toInt()) {
-              log.debug("deleteEntriesFromModConfig:: Successfully deleted configuration entry {}",
-                id);
-              return;
+    return emailSettingsService.getEmailSettingsByKey("smtp-configuration", conn)
+      .recover(throwable -> {
+        log.debug("migrateSmtpConfigToSettings:: Email settings not found by key, creating new setting from SMTP configuration");
+        return succeededFuture(EmailUtils.convertSmtpConfigurationToSetting(smtpConfig));
+      })
+      .map(existingSetting -> existingSetting.withValue(smtpConfig))
+      .compose(setting -> emailSettingsService.upsertEmailSettings(setting, conn))
+      .compose(createdSetting -> {
+        log.info("migrateSmtpConfigToSettings:: Successfully migrated SMTP configuration to settings table");
+        return smtpConfigurationService.deleteSmtpConfiguration(smtpConfig.getId(), conn)
+          .compose(deleted -> {
+            if (deleted) {
+              log.info("migrateSmtpConfigToSettings:: Successfully deleted SMTP configuration from SMTP table");
+            } else {
+              log.warn("migrateSmtpConfigToSettings:: Failed to delete SMTP configuration from SMTP table");
             }
-            log.warn("deleteEntriesFromModConfig:: Failed to delete configuration entry {}", id);
-          })
-          .onFailure(log::error);
-      });
+            return succeededFuture(createdSetting);
+          });
+      })
+      .onSuccess(result -> log.debug("migrateSmtpConfigToSettings:: result: {}",
+        () -> emailSettingsAsJson(result)))
+      .onFailure(throwable ->
+        log.error("migrateSmtpConfigToSettings:: Failed to migrate SMTP configuration to settings", throwable));
   }
 
-  protected Future<EmailEntity> sendEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
+  protected Future<EmailEntity> sendEmail(EmailEntity email, Setting emailSettings) {
     log.debug("sendEmail:: email: {}, smtpConfiguration: {}", () -> emailAsJson(email),
-      () -> smtpConfigAsJson(smtpConfiguration));
+      () -> smtpConfigAsJson((SmtpConfiguration) emailSettings.getValue()));
     Promise<JsonObject> promise = Promise.promise();
-    mailService.sendEmail(mapFrom(smtpConfiguration), mapFrom(email), promise);
+    mailService.sendEmail(mapFrom(emailSettings.getValue()), mapFrom(email), promise);
 
     return promise.future()
       .map(email)
@@ -363,7 +308,7 @@ public abstract class AbstractEmail {
     log.debug("mapExceptionToResponse:: throwable: ", t);
     String errMsg = t.getMessage();
 
-    if (t.getClass() == ConfigurationException.class) {
+    if (t.getClass() == ConfigurationException.class || t.getClass() == SmtpConfigurationNotFoundException.class) {
       log.warn("mapExceptionToResponse:: exception class is {}", t.getClass());
       return Response.status(400)
         .header(CONTENT_TYPE, TEXT_PLAIN)

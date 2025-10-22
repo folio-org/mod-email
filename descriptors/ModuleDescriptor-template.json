@@ -1,12 +1,6 @@
 {
   "id": "${artifactId}-${version}",
   "name": "email",
-  "requires": [
-    {
-      "id": "configuration",
-      "version": "2.0"
-    }
-  ],
   "provides": [
     {
       "id": "email",
@@ -19,10 +13,6 @@
           "pathPattern": "/email",
           "permissionsRequired": [
             "email.message.post"
-          ],
-          "modulePermissions": [
-            "configuration.entries.collection.get",
-            "configuration.entries.item.delete"
           ]
         },
         {
@@ -120,10 +110,6 @@
             "POST"
           ],
           "pathPattern": "/delayedTask/retryFailedEmails",
-          "modulePermissions": [
-            "configuration.entries.collection.get",
-            "configuration.entries.item.delete"
-          ],
           "unit": "minute",
           "delay": "5"
         }

@@ -15,6 +15,7 @@ import static org.folio.enums.SmtpEmail.EMAIL_SMTP_SSL;
 import static org.folio.enums.SmtpEmail.EMAIL_START_TLS_OPTIONS;
 import static org.folio.enums.SmtpEmail.EMAIL_TRUST_ALL;
 import static org.folio.enums.SmtpEmail.EMAIL_USERNAME;
+import static org.folio.util.LogUtil.asJson;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.enums.SmtpEmail;
@@ -32,6 +34,7 @@ import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailHeader;
+import org.folio.rest.jaxrs.model.Setting;
 import org.folio.rest.jaxrs.model.SmtpConfiguration;
 
 import io.vertx.core.Future;
@@ -40,6 +43,7 @@ import io.vertx.ext.mail.StartTLSOptions;
 
 public class EmailUtils {
   private static final Logger logger = LogManager.getLogger(EmailUtils.class);
+  private static final ObjectMapper objectMapper = new ObjectMapper();
 
   public static final String MAIL_SERVICE_ADDRESS = "mail-service.queue";
   public static final String STORAGE_SERVICE_ADDRESS = "storage-service.queue";
@@ -72,7 +76,7 @@ public class EmailUtils {
   }
 
   public static Future<SmtpConfiguration> validateSmtpConfiguration(SmtpConfiguration smtpConfiguration) {
-    boolean configurationIsValid =  smtpConfiguration.getPort() != null && isNoneBlank(
+    boolean configurationIsValid = smtpConfiguration.getPort() != null && isNoneBlank(
       smtpConfiguration.getHost(),
       smtpConfiguration.getUsername(),
       smtpConfiguration.getPassword());
@@ -81,10 +85,23 @@ public class EmailUtils {
       return succeededFuture(smtpConfiguration);
     }
 
-    String errorMessage = String.format(ERROR_MIN_REQUIREMENT_MOD_CONFIG,
-      REQUIREMENTS_CONFIG_SET);
+    String errorMessage = String.format(ERROR_MIN_REQUIREMENT_MOD_CONFIG, REQUIREMENTS_CONFIG_SET);
     logger.error(errorMessage);
     return failedFuture(new SmtpConfigurationException(errorMessage));
+  }
+
+  public static Future<Setting> validateEmailSettings(Setting setting) {
+    logger.debug("validateEmailSettings:: validating email settings: {}", asJson(setting));
+
+    SmtpConfiguration smtpConfiguration = convertSettingToSmtpConfiguration(setting);
+    return validateSmtpConfiguration(smtpConfiguration)
+      .map(result -> setting)
+      .onSuccess(result -> logger.debug("validateEmailSettings:: validation successful"))
+      .onFailure(throwable -> {
+        String errorMessage = "Failed to validate email settings: " + throwable.getMessage();
+        logger.error(errorMessage);
+        throw new SmtpConfigurationException(errorMessage);
+      });
   }
 
   /**
@@ -155,5 +172,29 @@ public class EmailUtils {
           .withValue(config.getValue()))
         .collect(Collectors.toList()));
 
+  }
+
+  public static SmtpConfiguration convertSettingToSmtpConfiguration(Setting setting) {
+    try {
+      Object value = setting.getValue();
+
+      if (value instanceof SmtpConfiguration) {
+        return (SmtpConfiguration) value;
+      }
+
+      return objectMapper.convertValue(value, SmtpConfiguration.class);
+    } catch (Exception e) {
+      String errorMessage = "Failed to convert email setting to SMTP configuration";
+      logger.error(errorMessage, e);
+      throw new SmtpConfigurationException(errorMessage);
+    }
+  }
+
+  public static Setting convertSmtpConfigurationToSetting(SmtpConfiguration smtpConfiguration) {
+    return new Setting()
+      .withId(UUID.randomUUID().toString())
+      .withKey("smtp-configuration")
+      .withScope("mod-email")
+      .withValue(smtpConfiguration);
   }
 }

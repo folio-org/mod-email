@@ -1,17 +1,6 @@
 package org.folio.rest.impl;
 
-import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
-import static org.folio.rest.jaxrs.model.EmailEntity.Status.FAILURE;
-import static org.folio.util.StubUtils.buildSmtpConfiguration;
-import static org.folio.util.StubUtils.buildWiserSmtpConfiguration;
-import static org.folio.util.StubUtils.getIncorrectConfigurations;
-import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
-import static org.folio.util.StubUtils.getWiserMockConfigurations;
-import static org.folio.util.StubUtils.initModConfigStub;
-import static org.junit.Assert.assertEquals;
-
-import java.util.List;
-
+import io.restassured.response.Response;
 import io.vertx.core.json.JsonObject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
@@ -19,7 +8,18 @@ import org.folio.rest.impl.base.AbstractAPITest;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.junit.Test;
 
-import io.restassured.response.Response;
+import java.util.List;
+
+import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
+import static org.folio.rest.jaxrs.model.EmailEntity.Status.FAILURE;
+import static org.folio.util.StubUtils.buildIncorrectWiserEmailSettings;
+import static org.folio.util.StubUtils.buildInvalidSmtpConfiguration;
+import static org.folio.util.StubUtils.buildSmtpConfiguration;
+import static org.folio.util.StubUtils.buildWiserEmailSettings;
+import static org.folio.util.StubUtils.buildWiserSmtpConfiguration;
+import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
+import static org.folio.util.StubUtils.initModConfigStub;
+import static org.junit.Assert.assertEquals;
 
 public class GettingMetricsTest extends AbstractAPITest {
 
@@ -91,8 +91,7 @@ public class GettingMetricsTest extends AbstractAPITest {
 
   @Test
   public void testSendEmailsWithDeliveredStatus() {
-    int mockServerPort = userMockServer.port();
-    initModConfigStub(mockServerPort, getWiserMockConfigurations());
+    post(REST_PATH_SMTP_CONFIGURATION, buildWiserSmtpConfiguration().encodePrettily());
 
     int statusCode = 200;
     EmailEntity emailOne = sendEmail(statusCode);
@@ -124,8 +123,7 @@ public class GettingMetricsTest extends AbstractAPITest {
 
   @Test
   public void testSendEmailsWithFailureStatus() {
-    int mockServerPort = userMockServer.port();
-    initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
+    post(REST_PATH_EMAIL_SETTINGS, buildIncorrectWiserEmailSettings().encodePrettily());
 
     int statusCode = 200;
     EmailEntity emailOne = sendEmail(statusCode);
@@ -157,8 +155,7 @@ public class GettingMetricsTest extends AbstractAPITest {
 
   @Test
   public void testSendEmailWithIncorrectConfigurations() {
-    int mockServerPort = userMockServer.port();
-    initModConfigStub(mockServerPort, getIncorrectConfigurations());
+    post(REST_PATH_SMTP_CONFIGURATION, buildInvalidSmtpConfiguration().encodePrettily());
 
     // send email
     EmailEntity email = sendEmail(200);
@@ -197,8 +194,7 @@ public class GettingMetricsTest extends AbstractAPITest {
 
     String postResponseId = new JsonObject(postResponse.body().asString()).getString("id");
 
-    int mockServerPort = userMockServer.port();
-    initModConfigStub(mockServerPort, getWiserMockConfigurations());
+    post(REST_PATH_EMAIL_SETTINGS, buildWiserEmailSettings().encodePrettily());
 
     int statusCode = 200;
     EmailEntity emailOne = sendEmail(statusCode);

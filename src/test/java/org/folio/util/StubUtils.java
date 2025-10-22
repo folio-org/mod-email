@@ -189,7 +189,18 @@ public class StubUtils {
   public static JsonObject buildInvalidSmtpConfiguration() {
     return new JsonObject()
       .put("host", "localhost")
-      .put("password", "password");
+      .put("password", "password")
+      .put("username", "")
+      .put("port", 0);
+  }
+
+  public static JsonObject buildInvalidEmailSettings() {
+    return new JsonObject()
+      .put("id", UUID.randomUUID().toString())
+      .put("key", "smtp-configuration")
+      .put("value", buildInvalidSmtpConfiguration())
+      .put("scope", "mod-email")
+      .put("_version", 1);
   }
 
   public static SmtpConfiguration buildSmtpConfiguration(String user, String password,
@@ -203,20 +214,40 @@ public class StubUtils {
       .withAuthMethods(authMethods);
   }
 
-  public static JsonObject buildEmailSetting() {
+  public static JsonObject buildIncorrectWiserEmailSettings() {
     return new JsonObject()
       .put("id", UUID.randomUUID().toString())
       .put("key", "smtp-configuration")
-      .put("value", "noreply@folio.org")
-      .put("scope", "mod-email");
+      .put("value", buildIncorrectWiserSmtpConfiguration())
+      .put("scope", "mod-email")
+      .put("_version", 1);
   }
 
-  public static JsonObject buildEmailSetting(String id, String key, String value) {
+  public static JsonObject buildWiserEmailSettings() {
+    return new JsonObject()
+      .put("id", UUID.randomUUID().toString())
+      .put("key", "smtp-configuration")
+      .put("value", buildWiserSmtpConfiguration())
+      .put("scope", "mod-email")
+      .put("_version", 1);
+  }
+
+  public static JsonObject buildValidEmailSettings() {
+    return new JsonObject()
+      .put("id", UUID.randomUUID().toString())
+      .put("key", "smtp-configuration")
+      .put("value", buildSmtpConfiguration())
+      .put("scope", "mod-email")
+      .put("_version", 1);
+  }
+
+  public static JsonObject buildValidEmailSettings(String id, JsonObject value) {
     return new JsonObject()
       .put("id", id)
-      .put("key", key)
+      .put("key", "smtp-configuration")
       .put("value", value)
-      .put("scope", "mod-email");
+      .put("scope", "mod-email")
+      .put("_version", 1);
   }
 
 }

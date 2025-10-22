@@ -5,8 +5,7 @@
   "properties": {
     "id": {
       "description": "Identifier",
-      "type": "string",
-      "format": "uuid"
+      "$ref": "uuid.json"
     },
     "scope": {
       "type": "string",
@@ -23,6 +22,10 @@
       "type": "string",
       "format": "uuid",
       "description": "Owner of this setting (optional)"
+    },
+    "_version": {
+      "type": "integer",
+      "description": "Record version for optimistic locking"
     }
   },
   "additionalProperties": false,

@@ -11,24 +11,26 @@ import java.util.UUID;
 
 import static java.lang.String.format;
 import static org.folio.matchers.JsonMatchers.matchesJson;
-import static org.folio.util.StubUtils.buildEmailSetting;
+import static org.folio.util.StubUtils.buildSmtpConfiguration;
+import static org.folio.util.StubUtils.buildValidEmailSettings;
+import static org.junit.Assert.assertEquals;
 
 public class EmailSettingsAPITest extends AbstractAPITest {
   public static final String ITEM_PATH_TEMPLATE = "%s/%s";
 
   @Test
   public void postEmailSettings_positive() {
-    JsonObject emailSetting = buildEmailSetting();
+    JsonObject emailSetting = buildValidEmailSettings();
 
     post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily())
       .then()
       .statusCode(HttpStatus.SC_CREATED)
-      .body(matchesJson(emailSetting, List.of("metadata")));
+      .body(matchesJson(emailSetting));
   }
 
   @Test
   public void getEmailSettings_positive() {
-    JsonObject emailSetting = buildEmailSetting();
+    JsonObject emailSetting = buildValidEmailSettings();
 
     Response postResponse = post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily())
       .then()
@@ -43,12 +45,12 @@ public class EmailSettingsAPITest extends AbstractAPITest {
     get(REST_PATH_EMAIL_SETTINGS)
       .then()
       .statusCode(HttpStatus.SC_OK)
-      .body(matchesJson(emailSettings, List.of("metadata")));
+      .body(matchesJson(emailSettings));
   }
 
   @Test
   public void getById_positive() {
-    JsonObject emailSetting = buildEmailSetting();
+    JsonObject emailSetting = buildValidEmailSettings();
 
     Response postResponse = post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily())
       .then()
@@ -60,12 +62,12 @@ public class EmailSettingsAPITest extends AbstractAPITest {
     get(pathToEmailSettingById(postResponseId))
       .then()
       .statusCode(HttpStatus.SC_OK)
-      .body(matchesJson(emailSetting.put("id", postResponseId), List.of("metadata")));
+      .body(matchesJson(emailSetting.put("id", postResponseId)));
   }
 
   @Test
   public void getById_negative_idPathParameterIsWrong() {
-    JsonObject emailSetting = buildEmailSetting();
+    JsonObject emailSetting = buildValidEmailSettings();
 
     post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily());
 
@@ -76,7 +78,7 @@ public class EmailSettingsAPITest extends AbstractAPITest {
 
   @Test
   public void putById_positive() {
-    JsonObject emailSetting = buildEmailSetting();
+    JsonObject emailSetting = buildValidEmailSettings();
 
     Response postResponse = post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily())
       .then()
@@ -97,12 +99,12 @@ public class EmailSettingsAPITest extends AbstractAPITest {
     get(pathToEmailSettingById(postResponseId))
       .then()
       .statusCode(HttpStatus.SC_OK)
-      .body(matchesJson(emailSettingToPut, List.of("metadata")));
+      .body(matchesJson(emailSettingToPut, List.of("_version")));
   }
 
   @Test
   public void putById_negative_idPathParameterIsWrong() {
-    JsonObject emailSetting = buildEmailSetting();
+    JsonObject emailSetting = buildValidEmailSettings();
 
     Response postResponse = post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily())
       .then()
@@ -125,7 +127,7 @@ public class EmailSettingsAPITest extends AbstractAPITest {
 
   @Test
   public void deleteById_positive() {
-    JsonObject emailSetting = buildEmailSetting();
+    JsonObject emailSetting = buildValidEmailSettings();
 
     Response postResponse = post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily())
       .then()
@@ -145,7 +147,7 @@ public class EmailSettingsAPITest extends AbstractAPITest {
 
   @Test
   public void deleteById_negative_idPathParameterIsWrong() {
-    JsonObject emailSetting = buildEmailSetting();
+    JsonObject emailSetting = buildValidEmailSettings();
 
     Response postResponse = post(REST_PATH_EMAIL_SETTINGS, emailSetting.encodePrettily())
       .then()
@@ -163,37 +165,43 @@ public class EmailSettingsAPITest extends AbstractAPITest {
     get(pathToEmailSettingById(postResponseId))
       .then()
       .statusCode(HttpStatus.SC_OK)
-      .body(matchesJson(emailSetting.put("id", postResponseId), List.of("metadata")));
+      .body(matchesJson(emailSetting.put("id", postResponseId)));
   }
 
   @Test
   public void getEmailSettings_positive_queryByScope() {
-    JsonObject emailSetting1 = buildEmailSetting( "reply-to", "noreply@folio.org", "Reply-To address");
-    JsonObject emailSetting2 = buildEmailSetting("sender", "admin@folio.org", "Sender address");
+    JsonObject emailSetting1 = buildValidEmailSettings(UUID.randomUUID().toString(), buildSmtpConfiguration());
+    JsonObject emailSetting2 = buildValidEmailSettings(UUID.randomUUID().toString(), buildSmtpConfiguration());
 
     post(REST_PATH_EMAIL_SETTINGS, emailSetting1.encodePrettily());
     post(REST_PATH_EMAIL_SETTINGS, emailSetting2.encodePrettily());
 
-    get(REST_PATH_EMAIL_SETTINGS + "?query=scope==email")
+    Response response = get(REST_PATH_EMAIL_SETTINGS + "?query=scope==mod-email")
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()
       .response();
+    long totalRecords = new JsonObject(response.body().asString())
+      .getLong("totalRecords");
+    assertEquals(1, totalRecords);
   }
 
   @Test
   public void getEmailSettings_positive_queryByKey() {
-    JsonObject emailSetting1 = buildEmailSetting("reply-to", "noreply@folio.org", "Reply-To address");
-    JsonObject emailSetting2 = buildEmailSetting("sender", "admin@folio.org", "Sender address");
+    JsonObject emailSetting1 = buildValidEmailSettings(UUID.randomUUID().toString(), buildSmtpConfiguration());
+    JsonObject emailSetting2 = buildValidEmailSettings(UUID.randomUUID().toString(), buildSmtpConfiguration());
 
     post(REST_PATH_EMAIL_SETTINGS, emailSetting1.encodePrettily());
     post(REST_PATH_EMAIL_SETTINGS, emailSetting2.encodePrettily());
 
-    get(REST_PATH_EMAIL_SETTINGS + "?query=key==reply-to")
+    Response response = get(REST_PATH_EMAIL_SETTINGS + "?query=key==smtp-configuration")
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()
       .response();
+    long totalRecords = new JsonObject(response.body().asString())
+      .getLong("totalRecords");
+    assertEquals(1, totalRecords);
   }
 
   @Test

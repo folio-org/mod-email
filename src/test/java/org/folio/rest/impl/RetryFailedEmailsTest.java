@@ -1,29 +1,6 @@
 package org.folio.rest.impl;
 
-import static java.time.Duration.ofSeconds;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toList;
-import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
-import static org.folio.rest.jaxrs.model.EmailEntity.Status.FAILURE;
-import static org.folio.util.StubUtils.getIncorrectConfigurations;
-import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
-import static org.folio.util.StubUtils.getWiserMockConfigurations;
-import static org.folio.util.StubUtils.initFailModConfigStub;
-import static org.folio.util.StubUtils.initModConfigStub;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
-import java.time.Clock;
-import java.time.Duration;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.IntStream;
-
-import javax.ws.rs.core.MediaType;
-
+import io.restassured.response.Response;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.HttpStatus;
 import org.folio.rest.impl.base.AbstractAPITest;
@@ -34,7 +11,26 @@ import org.folio.util.ClockUtil;
 import org.junit.Test;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
-import io.restassured.response.Response;
+import javax.ws.rs.core.MediaType;
+import java.time.Clock;
+import java.time.Duration;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.IntStream;
+
+import static java.time.Duration.ofSeconds;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
+import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
+import static org.folio.rest.jaxrs.model.EmailEntity.Status.FAILURE;
+import static org.folio.util.StubUtils.buildIncorrectWiserEmailSettings;
+import static org.folio.util.StubUtils.buildInvalidSmtpConfiguration;
+import static org.folio.util.StubUtils.buildWiserEmailSettings;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class RetryFailedEmailsTest extends AbstractAPITest {
   private static final int RETRY_MAX_ATTEMPTS = 3;
@@ -45,7 +41,7 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
 
   @Test
   public void shouldRetryFailedEmailsUntilAllAttemptsAreExhausted() {
-    initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
+    post(REST_PATH_EMAIL_SETTINGS, buildWiserEmailSettings().encodePrettily());
     throwSmtpError(true);
     int emailsCount = 5;
 
@@ -71,7 +67,7 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
 
   @Test
   public void shouldRetryFailedEmailsInBatches() {
-    initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
+    post(REST_PATH_EMAIL_SETTINGS, buildWiserEmailSettings().encodePrettily());
     throwSmtpError(true);
     int twoBatches = RETRY_BATCH_SIZE * 2;
 
@@ -91,7 +87,7 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
 
   @Test
   public void shouldRetryEmailFailedDueToSmtpError() {
-    initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
+    post(REST_PATH_EMAIL_SETTINGS, buildWiserEmailSettings().encodePrettily());
     throwSmtpError(true);
 
     String expectedErrorMessage = "Error in the 'mod-email' module, the module " +
@@ -109,7 +105,7 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
 
   @Test
   public void shouldRetryEmailFailedDueToInvalidConfiguration() {
-    initModConfigStub(userMockServer.port(), getIncorrectWiserMockConfigurations());
+    post(REST_PATH_EMAIL_SETTINGS, buildIncorrectWiserEmailSettings().encodePrettily());
 
     String expectedErrorMessage = "Error in the 'mod-email' module, the module didn't send email | " +
       "message: Connection refused";
@@ -118,16 +114,15 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
       .then()
       .statusCode(HttpStatus.SC_OK)
       .body(containsString(expectedErrorMessage));
-
     verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
-    initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
     deleteLocalConfigurationAndWait();
+    post(REST_PATH_EMAIL_SETTINGS, buildWiserEmailSettings().encodePrettily());
     runRetryJobAndWaitForResult(1, DELIVERED, 2, false, MESSAGE_WAS_DELIVERED);
   }
 
   @Test
   public void shouldRetryEmailFailedDueToInsufficientConfiguration() {
-    initModConfigStub(userMockServer.port(), getIncorrectConfigurations());
+    post(REST_PATH_SMTP_CONFIGURATION, buildInvalidSmtpConfiguration().encodePrettily());
 
     String expectedErrorMessage = "The 'mod-config' module doesn't have a minimum config for SMTP " +
       "server, the min config is: [EMAIL_SMTP_PORT, EMAIL_PASSWORD, EMAIL_SMTP_HOST, EMAIL_USERNAME]";
@@ -138,15 +133,13 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
       .body(is(expectedErrorMessage));
 
     verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
-    initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
+    post(REST_PATH_EMAIL_SETTINGS, buildWiserEmailSettings().encodePrettily());
     runRetryJobAndWaitForResult(1, DELIVERED, 2, false, MESSAGE_WAS_DELIVERED);
   }
 
   @Test
   public void shouldRetryEmailFailedDueToErrorInModConfiguration() {
-    initFailModConfigStub(userMockServer.port());
-
-    String expectedErrorMessage = "Error looking up config";
+    String expectedErrorMessage = "SMTP configuration not found";
 
     sendEmail(buildEmail())
       .then()
@@ -154,13 +147,13 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
       .body(containsString(expectedErrorMessage));
 
     verifyStoredEmails(1, FAILURE, 1, true, expectedErrorMessage);
-    initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
+    post(REST_PATH_EMAIL_SETTINGS, buildWiserEmailSettings().encodePrettily());
     runRetryJobAndWaitForResult(1, DELIVERED, 2, false, MESSAGE_WAS_DELIVERED);
   }
 
   @Test
   public void shouldNotRetryEmailOlderThanConfiguredAge() {
-    initModConfigStub(userMockServer.port(), getWiserMockConfigurations());
+    post(REST_PATH_EMAIL_SETTINGS, buildWiserEmailSettings().encodePrettily());
     throwSmtpError(true);
 
     String expectedErrorMessage = "Error in the 'mod-email' module, the module " +

@@ -1,9 +1,7 @@
 package org.folio.repository;
 
-import static org.folio.util.LogUtil.asJson;
-
-import java.util.List;
-
+import io.vertx.core.Future;
+import io.vertx.sqlclient.RowSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.cql2pgjson.CQL2PgJSON;
@@ -14,8 +12,9 @@ import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.persist.interfaces.Results;
 
-import io.vertx.core.Future;
-import io.vertx.sqlclient.RowSet;
+import java.util.List;
+
+import static org.folio.util.LogUtil.asJson;
 
 public class BaseRepository<T> {
 
