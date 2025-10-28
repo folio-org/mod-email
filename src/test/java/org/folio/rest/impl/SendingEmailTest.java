@@ -1,21 +1,5 @@
 package org.folio.rest.impl;
 
-import io.restassured.response.Response;
-import io.vertx.core.json.JsonObject;
-import junit.framework.AssertionFailedError;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.http.HttpStatus;
-import org.folio.rest.impl.base.AbstractAPITest;
-import org.folio.rest.jaxrs.model.Attachment;
-import org.folio.rest.jaxrs.model.EmailEntity;
-import org.junit.Test;
-import org.subethamail.wiser.WiserMessage;
-
-import javax.ws.rs.core.MediaType;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-
 import static java.lang.String.format;
 import static junit.framework.TestCase.fail;
 import static org.folio.matchers.JsonMatchers.matchesJson;
@@ -24,12 +8,29 @@ import static org.folio.util.StubUtils.buildIncorrectWiserEmailSettings;
 import static org.folio.util.StubUtils.buildIncorrectWiserSmtpConfiguration;
 import static org.folio.util.StubUtils.buildInvalidEmailSettings;
 import static org.folio.util.StubUtils.buildInvalidSmtpConfiguration;
-import static org.folio.util.StubUtils.buildSmtpConfiguration;
 import static org.folio.util.StubUtils.buildValidEmailSettings;
 import static org.folio.util.StubUtils.buildWiserSmtpConfiguration;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
+import javax.ws.rs.core.MediaType;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.http.HttpStatus;
+import org.folio.rest.impl.base.AbstractAPITest;
+import org.folio.rest.jaxrs.model.Attachment;
+import org.folio.rest.jaxrs.model.EmailEntity;
+import org.junit.Test;
+import org.subethamail.wiser.WiserMessage;
+
+import io.restassured.response.Response;
+import io.vertx.core.json.JsonObject;
+import junit.framework.AssertionFailedError;
 
 public class SendingEmailTest extends AbstractAPITest {
 

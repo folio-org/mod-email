@@ -49,7 +49,7 @@ public class EmailUtils {
   public static final String STORAGE_SERVICE_ADDRESS = "storage-service.queue";
   public static final String EMAIL_STATISTICS_TABLE_NAME = "email_statistics";
   private static final String EMAIL_HEADERS_CONFIG_NAME = "email.headers";
-  private static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SMTP server, the min config is: %s";
+  private static final String ERROR_MIN_REQUIREMENT_SMTP_CONFIG = "Invalid config for SMTP server, the min config is: %s";
 
   private EmailUtils() {
     //not called
@@ -85,7 +85,7 @@ public class EmailUtils {
       return succeededFuture(smtpConfiguration);
     }
 
-    String errorMessage = String.format(ERROR_MIN_REQUIREMENT_MOD_CONFIG, REQUIREMENTS_CONFIG_SET);
+    String errorMessage = String.format(ERROR_MIN_REQUIREMENT_SMTP_CONFIG, REQUIREMENTS_CONFIG_SET);
     logger.error(errorMessage);
     return failedFuture(new SmtpConfigurationException(errorMessage));
   }

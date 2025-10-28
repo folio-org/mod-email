@@ -1,17 +1,18 @@
 package org.folio.rest.impl;
 
-import io.restassured.response.Response;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.apache.http.HttpStatus;
-import org.folio.rest.impl.base.AbstractAPITest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 import static junit.framework.TestCase.assertTrue;
 import static org.folio.util.StubUtils.buildInvalidEmailSettings;
 import static org.folio.util.StubUtils.buildInvalidSmtpConfiguration;
 import static org.folio.util.StubUtils.getEmailEntity;
 import static org.hamcrest.core.StringContains.containsString;
+
+import org.apache.http.HttpStatus;
+import org.folio.rest.impl.base.AbstractAPITest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import io.restassured.response.Response;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 @RunWith(VertxUnitRunner.class)
 public class EmailAPITest extends AbstractAPITest {
@@ -21,7 +22,7 @@ public class EmailAPITest extends AbstractAPITest {
     post(REST_PATH_SMTP_CONFIGURATION, buildInvalidSmtpConfiguration().encodePrettily());
 
     String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", null);
-    String expectedErrMsg = "The 'mod-config' module doesn't have a minimum config for SMTP server";
+    String expectedErrMsg = "Invalid config for SMTP server";
 
     post(REST_PATH_EMAIL, okapiEmailEntity)
       .then()
@@ -35,7 +36,7 @@ public class EmailAPITest extends AbstractAPITest {
     post(REST_PATH_SMTP_CONFIGURATION, buildInvalidSmtpConfiguration().encodePrettily());
 
     String okapiEmailEntity = getEmailEntity("user@user.com", "admin@admin.com", null);
-    String expectedErrMsg = "The 'mod-config' module doesn't have a minimum config for SMTP server";
+    String expectedErrMsg = "Invalid config for SMTP server";
 
     post(REST_PATH_EMAIL, okapiEmailEntity)
       .then()

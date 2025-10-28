@@ -1,24 +1,5 @@
 package org.folio.rest.impl;
 
-import io.restassured.response.Response;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.http.HttpStatus;
-import org.folio.rest.impl.base.AbstractAPITest;
-import org.folio.rest.jaxrs.model.EmailEntity;
-import org.folio.rest.jaxrs.model.EmailEntity.Status;
-import org.folio.rest.jaxrs.model.EmailEntries;
-import org.folio.util.ClockUtil;
-import org.junit.Test;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
-
-import javax.ws.rs.core.MediaType;
-import java.time.Clock;
-import java.time.Duration;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.IntStream;
-
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -31,6 +12,27 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.IntStream;
+
+import javax.ws.rs.core.MediaType;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.http.HttpStatus;
+import org.folio.rest.impl.base.AbstractAPITest;
+import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.rest.jaxrs.model.EmailEntity.Status;
+import org.folio.rest.jaxrs.model.EmailEntries;
+import org.folio.util.ClockUtil;
+import org.junit.Test;
+import org.testcontainers.shaded.org.awaitility.Awaitility;
+
+import io.restassured.response.Response;
 
 public class RetryFailedEmailsTest extends AbstractAPITest {
   private static final int RETRY_MAX_ATTEMPTS = 3;
@@ -124,8 +126,8 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
   public void shouldRetryEmailFailedDueToInsufficientConfiguration() {
     post(REST_PATH_SMTP_CONFIGURATION, buildInvalidSmtpConfiguration().encodePrettily());
 
-    String expectedErrorMessage = "The 'mod-config' module doesn't have a minimum config for SMTP " +
-      "server, the min config is: [EMAIL_SMTP_PORT, EMAIL_PASSWORD, EMAIL_SMTP_HOST, EMAIL_USERNAME]";
+    String expectedErrorMessage = "Invalid config for SMTP server, the min config is: " +
+      "[EMAIL_SMTP_PORT, EMAIL_PASSWORD, EMAIL_SMTP_HOST, EMAIL_USERNAME]";
 
     sendEmail(buildEmail())
       .then()

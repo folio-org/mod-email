@@ -1,6 +1,8 @@
 package org.folio.services;
 
-import io.vertx.core.Future;
+import static io.vertx.core.Future.failedFuture;
+import static io.vertx.core.Future.succeededFuture;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.exceptions.SmtpConfigurationNotFoundException;
@@ -9,12 +11,11 @@ import org.folio.rest.persist.Conn;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
 
-import static io.vertx.core.Future.failedFuture;
-import static io.vertx.core.Future.succeededFuture;
-import static org.folio.repository.SmtpConfigurationRepository.SMTP_CONFIGURATION_TABLE_NAME;
+import io.vertx.core.Future;
 
 public class SmtpConfigurationService {
   private static final Logger log = LogManager.getLogger(SmtpConfigurationService.class);
+  public static final String SMTP_CONFIGURATION_TABLE_NAME = "smtp_configuration";
 
   public Future<SmtpConfiguration> getSmtpConfiguration(Conn conn) {
     log.debug("getSmtpConfiguration::");

@@ -54,8 +54,7 @@ public class EmailSettingsService {
     log.debug("upsertEmailSettings::");
     return conn.upsert(SETTINGS_TABLE_NAME, String.valueOf(emailSettings.getId()), emailSettings)
       .map(emailSettings::withId)
-      .onSuccess(result -> log.debug("upsertEmailSettings:: result: {}",
-        () -> emailSettingsAsJson(result)));
+      .onSuccess(result -> log.debug("upsertEmailSettings:: Settings with key were updated/created"));
   }
 
   public static String emailSettingsAsJson(Setting emailSettings) {

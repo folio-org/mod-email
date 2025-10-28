@@ -5,7 +5,7 @@
   "properties": {
     "id": {
       "description": "Identifier",
-      "$ref": "uuid.json"
+      "$ref": "raml-util/schemas/uuid.schema"
     },
     "scope": {
       "type": "string",

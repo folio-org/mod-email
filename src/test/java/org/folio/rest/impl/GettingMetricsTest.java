@@ -1,15 +1,5 @@
 package org.folio.rest.impl;
 
-import io.restassured.response.Response;
-import io.vertx.core.json.JsonObject;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpStatus;
-import org.folio.rest.impl.base.AbstractAPITest;
-import org.folio.rest.jaxrs.model.EmailEntity;
-import org.junit.Test;
-
-import java.util.List;
-
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.FAILURE;
 import static org.folio.util.StubUtils.buildIncorrectWiserEmailSettings;
@@ -20,6 +10,17 @@ import static org.folio.util.StubUtils.buildWiserSmtpConfiguration;
 import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
 import static org.folio.util.StubUtils.initModConfigStub;
 import static org.junit.Assert.assertEquals;
+
+import java.util.List;
+
+import io.vertx.core.json.JsonObject;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpStatus;
+import org.folio.rest.impl.base.AbstractAPITest;
+import org.folio.rest.jaxrs.model.EmailEntity;
+import org.junit.Test;
+
+import io.restassured.response.Response;
 
 public class GettingMetricsTest extends AbstractAPITest {
 

@@ -1,36 +1,5 @@
 package org.folio.rest.impl.base;
 
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.folio.exceptions.ConfigurationException;
-import org.folio.exceptions.SmtpConfigurationException;
-import org.folio.exceptions.SmtpConfigurationNotFoundException;
-import org.folio.rest.jaxrs.model.EmailEntity;
-import org.folio.rest.jaxrs.model.EmailEntity.Status;
-import org.folio.rest.jaxrs.model.EmailEntries;
-import org.folio.rest.jaxrs.model.Setting;
-import org.folio.rest.jaxrs.model.SmtpConfiguration;
-import org.folio.rest.persist.Conn;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.services.EmailSettingsService;
-import org.folio.services.SmtpConfigurationService;
-import org.folio.services.email.MailService;
-import org.folio.services.storage.StorageService;
-import org.folio.util.ClockUtil;
-import org.folio.util.EmailUtils;
-
-import javax.ws.rs.core.Response;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
 import static io.vertx.core.json.JsonObject.mapFrom;
@@ -53,6 +22,39 @@ import static org.folio.util.LogUtil.emailAsJson;
 import static org.folio.util.LogUtil.emailIdsAsString;
 import static org.folio.util.LogUtil.headersAsString;
 import static org.folio.util.LogUtil.smtpConfigAsJson;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+import javax.ws.rs.core.Response;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.folio.exceptions.ConfigurationException;
+import org.folio.exceptions.SmtpConfigurationException;
+import org.folio.exceptions.SmtpConfigurationNotFoundException;
+import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.rest.jaxrs.model.EmailEntity.Status;
+import org.folio.rest.jaxrs.model.EmailEntries;
+import org.folio.rest.jaxrs.model.Setting;
+import org.folio.rest.jaxrs.model.SmtpConfiguration;
+import org.folio.rest.persist.Conn;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.services.EmailSettingsService;
+import org.folio.services.SmtpConfigurationService;
+import org.folio.services.email.MailService;
+import org.folio.services.storage.StorageService;
+import org.folio.util.ClockUtil;
+import org.folio.util.EmailUtils;
+
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 
 public abstract class AbstractEmail {
 
