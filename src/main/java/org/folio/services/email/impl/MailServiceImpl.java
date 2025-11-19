@@ -3,7 +3,6 @@ package org.folio.services.email.impl;
 import static io.vertx.core.Future.failedFuture;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 import static org.folio.rest.impl.base.AbstractEmail.RETRY_MAX_ATTEMPTS;
@@ -35,12 +34,8 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.mail.LoginOption;
 import io.vertx.ext.mail.MailAttachment;
-import io.vertx.ext.mail.MailClient;
-import io.vertx.ext.mail.MailConfig;
 import io.vertx.ext.mail.MailMessage;
-import io.vertx.ext.mail.StartTLSOptions;
 
 public class MailServiceImpl implements MailService {
 
@@ -49,36 +44,30 @@ public class MailServiceImpl implements MailService {
   private static final String ERROR_ATTACHMENT_DATA = "Error attaching the `%s` file to email!";
   private static final String INCORRECT_ATTACHMENT_DATA = "No data attachment!";
 
-  private final Vertx vertx;
-
-  private MailClient client = null;
-  private MailConfig config = null;
+  private final MailClientProvider mailClientProvider;
 
   public MailServiceImpl(Vertx vertx) {
-    this.vertx = vertx;
+    this.mailClientProvider = new MailClientProvider(vertx);
   }
 
   @Override
-  public void sendEmail(JsonObject smtpConfigurationJson, JsonObject emailJson,
-    Handler<AsyncResult<JsonObject>> resultHandler) {
-
+  public void sendEmail(String tenantId, JsonObject configJson, JsonObject emailJson, Handler<AsyncResult<JsonObject>> resultHandler) {
     log.debug("sendEmail:: parameters smtpConfigurationJson: JsonObject, emailJson: JsonObject");
-    SmtpConfiguration smtpConfiguration = smtpConfigurationJson.mapTo(SmtpConfiguration.class);
+    var smtpConfiguration = configJson.mapTo(SmtpConfiguration.class);
     log.debug("sendEmail:: converted SMTP configuration: {}",
       () -> smtpConfigAsJson(smtpConfiguration));
 
     try {
       EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
-      MailConfig mailConfig = getMailConfig(smtpConfiguration);
       MailMessage mailMessage = getMailMessage(emailEntity, smtpConfiguration);
       String emailId = emailEntity.getId();
       long start = currentTimeMillis();
 
-      log.info("sendEmail:: Sending email {}: attempt {}/{}",
-        emailId, emailEntity.getAttemptCount() + 1, RETRY_MAX_ATTEMPTS);
+      log.info("sendEmail:: Sending email {}: attempt {}/{} for tenant {}",
+        emailId, emailEntity.getAttemptCount() + 1, RETRY_MAX_ATTEMPTS, tenantId);
 
-      defineMailClient(mailConfig)
-        .sendMail(mailMessage)
+      mailClientProvider.get(tenantId, smtpConfiguration)
+        .compose(mailClient -> mailClient.sendMail(mailMessage))
         .onSuccess(r -> log.info("sendEmail:: Email {} sent in {} ms", emailId, currentTimeMillis() - start))
         .onFailure(t -> log.warn("sendEmail:: Failed to send email {}: ", emailId, t))
         .map(emailJson)
@@ -89,49 +78,8 @@ public class MailServiceImpl implements MailService {
     }
   }
 
-  private MailClient defineMailClient(MailConfig mailConfig) {
-    log.debug("defineMailClient:: ");
-    if (Objects.isNull(config) || !config.equals(mailConfig)) {
-      log.info("defineMailClient:: Creating new mail client");
-      config = mailConfig;
-      client = MailClient.create(vertx, mailConfig);
-    }
-    return client;
-  }
-
-  private MailConfig getMailConfig(SmtpConfiguration smtpConfiguration) {
-    log.debug("getMailConfig:: parameters smtpConfiguration: {}",
-      () -> smtpConfigAsJson(smtpConfiguration));
-    boolean ssl = ofNullable(smtpConfiguration.getSsl()).orElse(false);
-
-    StartTLSOptions startTLSOptions = StartTLSOptions.valueOf(
-      ofNullable(smtpConfiguration.getStartTlsOptions())
-        .orElse(SmtpConfiguration.StartTlsOptions.OPTIONAL)
-        .value());
-
-    boolean trustAll = ofNullable(smtpConfiguration.getTrustAll()).orElse(false);
-
-    LoginOption loginOption = LoginOption.valueOf(
-      ofNullable(smtpConfiguration.getLoginOption())
-        .orElse(SmtpConfiguration.LoginOption.NONE)
-        .value());
-
-    String authMethods = ofNullable(smtpConfiguration.getAuthMethods()).orElse(StringUtils.EMPTY);
-
-    return new MailConfig()
-      .setHostname(smtpConfiguration.getHost())
-      .setPort(smtpConfiguration.getPort())
-      .setUsername(smtpConfiguration.getUsername())
-      .setPassword(smtpConfiguration.getPassword())
-      .setSsl(ssl)
-      .setTrustAll(trustAll)
-      .setLogin(loginOption)
-      .setStarttls(startTLSOptions)
-      .setAuthMethods(authMethods);
-  }
-
-  MailConfig getMailConfig() {
-    return config;
+  public SmtpConfiguration getMailConfig(String tenantId) {
+    return mailClientProvider.getConfiguration(tenantId);
   }
 
   private MailMessage getMailMessage(EmailEntity emailEntity, SmtpConfiguration smtpConfiguration) {
@@ -206,7 +154,7 @@ public class MailServiceImpl implements MailService {
     }
 
     if (message.getHeaders() == null) {
-      log.warn("addHeadersFromConfiguration:: No headers found in the mail message");
+      log.debug("addHeadersFromConfiguration:: No headers found in the mail message");
       message.setHeaders(new HeadersMultiMap());
     }
 
