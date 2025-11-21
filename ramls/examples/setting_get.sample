@@ -1,0 +1,13 @@
+{
+  "id": "f04c7277-0019-43cf-84b3-02d894a9d81a",
+  "key": "SMTP_CONFIGURATION",
+  "value": {
+    "module": "SMTP_SERVER",
+    "configName": "smtp",
+    "code": "EMAIL_SMTP_HOST",
+    "description": "server smtp host",
+    "default": true,
+    "enabled": true,
+    "value": "smtp.googlemail.com"
+  }
+}

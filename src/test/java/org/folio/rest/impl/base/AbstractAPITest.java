@@ -79,6 +79,7 @@ public abstract class AbstractAPITest {
   private static final Logger logger = LogManager.getLogger(AbstractAPITest.class);
 
   protected static final String SMTP_CONFIGURATION_TABLE_NAME = "smtp_configuration";
+  protected static final String SETTINGS_TABLE = "settings";
   private static final int DEFAULT_LIMIT = 100;
   private static final int POST_TENANT_TIMEOUT = 10000;
   private static final String HTTP_PORT = "http.port";
@@ -90,6 +91,7 @@ public abstract class AbstractAPITest {
   private static final String OKAPI_URL_TEMPLATE = "http://localhost:%s";
 
   protected static final String REST_PATH_EMAIL = "/email";
+  protected static final String REST_PATH_MAIL_SETTINGS = "/email/settings";
   protected static final String REST_PATH_SMTP_CONFIGURATION = "/smtp-configuration";
   private static final String PATH_WITH_QUERY_TEMPLATE = "%s?query=%s&limit=%s";
   protected static final String ADDRESS_TEMPLATE = "%s@localhost";
@@ -205,7 +207,8 @@ public abstract class AbstractAPITest {
   }
 
   protected Future<RowSet<Row>> deleteLocalConfiguration() {
-    return postgresClient.delete(SMTP_CONFIGURATION_TABLE_NAME, new Criterion());
+    return postgresClient.delete(SMTP_CONFIGURATION_TABLE_NAME, new Criterion())
+      .compose(rs -> postgresClient.delete(SETTINGS_TABLE, new Criterion()));
   }
 
   protected void deleteLocalConfigurationAndWait() {

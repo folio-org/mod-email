@@ -1,0 +1,17 @@
+{
+  "settings": [
+    {
+      "key": "SMTP_CONFIGURATION",
+      "value": {
+        "module": "SMTP_SERVER",
+        "configName": "smtp",
+        "code": "EMAIL_SMTP_HOST",
+        "description": "server smtp host",
+        "default": true,
+        "enabled": true,
+        "value": "smtp.googlemail.com"
+      }
+    }
+  ],
+  "totalRecords": 1
+}

@@ -12,6 +12,7 @@ import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
 import static org.folio.util.StubUtils.URL_SINGLE_CONFIGURATION;
 import static org.folio.util.StubUtils.buildIncorrectWiserSmtpConfiguration;
 import static org.folio.util.StubUtils.buildInvalidSmtpConfiguration;
+import static org.folio.util.StubUtils.buildWiserEmailSettings;
 import static org.folio.util.StubUtils.buildWiserSmtpConfiguration;
 import static org.folio.util.StubUtils.createConfigurationsWithCustomHeaders;
 import static org.folio.util.StubUtils.getIncorrectConfigurations;
@@ -19,6 +20,7 @@ import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
 import static org.folio.util.StubUtils.getWiserMockConfigurations;
 import static org.folio.util.StubUtils.initFailModConfigStub;
 import static org.folio.util.StubUtils.initModConfigStub;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -47,13 +49,13 @@ import io.vertx.core.json.JsonObject;
 import junit.framework.AssertionFailedError;
 
 public class SendingEmailTest extends AbstractAPITest {
-  
+
   private int mockServerPort;
   @Before
   public void setUp() {
     mockServerPort = userMockServer.port();
   }
-  
+
   @Test
   public void sendTextEmail() throws Exception {
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
@@ -317,6 +319,12 @@ public class SendingEmailTest extends AbstractAPITest {
   }
 
   @Test
+  public void shouldSucceedWhenOnlySettingConfigurationExists() throws Exception {
+    post(REST_PATH_MAIL_SETTINGS, buildWiserEmailSettings().encodePrettily());
+    sendEmailAndAssertDelivered();
+  }
+
+  @Test
   public void shouldSucceedWhenBothLocalAndRemoteConfigsExistAndRemoteIsInvalid() throws Exception {
     initModConfigStub(mockServerPort, getIncorrectConfigurations());
     createWiserSmtpConfigurationInDb();
@@ -485,17 +493,18 @@ public class SendingEmailTest extends AbstractAPITest {
   }
 
   private void checkThatCorrectConfigCopiedToLocalDb() {
-    Response response = get(REST_PATH_SMTP_CONFIGURATION)
+    Response response = get(REST_PATH_MAIL_SETTINGS + "?query=key=smtp-configuration")
       .then()
       .statusCode(HttpStatus.SC_OK)
       .extract()
       .response();
 
     String configuration = new JsonObject(response.body().asString())
-      .getJsonArray("smtpConfigurations")
+      .getJsonArray("settings")
       .getJsonObject(0)
+      .getJsonObject("value")
       .encodePrettily();
-    assertThat(configuration, matchesJson(buildWiserSmtpConfiguration(), List.of("id")));
+    assertThat(configuration, matchesJson(buildWiserSmtpConfiguration(), List.of("metadata")));
   }
 
   private void checkThatConfigAreDeletedFromModConfig() {

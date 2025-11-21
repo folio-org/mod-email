@@ -203,4 +203,13 @@ public class StubUtils {
       .withAuthMethods(authMethods);
   }
 
+  public static JsonObject buildWiserEmailSettings() {
+    return new JsonObject()
+      .put("id", UUID.randomUUID().toString())
+      .put("key", "smtp-configuration")
+      .put("value", buildWiserSmtpConfiguration())
+      .put("scope", "mod-email")
+      .put("_version", 1);
+  }
+
 }

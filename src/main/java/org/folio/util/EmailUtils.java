@@ -19,7 +19,6 @@ import static org.folio.enums.SmtpEmail.EMAIL_USERNAME;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -134,7 +133,6 @@ public class EmailUtils {
 
   public static SmtpConfiguration convertSmtpConfiguration(Configurations configurations) {
     return new SmtpConfiguration()
-      .withId(UUID.randomUUID().toString())
       .withHost(getEmailConfig(configurations, EMAIL_SMTP_HOST, String.class))
       .withPort(getEmailConfig(configurations, EMAIL_SMTP_PORT, Integer.class))
       .withUsername(getEmailConfig(configurations, EMAIL_USERNAME, String.class))

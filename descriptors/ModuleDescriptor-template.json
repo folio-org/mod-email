@@ -128,6 +128,37 @@
           "delay": "5"
         }
       ]
+    },
+    {
+      "id": "email.settings",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": ["GET"],
+          "pathPattern": "/email/settings",
+          "permissionsRequired": ["email.settings.collection.get"]
+        },
+        {
+          "methods": ["GET"],
+          "pathPattern": "/email/settings/{id}",
+          "permissionsRequired": ["email.settings.item.get"]
+        },
+        {
+          "methods": ["POST"],
+          "pathPattern": "/email/settings",
+          "permissionsRequired": ["email.settings.item.post"]
+        },
+        {
+          "methods": ["PUT"],
+          "pathPattern": "/email/settings/{id}",
+          "permissionsRequired": ["email.settings.item.put"]
+        },
+        {
+          "methods": ["DELETE"],
+          "pathPattern": "/email/settings/{id}",
+          "permissionsRequired": ["email.settings.item.delete"]
+        }
+      ]
     }
   ],
   "permissionSets": [
@@ -194,6 +225,43 @@
         "email.smtp-configuration.item.delete"
       ],
       "visible": false
+    },
+    {
+      "permissionName" : "email.settings.collection.get",
+      "displayName" : "mod-email - retrieve settings by cql",
+      "description" : "Get a collection of settings"
+    },
+    {
+      "permissionName" : "email.settings.item.get",
+      "displayName" : "mod-email - retrieve a setting by id",
+      "description" : "Fetch a setting"
+    },
+    {
+      "permissionName" : "email.settings.item.put",
+      "displayName" : "mod-email - Update a setting by id",
+      "description" : "Update a setting"
+    },
+    {
+      "permissionName" : "email.settings.item.post",
+      "displayName" : "mod-email - Save a setting",
+      "description" : "Add a setting"
+    },
+    {
+      "permissionName" : "email.settings.item.delete",
+      "displayName" : "mod-email - Remove a setting by id",
+      "description" : "Delete a setting"
+    },
+    {
+      "permissionName" : "email.settings.all",
+      "displayName" : "mod-email - settings all",
+      "description" : "All permissions for setting",
+      "subPermissions" : [
+        "email.settings.collection.get",
+        "email.settings.item.get",
+        "email.settings.item.post",
+        "email.settings.item.put",
+        "email.settings.item.delete"
+      ]
     }
   ],
   "launchDescriptor": {

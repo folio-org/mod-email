@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Setting",
+  "type": "object",
+  "properties": {
+    "id": {
+      "description": "Identifier",
+      "$ref": "raml-util/schemas/uuid.schema"
+    },
+    "scope": {
+      "type": "string",
+      "description": "Scope for this entry (normally a module)",
+      "enum": [ "mod-email" ]
+    },
+    "key": {
+      "type": "string",
+      "description": "Key within scope for this setting"
+    },
+    "value": {
+      "description": "Settings value (any type)"
+    },
+    "userId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Owner of this setting (optional)"
+    },
+    "_version": {
+      "type": "integer",
+      "description": "Record version for optimistic locking"
+    },
+    "metadata": {
+      "description": "Metadata about creation and changes to setting, provided by the server (client should not provide)",
+      "type": "object",
+      "$ref": "raml-util/schemas/metadata.schema"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "scope",
+    "key",
+    "value"
+  ]
+}
