@@ -1,3 +1,7 @@
+## 2025-03-14 v1.20.0 - In progress
+* Implement local settings API [MODEMAIL-112](https://folio-org.atlassian.net/browse/MODEMAIL-112)
+
+
 ## 2025-03-14 v1.19.0
 * Update mod-email to Java 21 [FOLIO-4225](https://folio-org.atlassian.net/browse/FOLIO-4225)
 
