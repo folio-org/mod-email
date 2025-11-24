@@ -40,6 +40,7 @@ public abstract class AbstractMailSettings {
   );
 
   protected AbstractMailSettings() {
+    // empty constructor
   }
 
   /**
@@ -139,7 +140,7 @@ public abstract class AbstractMailSettings {
     var error = new Error()
       .withCode("service_error")
       .withType(throwable.getClass().getSimpleName())
-      .withMessage("Failed to update setting: " + throwable.getMessage());
+      .withMessage("Unexpected error occurred: " + throwable.getMessage());
 
     return Response.status(INTERNAL_SERVER_ERROR)
       .header(CONTENT_TYPE, APPLICATION_JSON)
@@ -152,18 +153,9 @@ public abstract class AbstractMailSettings {
       throw new EmailSettingsException(getEntityNotFoundErrorEntity(id), NOT_FOUND);
     }
 
-    var settingEntity = prevValue.mapTo(Setting.class);
-    if (isSettingKeyChanged(newValue, settingEntity)) {
-      throw new EmailSettingsException(buildKeyIsChangedError(id), UNPROCESSABLE_ENTITY.code());
-    }
-
-    MAIL_SETTINGS_VERIFIERS.get(settingEntity.getKey()).accept(newValue.getValue());
+    MAIL_SETTINGS_VERIFIERS.get(newValue.getKey()).accept(newValue.getValue());
     removeIdFromValueIfPresent(newValue);
     return conn.update(SETTINGS_TABLE, newValue, id).map(updatedRs -> respond204());
-  }
-
-  private static boolean isSettingKeyChanged(Setting updatedSetting, Setting settingEntity) {
-    return !Objects.equals(settingEntity.getKey(), updatedSetting.getKey());
   }
 
   private Error getInvalidKeyErrorEntity() {
@@ -177,13 +169,6 @@ public abstract class AbstractMailSettings {
     return new Error()
       .withMessage("Setting entity not found by id: " + id)
       .withCode("not_found_error")
-      .withParameters(List.of(new Parameter().withKey("id").withValue(id)));
-  }
-
-  private static Error buildKeyIsChangedError(String id) {
-    return new Error()
-      .withMessage("Setting key cannot be changed")
-      .withCode("validation_error")
       .withParameters(List.of(new Parameter().withKey("id").withValue(id)));
   }
 

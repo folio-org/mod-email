@@ -327,6 +327,18 @@ public class EmailSettingsAPITest extends AbstractAPITest {
   }
 
   @Test
+  public void putById_negative_prevEntityNotFound() {
+    var emailSetting = buildValidEmailSettings();
+    var emailSettingToPut = emailSetting.copy().put("id", CONFIG_ID);
+    var idPathParameter = UUID.randomUUID().toString();
+
+    put(emailSettingByIdPath(idPathParameter),
+      emailSettingToPut.encodePrettily())
+      .then()
+      .statusCode(SC_NOT_FOUND);
+  }
+
+  @Test
   public void deleteById_positive() {
     var emailSetting = buildValidEmailSettings();
     post(REST_PATH_MAIL_SETTINGS, emailSetting.encodePrettily())

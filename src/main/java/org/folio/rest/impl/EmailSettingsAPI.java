@@ -1,6 +1,5 @@
 package org.folio.rest.impl;
 
-import com.github.dockerjava.zerodep.shaded.org.apache.hc.client5.http.impl.classic.FutureRequestExecutionMetrics;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;

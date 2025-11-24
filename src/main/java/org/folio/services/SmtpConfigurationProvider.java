@@ -94,19 +94,18 @@ public class SmtpConfigurationProvider {
    *       for the {@code mod-configuration} entries (deletion is best-effort and logged).</li>
    * </ul>
    *
-   * @param requestHeaders Okapi request headers required for mod-config requests
+   * @param headers Okapi request headers required for mod-config requests
    *                       (e.g. tenant, token); must not be {@code null}
    * @return a {@code Future} that completes with the resolved {@code SmtpConfiguration}
    * or fails with a {@code ConfigurationException} * or other runtime cause if lookup or migration fails
    */
-  public Future<SmtpConfiguration> lookup(Map<String, String> requestHeaders) {
-    log.debug("lookupSmtpConfiguration:: parameters requestHeaders: {}",
-      () -> headersAsString(requestHeaders));
+  public Future<SmtpConfiguration> lookup(Map<String, String> headers) {
+    log.debug("lookupSmtpConfiguration:: parameters requestHeaders: {}", () -> headersAsString(headers));
 
     return postgresClient.withTrans(conn ->
       mailSettingsService.getSmtpConfigSetting(conn)
         .recover(err -> tryFindAndMigrateSettingsFromSmtpRepo(conn, err))
-        .recover(err -> tryFindAndMigrateSettingsFromModConfiguration(err, conn, requestHeaders))
+        .recover(err -> tryFindAndMigrateSettingsFromModConfiguration(err, conn, headers))
         .onFailure(err -> log.warn("Failed to find SMTP configuration: {} {}",
           err.getClass().getSimpleName(), err.getMessage())));
   }

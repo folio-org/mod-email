@@ -17,6 +17,10 @@ import org.folio.rest.jaxrs.model.SmtpConfiguration;
 
 public class SmtpConfigurationValueVerifier {
 
+  private SmtpConfigurationValueVerifier() {
+    throw new IllegalStateException("Utility class cannot be initialized");
+  }
+
   /**
    * Verifies the provided value to ensure it is a valid SMTP configuration.
    *

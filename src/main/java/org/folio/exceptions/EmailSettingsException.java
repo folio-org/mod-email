@@ -9,11 +9,10 @@ import lombok.Getter;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
 
-@Getter
 public class EmailSettingsException extends RuntimeException {
 
-  private transient final Error error;
   private final int statusCode;
+  private transient final Error error;
 
   /**
    * Constructs a MailServiceException without capturing a stack trace.
@@ -68,5 +67,14 @@ public class EmailSettingsException extends RuntimeException {
       .entity(new Errors().withErrors(List.of(error)))
       .header(CONTENT_TYPE, APPLICATION_JSON)
       .build();
+  }
+
+  /**
+   * Returns the error payload associated with this exception.
+   *
+   * @return the {@link Error} object containing error details
+   */
+  public Error getError() {
+    return error;
   }
 }
