@@ -5,14 +5,13 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 import java.util.List;
 import javax.ws.rs.core.Response;
-import lombok.Getter;
 import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
 
 public class EmailSettingsException extends RuntimeException {
 
   private final int statusCode;
-  private transient final Error error;
+  private final transient Error error;
 
   /**
    * Constructs a MailServiceException without capturing a stack trace.

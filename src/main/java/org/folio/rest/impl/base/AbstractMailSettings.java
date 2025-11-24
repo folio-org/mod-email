@@ -14,7 +14,6 @@ import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
 import javax.ws.rs.core.Response;
 import org.apache.logging.log4j.LogManager;
