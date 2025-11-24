@@ -12,32 +12,82 @@ Version 2.0. See the file "[LICENSE](LICENSE)" for more information.
 `mod-email` provides an API for delivering email messages.
 
 ## Configuration
+
 For email delivery `mod-email` relies on the external SMTP server,
-configuration for which is stored by `mod-email` in its own database.
-The module also provides CRUD API for managing it.
-If `mod-email` couldn't find SMTP configuration in its own DB, it'll try to
-fetch one from`mod-configuration`, copy it to the DB and then delete it from
-`mod-configuration`.
+configuration for which is stored by `mod-email` in its own database using local settings API with
+interface: `email.settings`. The module provides CRUD API for managing it.
+Order of settings retrieval (migration to `mod-email` own settings storage):
+
+1. Settings storage with `email.settings` interface (preferred way).
+2. **[deprecated]** SMTP configuration storage with interface: `smtpConfiguration` .
+3. **[deprecated]** `mod-configuration` module .
 
 ### Supported configuration parameters
 
-| mod-email parameter | mod-configuration parameter | DESCRIPTION                                                                                                               | EXAMPLES                       |
-|---------------------|---------------------------------------|---------------------------------------------------------------------------------------------------------------------------|--------------------------------|
-| host                | EMAIL_SMTP_HOST             | the hostname of the smtp server                                                                                           | 'localhost'                    |
-| port                | EMAIL_SMTP_PORT             | the port of the smtp server                                                                                               | 502                            |
-| loginOption         | EMAIL_SMTP_LOGIN_OPTION     | the login mode for the connection                                                                                         | DISABLED, OPTIONAL or REQUIRED |
-| trustAll            | EMAIL_TRUST_ALL             | trust all certificates on ssl connect                                                                                     | true or false                  |
-| ssl                 | EMAIL_SMTP_SSL              | sslOnConnect mode for the connection                                                                                      | true or false                  |
-| startTlsOptions     | EMAIL_START_TLS_OPTIONS     | TLS security mode for the connection                                                                                      | DISABLED, OPTIONAL or REQUIRED |
-| username            | EMAIL_USERNAME              | the username for the login                                                                                                | 'login'                        |
-| password            | EMAIL_PASSWORD              | the password for the login                                                                                                | 'password'                     |
-| from                | EMAIL_FROM                  | 'from' property of the email                                                                                              | noreply@folio.org              |
-| authMethods         | AUTH_METHODS                | authentication methods                                                                                                    | 'CRAM-MD5 LOGIN PLAIN'         |
-| expirationHours         |                 | Messages which are older than expiration hours are considered as expired and gets deleted. Default value will be 24 hours | 12                             |
+| mod-email parameter | mod-configuration parameter | Required | DESCRIPTION                                                                                                               | EXAMPLES                       |
+|---------------------|-----------------------------|:---------|---------------------------------------------------------------------------------------------------------------------------|--------------------------------|
+| host                | EMAIL_SMTP_HOST             | true     | the hostname of the smtp server                                                                                           | 'localhost'                    |
+| port                | EMAIL_SMTP_PORT             | true     | the port of the smtp server                                                                                               | 502                            |
+| loginOption         | EMAIL_SMTP_LOGIN_OPTION     | false    | the login mode for the connection                                                                                         | DISABLED, OPTIONAL or REQUIRED |
+| trustAll            | EMAIL_TRUST_ALL             | false    | trust all certificates on ssl connect                                                                                     | true or false                  |
+| ssl                 | EMAIL_SMTP_SSL              | false    | sslOnConnect mode for the connection                                                                                      | true or false                  |
+| startTlsOptions     | EMAIL_START_TLS_OPTIONS     | false    | TLS security mode for the connection                                                                                      | DISABLED, OPTIONAL or REQUIRED |
+| username            | EMAIL_USERNAME              | true     | the username for the login                                                                                                | 'login'                        |
+| password            | EMAIL_PASSWORD              | true     | the password for the login                                                                                                | 'password'                     |
+| from                | EMAIL_FROM                  | false    | 'from' property of the email                                                                                              | noreply@folio.org              |
+| authMethods         | AUTH_METHODS                | false    | authentication methods                                                                                                    | 'CRAM-MD5 LOGIN PLAIN'         |
+| expirationHours     |                             | false    | Messages which are older than expiration hours are considered as expired and gets deleted. Default value will be 24 hours | 12                             |
 
-### Configuration using `mod-email`'s API
+
+### Configuration using `email.settings` interface
 
 This method of configuration is preferred.
+
+Required parameters:
+* `key = "smtp-configuration"`
+* `scope = "mod-email"`
+* `value.host`
+* `value.port`
+* `value.username`
+* `value.password`
+
+SMTP configuration (`GET /email/settings/{id}`) example:
+
+```json
+{
+  "key": "smtp-configuration",
+  "scope": "mod-email",
+  "value": {
+    "host": "example-host.com",
+    "port": 587,
+    "username": "example-username",
+    "password": "example-password",
+    "ssl": false,
+    "trustAll": false,
+    "loginOption": "NONE",
+    "startTlsOptions": "OPTIONAL",
+    "authMethods": "",
+    "from": "noreply@folio.org",
+    "_version": "1",
+    "emailHeaders": [
+      {
+        "name": "Reply-To",
+        "value": "noreply@folio.org"
+      }
+    ]
+  }
+}
+```
+
+> Note: `mod-email` validates value against SMTP configuration model and will reject invalid settings. Ensure required
+> fields (host, port, username, password) are present and correctly formatted; invalid values will result in API
+> validation errors.
+> </br></br>
+> Settings are versioned, so performing an update requires providing the next `_version` field value (optimistic locking).
+
+### Configuration using `mod-email`'s API (Deprecated)
+
+This method of configuration is deprecated.
 
 Required configuration parameters:
 * Host

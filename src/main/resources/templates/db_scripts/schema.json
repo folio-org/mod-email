@@ -30,6 +30,18 @@
       "tableName": "smtp_configuration",
       "fromModuleVersion": "1.15.2",
       "withMetadata": true
+    },
+    {
+      "tableName": "settings",
+      "fromModuleVersion": "mod-email-1.20.0",
+      "withMetadata": true,
+      "withOptimisticLocking": "failOnConflict",
+      "uniqueIndex": [
+        {
+          "fieldName": "key",
+          "caseSensitive": false
+        }
+      ]
     }
   ]
 }

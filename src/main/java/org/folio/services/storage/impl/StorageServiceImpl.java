@@ -1,6 +1,7 @@
 package org.folio.services.storage.impl;
 
 import static io.vertx.core.Future.succeededFuture;
+import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 import static org.folio.rest.persist.PostgresClient.convertToPsqlStandard;
 import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
 import static org.folio.util.LogUtil.asJson;
@@ -13,12 +14,12 @@ import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailEntries;
-import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.persist.interfaces.Results;
+import org.folio.services.MailSettingsService;
 import org.folio.services.storage.StorageService;
 
 import io.vertx.core.AsyncResult;
@@ -135,19 +136,16 @@ public class StorageServiceImpl implements StorageService {
 
   private Future<Integer> getExpirationHoursFromConfig(String tenantId) {
     return PostgresClient.getInstance(vertx, tenantId)
-      .get("smtp_configuration", SmtpConfiguration.class, new Criterion())
-      .map(this::getExpirationHoursFromResult)
+      .withConn(conn -> new MailSettingsService().getSmtpConfigSetting(conn))
+      .otherwise(error -> {
+        logger.warn("getExpirationHoursFromConfig:: configuration not found, using empty placeholder", error);
+        return new SmtpConfiguration();
+      })
+      .map(config -> defaultIfNull(config.getExpirationHours(), DEFAULT_EXPIRATION_HOURS))
       .recover(e -> {
         logger.warn("getExpirationHoursFromConfig:: Failed to get expirationHours from smtp_configuration", e);
         return Future.succeededFuture(DEFAULT_EXPIRATION_HOURS);
       });
-  }
-
-  private Integer getExpirationHoursFromResult(Results<SmtpConfiguration> results) {
-    return results != null && results.getResults() != null
-      && !results.getResults().isEmpty()
-      && results.getResults().get(0).getExpirationHours() != null
-      ? results.getResults().get(0).getExpirationHours() : DEFAULT_EXPIRATION_HOURS;
   }
 
   private void errorHandler(Throwable ex, Handler<AsyncResult<JsonObject>> asyncResultHandler) {

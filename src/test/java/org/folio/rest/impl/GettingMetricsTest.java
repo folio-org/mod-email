@@ -3,7 +3,7 @@ package org.folio.rest.impl;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.FAILURE;
 import static org.folio.util.StubUtils.buildSmtpConfiguration;
-import static org.folio.util.StubUtils.buildWiserSmtpConfiguration;
+import static org.folio.util.StubUtils.buildWiserEmailSettings;
 import static org.folio.util.StubUtils.getIncorrectConfigurations;
 import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
 import static org.folio.util.StubUtils.getWiserMockConfigurations;
@@ -186,11 +186,11 @@ public class GettingMetricsTest extends AbstractAPITest {
 
   @Test
   public void testEmailExpiryWithExpirationTimeAndCorrectConfig() {
-    JsonObject smtpConfiguration = buildWiserSmtpConfiguration();
+    JsonObject smtpConfiguration = buildWiserEmailSettings();
     // For testing purpose, expiration hours set to 0. So that the email gets deleted immediately
-    smtpConfiguration.put("expirationHours", 0);
+    smtpConfiguration.getJsonObject("value").put("expirationHours", 0);
 
-    Response postResponse = post(REST_PATH_SMTP_CONFIGURATION, smtpConfiguration.encodePrettily())
+    Response postResponse = post(REST_PATH_MAIL_SETTINGS, smtpConfiguration.encodePrettily())
       .then()
       .extract()
       .response();
@@ -224,8 +224,8 @@ public class GettingMetricsTest extends AbstractAPITest {
     assertEquals(0, actualEntries.size());
 
     // For testing purpose, expiration hours set to 1. So that the email gets deleted only after 1 hour
-    smtpConfiguration.put("expirationHours", 1);
-    put(REST_PATH_SMTP_CONFIGURATION + "/" + postResponseId, smtpConfiguration.encodePrettily())
+    smtpConfiguration.getJsonObject("value").put("expirationHours", 1);
+    put(REST_PATH_MAIL_SETTINGS + "/" + postResponseId, smtpConfiguration.encodePrettily())
       .then()
       .statusCode(HttpStatus.SC_NO_CONTENT);
 

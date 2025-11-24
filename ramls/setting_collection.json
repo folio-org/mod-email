@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Collection of setting records",
+  "type": "object",
+  "properties": {
+    "settings": {
+      "description": "The list of settings in this collection",
+      "type": "array",
+      "id": "settings",
+      "items": {
+        "type": "object",
+        "$ref": "setting.json"
+      }
+    },
+    "totalRecords": {
+      "description": "The number of setting records returned in this collection",
+      "type": "integer"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "settings",
+    "totalRecords"
+  ]
+}
