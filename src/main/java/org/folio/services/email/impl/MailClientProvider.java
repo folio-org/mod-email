@@ -21,11 +21,28 @@ public class MailClientProvider {
   private final Vertx vertx;
   private final Map<String, MailClientHolder> mailClientsCache;
 
+  /**
+   * Creates a new MailClientProvider using the given Vert.x instance.
+   *
+   * @param vertx Vert.x instance used to create MailClient instances
+   */
   public MailClientProvider(Vertx vertx) {
     this.vertx = vertx;
     this.mailClientsCache = new ConcurrentHashMap<>();
   }
 
+  /**
+   * Returns a {@link MailClient} for the given tenant id and SMTP configuration.
+   *
+   * <p>
+   * If a cached client exists and its configuration equals the provided
+   * {@code smtpConfiguration}, the cached client is returned. Otherwise, a new
+   * client is created, cached and returned.
+   *
+   * @param tenantId          the tenant identifier
+   * @param smtpConfiguration the SMTP configuration to use for creating the client
+   * @return a {@link Future} that completes with the {@link MailClient} instance or fails if creation fails
+   */
   public Future<MailClient> get(String tenantId, SmtpConfiguration smtpConfiguration) {
     log.debug("getOrCreateClient:: tenantId: {}, smtpConfiguration: {}",
       () -> tenantId, () -> smtpConfigAsJson(smtpConfiguration));
@@ -74,6 +91,12 @@ public class MailClientProvider {
     return Future.all(mailClients).mapEmpty();
   }
 
+  /**
+   * Returns the {@link SmtpConfiguration} currently associated with the given tenant.
+   *
+   * @param tenantId the tenant identifier
+   * @return the {@link SmtpConfiguration} for the tenant, or {@code null} if no client/configuration is present
+   */
   public SmtpConfiguration getConfiguration(String tenantId) {
     var emptyConfiguration = new MailClientHolder(null, null);
     return mailClientsCache.getOrDefault(tenantId, emptyConfiguration).configuration();

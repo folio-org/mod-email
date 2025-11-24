@@ -1,23 +1,25 @@
 package org.folio.services.email.impl;
 
 import static org.folio.util.StubUtils.buildSmtpConfiguration;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 
+import io.vertx.core.Vertx;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.folio.rest.jaxrs.model.SmtpConfiguration;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import io.vertx.core.Vertx;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.testcontainers.shaded.org.apache.commons.lang3.tuple.Pair;
 
 @RunWith(VertxUnitRunner.class)
 public class MailClientProviderTest {
+
+  private static final String TENANT_ID = "test_tenant";
 
   private Vertx vertx;
   private MailClientProvider provider;
@@ -30,85 +32,79 @@ public class MailClientProviderTest {
 
   @After
   public void tearDown(TestContext context) {
-    Async async = context.async();
     provider.cleanAll()
-      .onComplete(ar -> {
-        vertx.close(context.asyncAssertSuccess(v -> async.complete()));
-      });
+      .compose(ar -> vertx.close())
+      .onComplete(context.asyncAssertSuccess());
   }
 
   @Test
-  public void shouldCreateMailClientForTenant(TestContext context) {
-    Async async = context.async();
-    SmtpConfiguration config = buildSmtpConfiguration("user", "pass", "localhost", 587, "");
+  public void get_positive_createNewConfiguration(TestContext context) {
+    var config = smtpConfiguration();
 
-    provider.get("tenant1", config)
-      .onComplete(context.asyncAssertSuccess(client -> {
-        assertNotNull("Mail client should not be null", client);
-        async.complete();
+    var resultFuture = provider.get(TENANT_ID, config);
+    resultFuture.onComplete(context.asyncAssertSuccess(Assert::assertNotNull));
+
+    var configuration = provider.getConfiguration(TENANT_ID);
+    assertEquals(smtpConfiguration(), configuration);
+  }
+
+  @Test
+  public void get_positive_sameClientForIdenticalConfiguration(TestContext context) {
+    provider.get(TENANT_ID, smtpConfiguration())
+      .compose(firstClient -> provider.get(TENANT_ID, smtpConfiguration())
+        .map(secondClient -> Pair.of(firstClient, secondClient)))
+      .onComplete(context.asyncAssertSuccess(clientPair ->
+        assertSame(clientPair.getLeft(), clientPair.getRight())
+      ));
+  }
+
+  @Test
+  public void get_positive_shouldInitClientForNewConfig(TestContext context) {
+    provider.get(TENANT_ID, smtpConfiguration("password-1"))
+      .compose(firstClient -> provider.get(TENANT_ID, smtpConfiguration("password-2"))
+        .map(secondClient -> Pair.of(firstClient, secondClient)))
+      .onComplete(context.asyncAssertSuccess(clientPair ->
+        assertNotSame(clientPair.getLeft(), clientPair.getRight())
+      ));
+  }
+
+  @Test
+  public void get_positive_shouldCreateDifferentClients(TestContext context) {
+    var tenantId1 = "tenant1";
+    var tenantId2 = "tenant2";
+
+    provider.get(tenantId1, smtpConfiguration())
+      .compose(firstClient -> provider.get(tenantId2, smtpConfiguration())
+        .map(secondClient -> Pair.of(firstClient, secondClient)))
+      .onComplete(context.asyncAssertSuccess(clientPair ->
+        assertNotSame(clientPair.getLeft(), clientPair.getRight())
+      ));
+  }
+
+  @Test
+  public void get_positive_shouldRemoveDifferentClients(TestContext context) {
+    var config = smtpConfiguration();
+
+    provider.get(TENANT_ID, smtpConfiguration())
+      .compose(firstClient -> provider.remove(TENANT_ID).map(v -> firstClient))
+      .compose(firstClient -> provider.get("tenant1", config)
+        .map(secondClient -> Pair.of(firstClient, secondClient)))
+      .onComplete(context.asyncAssertSuccess(clientPair -> {
+        assertNotSame(clientPair.getLeft(), clientPair.getRight());
       }));
   }
 
   @Test
-  public void shouldReuseSameClientWhenConfigurationUnchanged(TestContext context) {
-    Async async = context.async();
-    SmtpConfiguration config = buildSmtpConfiguration("user", "pass", "localhost", 587, "");
-
-    provider.get("tenant1", config)
-      .compose(firstClient ->
-        provider.get("tenant1", config)
-          .onComplete(context.asyncAssertSuccess(secondClient -> {
-            assertSame("Should reuse the same client instance", firstClient, secondClient);
-            async.complete();
-          }))
-      );
+  public void remove_positive_emptyCache(TestContext context) {
+    provider.remove(TENANT_ID).onComplete(context.asyncAssertSuccess());
   }
 
-  @Test
-  public void shouldInitNewClientWhenConfigurationChanges(TestContext context) {
-    Async async = context.async();
-    SmtpConfiguration config1 = buildSmtpConfiguration("user", "pass", "localhost", 587, "");
-    SmtpConfiguration config2 = buildSmtpConfiguration("user2", "pass2", "localhost", 587, "");
-
-    provider.get("tenant1", config1)
-      .compose(firstClient ->
-        provider.get("tenant1", config2)
-          .onComplete(context.asyncAssertSuccess(secondClient -> {
-            assertNotSame("Should create a new client when configuration changes",
-              firstClient, secondClient);
-            async.complete();
-          }))
-      );
+  private static SmtpConfiguration smtpConfiguration() {
+    return buildSmtpConfiguration("test-user", "test-password", "localhost", 587, "");
   }
 
-  @Test
-  public void shouldMaintainSeparateClientsPerTenant(TestContext context) {
-    Async async = context.async();
-    SmtpConfiguration config = buildSmtpConfiguration("user", "pass", "localhost", 587, "");
-
-    provider.get("tenant1", config)
-      .compose(client1 ->
-        provider.get("tenant2", config)
-          .onComplete(context.asyncAssertSuccess(client2 -> {
-            assertNotSame("Different tenants should have separate client instances",
-              client1, client2);
-            async.complete();
-          }))
-      );
-  }
-
-  @Test
-  public void shouldRemoveForTenant(TestContext context) {
-    Async async = context.async();
-    SmtpConfiguration config = buildSmtpConfiguration("user", "pass", "localhost", 587, "");
-
-    provider.get("tenant1", config)
-      .compose(firstClient -> provider.remove("tenant1"))
-      .compose(v -> provider.get("tenant1", config))
-      .onComplete(context.asyncAssertSuccess(newClient -> {
-        assertNotNull("Should be able to create a new client after removal", newClient);
-        async.complete();
-      }));
+  private static SmtpConfiguration smtpConfiguration(String pass) {
+    return buildSmtpConfiguration("test-user", pass, "localhost", 587, "");
   }
 }
 
