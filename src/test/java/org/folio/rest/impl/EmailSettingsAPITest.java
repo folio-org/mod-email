@@ -9,7 +9,6 @@ import static org.apache.http.HttpStatus.SC_UNPROCESSABLE_ENTITY;
 import static org.folio.matchers.JsonMatchers.matchesJson;
 import static org.folio.util.StubUtils.buildIncorrectWiserSmtpConfiguration;
 import static org.folio.util.StubUtils.buildSmtpConfiguration;
-import static org.folio.util.StubUtils.buildWiserSmtpConfiguration;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 

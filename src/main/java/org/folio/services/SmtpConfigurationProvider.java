@@ -19,7 +19,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.exceptions.ConfigurationException;
-import org.folio.exceptions.SmtpConfigurationException;
 import org.folio.rest.client.OkapiClient;
 import org.folio.rest.jaxrs.model.Config;
 import org.folio.rest.jaxrs.model.Configurations;
@@ -64,7 +63,7 @@ public class SmtpConfigurationProvider {
   public SmtpConfigurationProvider(Vertx vertx,
     MailSettingsService settingsService, PostgresClient postgresClient) {
     this(settingsService, postgresClient,
-      (headers) -> new OkapiClient(vertx, headers, getWebClientOptions()),
+      headers -> new OkapiClient(vertx, headers, getWebClientOptions()),
       SmtpConfigurationService::new);
   }
 

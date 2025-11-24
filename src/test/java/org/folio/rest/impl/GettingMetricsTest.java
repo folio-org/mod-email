@@ -4,7 +4,6 @@ import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.FAILURE;
 import static org.folio.util.StubUtils.buildSmtpConfiguration;
 import static org.folio.util.StubUtils.buildWiserEmailSettings;
-import static org.folio.util.StubUtils.buildWiserSmtpConfiguration;
 import static org.folio.util.StubUtils.getIncorrectConfigurations;
 import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
 import static org.folio.util.StubUtils.getWiserMockConfigurations;

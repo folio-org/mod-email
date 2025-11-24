@@ -3,7 +3,6 @@ package org.folio.services;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.logging.log4j.LogManager;
@@ -20,7 +19,6 @@ import org.folio.util.EmailUtils;
 
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
-import static org.folio.util.LogUtil.asJson;
 import static org.folio.util.LogUtil.smtpConfigAsJson;
 
 public class MailSettingsService {

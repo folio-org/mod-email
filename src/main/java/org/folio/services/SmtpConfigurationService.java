@@ -18,8 +18,6 @@ import org.folio.util.EmailUtils;
 public class SmtpConfigurationService {
   private static final Logger log = LogManager.getLogger(SmtpConfigurationService.class);
 
-  public SmtpConfigurationService() {}
-
   public Future<SmtpConfiguration> getSmtpConfiguration(Conn conn) {
     log.debug("getSmtpConfiguration::");
     Criterion criterion = new Criterion();

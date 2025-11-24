@@ -12,7 +12,7 @@ import org.folio.rest.jaxrs.model.Errors;
 @Getter
 public class EmailSettingsException extends RuntimeException {
 
-  private final Error error;
+  private transient final Error error;
   private final int statusCode;
 
   /**

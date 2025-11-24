@@ -2,7 +2,6 @@ package org.folio.services;
 
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
-import static java.util.Collections.emptyMap;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.Status.OK;
@@ -68,7 +67,7 @@ public class SmtpConfigurationProviderTest {
   @Before
   public void setUp() {
     provider = new SmtpConfigurationProvider(settingsService, postgresClient,
-      (unused) -> okapiClient, () -> smtpConfigurationService);
+      ignored -> okapiClient, () -> smtpConfigurationService);
   }
 
   @After
@@ -203,13 +202,13 @@ public class SmtpConfigurationProviderTest {
   @Test
   @SuppressWarnings("unchecked")
   public void defaultConstructor_positive() throws Exception{
-    var provider = new SmtpConfigurationProvider(Vertx.vertx(), settingsService, postgresClient);
-    assertNotNull(provider);
+    var smtpConfigProvider = new SmtpConfigurationProvider(Vertx.vertx(), settingsService, postgresClient);
+    assertNotNull(smtpConfigProvider);
 
     var field = SmtpConfigurationProvider.class.getDeclaredField("okapiClientSupplier");
     field.setAccessible(true);
 
-    var okapiClientSupplier = (Function<Map<String, String>, OkapiClient>) field.get(provider);
+    var okapiClientSupplier = (Function<Map<String, String>, OkapiClient>) field.get(smtpConfigProvider);
 
     assertNotNull(okapiClientSupplier);
     assertNotNull(okapiClientSupplier.apply(requestHeaders()));

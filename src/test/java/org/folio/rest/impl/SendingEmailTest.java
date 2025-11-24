@@ -20,7 +20,6 @@ import static org.folio.util.StubUtils.getIncorrectWiserMockConfigurations;
 import static org.folio.util.StubUtils.getWiserMockConfigurations;
 import static org.folio.util.StubUtils.initFailModConfigStub;
 import static org.folio.util.StubUtils.initModConfigStub;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
