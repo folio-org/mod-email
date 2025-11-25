@@ -14,12 +14,18 @@
     "expirationHours": 24,
     "authMethods": "CRAM-MD5 LOGIN PLAIN",
     "from": "noreply@folio.org",
-    "_version": 1,
     "emailHeaders": [
       {
         "name": "Reply-To",
         "value": "noreply@folio.org"
       }
     ]
+  },
+  "_version": 1,
+  "metadata": {
+    "createdByUserId": "0c799032-442e-4d01-8e68-8c46529ef978",
+    "createdDate": "2023-10-01T12:00:00Z",
+    "updatedByUserId": "0c799032-442e-4d01-8e68-8c46529ef978",
+    "updatedDate": "2023-10-01T12:00:00Z"
   }
 }

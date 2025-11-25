@@ -14,12 +14,12 @@
     "expirationHours": 24,
     "authMethods": "CRAM-MD5 LOGIN PLAIN",
     "from": "noreply@folio.org",
-    "_version": 1,
     "emailHeaders": [
       {
         "name": "Reply-To",
         "value": "noreply@folio.org"
       }
     ]
-  }
+  },
+  "_version": 1,
 }

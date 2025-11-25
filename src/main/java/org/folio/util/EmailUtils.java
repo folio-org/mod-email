@@ -16,7 +16,6 @@ import static org.folio.enums.SmtpEmail.EMAIL_SMTP_SSL;
 import static org.folio.enums.SmtpEmail.EMAIL_START_TLS_OPTIONS;
 import static org.folio.enums.SmtpEmail.EMAIL_TRUST_ALL;
 import static org.folio.enums.SmtpEmail.EMAIL_USERNAME;
-import static org.folio.util.LogUtil.smtpConfigAsJson;
 
 import io.vertx.ext.mail.MailConfig;
 import java.util.Arrays;
