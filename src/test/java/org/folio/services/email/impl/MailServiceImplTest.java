@@ -58,9 +58,12 @@ public class MailServiceImplTest {
       .withBody(msg)
       .withOutputFormat(MediaType.TEXT_PLAIN);
 
+    String tenantId = "test_tenant";
+
     var mailServiceImpl = new MailServiceImpl(Vertx.vertx());
-    mailServiceImpl.sendEmail(mapFrom(smtpConfiguration), mapFrom(emailEntity), context.asyncAssertFailure(x -> {
-      assertThat(mailServiceImpl.getMailConfig().getAuthMethods(), is(AUTH_METHODS));
-    }));
+    mailServiceImpl.sendEmail(tenantId, mapFrom(smtpConfiguration), mapFrom(emailEntity),
+      context.asyncAssertFailure(x -> {
+        assertThat(mailServiceImpl.getMailConfig(tenantId).getAuthMethods(), is(AUTH_METHODS));
+      }));
   }
 }

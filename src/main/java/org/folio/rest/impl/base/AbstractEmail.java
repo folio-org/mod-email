@@ -185,7 +185,7 @@ public abstract class AbstractEmail {
     log.debug("sendEmail:: email: {}, smtpConfiguration: {}", () -> emailAsJson(email),
       () -> smtpConfigAsJson(smtpConfiguration));
     Promise<JsonObject> promise = Promise.promise();
-    mailService.sendEmail(mapFrom(smtpConfiguration), mapFrom(email), promise);
+    mailService.sendEmail(tenantId, mapFrom(smtpConfiguration), mapFrom(email), promise);
 
     return promise.future()
       .map(email)

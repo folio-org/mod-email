@@ -2,6 +2,7 @@ package org.folio.util;
 
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
@@ -15,7 +16,9 @@ import static org.folio.enums.SmtpEmail.EMAIL_SMTP_SSL;
 import static org.folio.enums.SmtpEmail.EMAIL_START_TLS_OPTIONS;
 import static org.folio.enums.SmtpEmail.EMAIL_TRUST_ALL;
 import static org.folio.enums.SmtpEmail.EMAIL_USERNAME;
+import static org.folio.util.LogUtil.smtpConfigAsJson;
 
+import io.vertx.ext.mail.MailConfig;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
@@ -153,5 +156,34 @@ public class EmailUtils {
           .withValue(config.getValue()))
         .collect(Collectors.toList()));
 
+  }
+
+  public static MailConfig getMailConfig(SmtpConfiguration smtpConfiguration) {
+    boolean ssl = ofNullable(smtpConfiguration.getSsl()).orElse(false);
+
+    StartTLSOptions startTLSOptions = StartTLSOptions.valueOf(
+      ofNullable(smtpConfiguration.getStartTlsOptions())
+        .orElse(SmtpConfiguration.StartTlsOptions.OPTIONAL)
+        .value());
+
+    boolean trustAll = ofNullable(smtpConfiguration.getTrustAll()).orElse(false);
+
+    LoginOption loginOption = LoginOption.valueOf(
+      ofNullable(smtpConfiguration.getLoginOption())
+        .orElse(SmtpConfiguration.LoginOption.NONE)
+        .value());
+
+    String authMethods = ofNullable(smtpConfiguration.getAuthMethods()).orElse(StringUtils.EMPTY);
+
+    return new MailConfig()
+      .setHostname(smtpConfiguration.getHost())
+      .setPort(smtpConfiguration.getPort())
+      .setUsername(smtpConfiguration.getUsername())
+      .setPassword(smtpConfiguration.getPassword())
+      .setSsl(ssl)
+      .setTrustAll(trustAll)
+      .setLogin(loginOption)
+      .setStarttls(startTLSOptions)
+      .setAuthMethods(authMethods);
   }
 }

@@ -32,9 +32,10 @@ public interface MailService {
   /**
    * send a single mail via MailClient
    *
+   * @param tenantId        the tenant identifier (from request headers)
    * @param configJson      represents the configuration of a mail service with mail server hostname,
    *                        port, security options, login options and login/password
    * @param emailEntityJson MailMessage object containing the mail text, from/to, attachments etc
    */
-  void sendEmail(JsonObject configJson, JsonObject emailEntityJson, Handler<AsyncResult<JsonObject>> resultHandler);
+  void sendEmail(String tenantId, JsonObject configJson, JsonObject emailEntityJson, Handler<AsyncResult<JsonObject>> resultHandler);
 }
