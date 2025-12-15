@@ -1,3 +1,6 @@
+## 2025-12-16 v1.19.1
+* Update to RMB 35.4.1, Vert.x 4.5.22 [MODEMAIL-120](https://folio-org.atlassian.net/browse/MODEMAIL-120)
+
 ## 2025-03-14 v1.19.0
 * Update mod-email to Java 21 [FOLIO-4225](https://folio-org.atlassian.net/browse/FOLIO-4225)
 
