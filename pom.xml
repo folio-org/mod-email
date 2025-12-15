@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.folio</groupId>
   <artifactId>mod-email</artifactId>
-  <version>1.20.0-SNAPSHOT</version>
+  <version>1.19.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <licenses>
@@ -15,8 +15,8 @@
 
   <properties>
     <aspectj.version>1.9.22.1</aspectj.version>
-    <raml-module-builder.version>35.4.0</raml-module-builder.version>
-    <vertx.version>4.5.13</vertx.version>
+    <raml-module-builder.version>35.4.1</raml-module-builder.version>
+    <vertx.version>4.5.22</vertx.version>
     <subethasmtp.version>3.1.7</subethasmtp.version>
     <rest-assured.version>5.5.1</rest-assured.version>
     <ramlfiles_path>${basedir}/ramls</ramlfiles_path>
