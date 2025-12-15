@@ -1,3 +1,7 @@
+## 2025-12-16 v1.18.2
+* Update to RMB 35.3.1, Vert.x 4.5.22 [MODEMAIL-119](https://folio-org.atlassian.net/browse/MODEMAIL-119)
+
+
 ## 2025-01-10 v1.18.1
 * Remove PII from mod-email [MODEMAIL-104](https://folio-org.atlassian.net/browse/MODEMAIL-104)
 
