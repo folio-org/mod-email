@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.folio</groupId>
   <artifactId>mod-email</artifactId>
-  <version>1.18.2-SNAPSHOT</version>
+  <version>1.18.2</version>
   <packaging>jar</packaging>
 
   <licenses>
@@ -395,7 +395,7 @@
     <url>https://github.com/folio-org/${project.artifactId}</url>
     <connection>scm:git:git://github.com/folio-org/${project.artifactId}.git</connection>
     <developerConnection>scm:git:git@github.com:folio-org/${project.artifactId}.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>v1.18.2</tag>
   </scm>
 
   <repositories>
