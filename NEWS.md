@@ -1,5 +1,6 @@
 ## 2025-03-14 v1.20.0 - In progress
 * Implement local settings API [MODEMAIL-112](https://folio-org.atlassian.net/browse/MODEMAIL-112)
+* Upgrade module to Vert.x 5.0 [MODEMAIL-114](https://folio-org.atlassian.net/browse/MODEMAIL-114)
 
 
 ## 2025-03-14 v1.19.0

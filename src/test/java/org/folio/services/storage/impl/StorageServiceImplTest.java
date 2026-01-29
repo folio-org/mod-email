@@ -6,7 +6,6 @@ import org.folio.services.storage.StorageService;
 import org.junit.Test;
 
 import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
 
 public class StorageServiceImplTest {
   private StorageService storageService = new StorageServiceImpl(Vertx.vertx());

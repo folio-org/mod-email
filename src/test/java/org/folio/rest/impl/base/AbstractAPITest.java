@@ -382,9 +382,9 @@ public abstract class AbstractAPITest {
    * Send random email
    */
   protected EmailEntity sendEmail(int expectedStatusCode) {
-    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.random(7, true, false));
-    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.random(5, true, false));
-    String msg = "Test text for the message. Random text: " + RandomStringUtils.random(20, true, false);
+    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
+    String msg = "Test text for the message. Random text: " + RandomStringUtils.insecure().nextAlphabetic(20);
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
