@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.core.MediaType;
 
+import io.vertx.core.MultiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,11 +29,9 @@ import org.folio.rest.jaxrs.model.EmailHeader;
 import org.folio.rest.jaxrs.model.SmtpConfiguration;
 import org.folio.services.email.MailService;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mail.MailAttachment;
 import io.vertx.ext.mail.MailMessage;
@@ -51,7 +50,7 @@ public class MailServiceImpl implements MailService {
   }
 
   @Override
-  public void sendEmail(String tenantId, JsonObject configJson, JsonObject emailJson, Handler<AsyncResult<JsonObject>> resultHandler) {
+  public Future<JsonObject> sendEmail(String tenantId, JsonObject configJson, JsonObject emailJson) {
     log.debug("sendEmail:: parameters smtpConfigurationJson: JsonObject, emailJson: JsonObject");
     var smtpConfiguration = configJson.mapTo(SmtpConfiguration.class);
     log.debug("sendEmail:: converted SMTP configuration: {}",
@@ -66,15 +65,14 @@ public class MailServiceImpl implements MailService {
       log.info("sendEmail:: Sending email {}: attempt {}/{} for tenant {}",
         emailId, emailEntity.getAttemptCount() + 1, RETRY_MAX_ATTEMPTS, tenantId);
 
-      mailClientProvider.get(tenantId, smtpConfiguration)
+      return mailClientProvider.get(tenantId, smtpConfiguration)
         .compose(mailClient -> mailClient.sendMail(mailMessage))
         .onSuccess(r -> log.info("sendEmail:: Email {} sent in {} ms", emailId, currentTimeMillis() - start))
         .onFailure(t -> log.warn("sendEmail:: Failed to send email {}: ", emailId, t))
-        .map(emailJson)
-        .onComplete(resultHandler);
+        .map(emailJson);
     } catch (Exception ex) {
       log.warn("sendEmail:: {}", format(ERROR_SENDING_EMAIL, ex), ex);
-      resultHandler.handle(failedFuture(ex.getMessage()));
+      return failedFuture(ex.getMessage());
     }
   }
 
@@ -155,7 +153,7 @@ public class MailServiceImpl implements MailService {
 
     if (message.getHeaders() == null) {
       log.debug("addHeadersFromConfiguration:: No headers found in the mail message");
-      message.setHeaders(new HeadersMultiMap());
+      message.setHeaders(MultiMap.caseInsensitiveMultiMap());
     }
 
     log.debug("addHeadersFromConfiguration:: Adding headers");

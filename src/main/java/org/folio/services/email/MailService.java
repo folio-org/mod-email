@@ -3,8 +3,7 @@ package org.folio.services.email;
 import org.folio.services.email.impl.MailServiceImpl;
 
 import io.vertx.codegen.annotations.ProxyGen;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
@@ -37,5 +36,5 @@ public interface MailService {
    *                        port, security options, login options and login/password
    * @param emailEntityJson MailMessage object containing the mail text, from/to, attachments etc
    */
-  void sendEmail(String tenantId, JsonObject configJson, JsonObject emailEntityJson, Handler<AsyncResult<JsonObject>> resultHandler);
+  Future<JsonObject> sendEmail(String tenantId, JsonObject configJson, JsonObject emailEntityJson);
 }

@@ -1,6 +1,5 @@
 package org.folio.services.storage.impl;
 
-import static io.vertx.core.Future.succeededFuture;
 import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 import static org.folio.rest.persist.PostgresClient.convertToPsqlStandard;
 import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
@@ -18,13 +17,10 @@ import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
-import org.folio.rest.persist.interfaces.Results;
 import org.folio.services.MailSettingsService;
 import org.folio.services.storage.StorageService;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import org.folio.rest.jaxrs.model.SmtpConfiguration;
@@ -45,8 +41,7 @@ public class StorageServiceImpl implements StorageService {
   }
 
   @Override
-  public void saveEmailEntity(String tenantId, JsonObject emailJson,
-    Handler<AsyncResult<JsonObject>> resultHandler) {
+  public Future<JsonObject> saveEmailEntity(String tenantId, JsonObject emailJson) {
 
     logger.debug("saveEmailEntity:: parameters tenantId: {}, emailJson: {}",
       () -> tenantId, () -> asJson(emailJson));
@@ -54,57 +49,45 @@ public class StorageServiceImpl implements StorageService {
       EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
       logger.debug("saveEmailEntity:: parameters emailEntity: {}", () -> asJson(emailEntity));
       String emailId = emailEntity.getId();
-      PostgresClient.getInstance(vertx, tenantId)
+      return PostgresClient.getInstance(vertx, tenantId)
         .save(EMAIL_STATISTICS_TABLE_NAME, emailId, emailEntity, true, true)
         .onSuccess(id -> logger.info("Email {} saved", emailId))
         .onFailure(t -> logger.error("Failed to save email {}: {}", emailId, t.getMessage()))
-        .map(emailJson)
-        .onComplete(resultHandler);
+        .map(emailJson);
     } catch (Exception ex) {
       logger.warn("saveEmailEntity:: Failed to save email", ex);
-      errorHandler(ex, resultHandler);
+      return Future.failedFuture(ex);
     }
   }
 
   @Override
-  public void findEmailEntries(String tenantId, int limit, int offset, String query,
-    Handler<AsyncResult<JsonObject>> resultHandler) {
+  public Future<JsonObject> findEmailEntries(String tenantId, int limit, int offset, String query) {
 
     logger.debug("findEmailEntries:: parameters tenantId: {}, limit: {}, offset: {}, query: {}",
       tenantId, limit, offset, query);
     try {
-      String[] fieldList = {"*"};
       CQLWrapper cql = getCQL(query, limit, offset);
       PostgresClient pgClient = PostgresClient.getInstance(vertx, tenantId);
-      pgClient.get(EMAIL_STATISTICS_TABLE_NAME, EmailEntity.class, fieldList, cql, true, false,
-        getReply -> {
-          if (getReply.failed()) {
-            logger.warn("findEmailEntries:: Failed to get email entries: ", getReply.cause());
-            errorHandler(getReply.cause(), resultHandler);
-            return;
-          }
-
-          Results<EmailEntity> result = getReply.result();
+      return pgClient.get(EMAIL_STATISTICS_TABLE_NAME, EmailEntity.class, cql, true)
+        .map(result -> {
           Integer totalRecords = result.getResultInfo().getTotalRecords();
           EmailEntries emailEntries = new EmailEntries()
             .withEmailEntity(result.getResults())
             .withTotalRecords(totalRecords);
-
-          JsonObject entries = JsonObject.mapFrom(emailEntries);
-          resultHandler.handle(succeededFuture(entries));
-        });
+          return JsonObject.mapFrom(emailEntries);
+        })
+        .onFailure(cause -> logger.warn("findEmailEntries:: Failed to get email entries: ", cause));
     } catch (Exception ex) {
       logger.warn("findEmailEntries:: Failed to get email entries", ex);
-      errorHandler(ex, resultHandler);
+      return Future.failedFuture(ex);
     }
   }
 
   @Override
-  public void deleteEmailEntriesByExpirationDateAndStatus(String tenantId, String expirationDate, String status,
-                                                          Handler<AsyncResult<JsonObject>> resultHandler) {
+  public Future<JsonObject> deleteEmailEntriesByExpirationDateAndStatus(String tenantId, String expirationDate, String status) {
     logger.debug("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {}", expirationDate, status);
     try {
-      getExpirationHoursFromConfig(tenantId)
+      return getExpirationHoursFromConfig(tenantId)
         .compose(expirationHours -> {
           String fullTableName = getFullTableName(EMAIL_STATISTICS_TABLE_NAME, tenantId);
           var pgClient = PostgresClient.getInstance(vertx, tenantId);
@@ -120,17 +103,12 @@ public class StorageServiceImpl implements StorageService {
               Tuple.of(expirationDate, status));
           }
         })
-        .onSuccess(result -> {
-          logger.info("deleteEmailEntriesByExpirationDateAndStatus:: deleted {} entries", result.rowCount());
-          resultHandler.handle(succeededFuture());
-        })
-        .onFailure(err -> {
-          logger.warn("deleteEmailEntriesByExpirationDateAndStatus:: Error while deleting entries", err);
-          errorHandler(err, resultHandler);
-        });
+        .onSuccess(result -> logger.info("deleteEmailEntriesByExpirationDateAndStatus:: deleted {} entries", result.rowCount()))
+        .onFailure(err -> logger.warn("deleteEmailEntriesByExpirationDateAndStatus:: Error while deleting entries", err))
+        .map(new JsonObject());
     } catch (Exception ex) {
       logger.warn("deleteEmailEntriesByExpirationDateAndStatus:: Failed to delete email entries", ex);
-      errorHandler(ex, resultHandler);
+      return Future.failedFuture(ex);
     }
   }
 
@@ -146,11 +124,6 @@ public class StorageServiceImpl implements StorageService {
         logger.warn("getExpirationHoursFromConfig:: Failed to get expirationHours from smtp_configuration", e);
         return Future.succeededFuture(DEFAULT_EXPIRATION_HOURS);
       });
-  }
-
-  private void errorHandler(Throwable ex, Handler<AsyncResult<JsonObject>> asyncResultHandler) {
-    logger.error(ex.getMessage(), ex);
-    asyncResultHandler.handle(Future.failedFuture(ex));
   }
 
   /**

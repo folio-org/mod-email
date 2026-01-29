@@ -5,7 +5,6 @@ import static io.vertx.core.Future.succeededFuture;
 import static java.lang.String.format;
 import static org.folio.HttpStatus.HTTP_NO_CONTENT;
 import static org.folio.HttpStatus.HTTP_OK;
-import static org.folio.rest.RestVerticle.MODULE_SPECIFIC_ARGS;
 import static org.folio.util.LogUtil.headersAsString;
 import static org.folio.util.LogUtil.smtpConfigAsJson;
 
@@ -208,7 +207,7 @@ public class SmtpConfigurationProvider {
 
   private static WebClientOptions getWebClientOptions() {
     final int lookupTimeout = Integer.parseInt(
-      MODULE_SPECIFIC_ARGS.getOrDefault(LOOKUP_TIMEOUT, LOOKUP_TIMEOUT_VAL));
+      System.getProperty(LOOKUP_TIMEOUT, LOOKUP_TIMEOUT_VAL));
 
     var webClientOptions = new WebClientOptions();
     webClientOptions.setConnectTimeout(lookupTimeout);

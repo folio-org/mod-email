@@ -3,8 +3,7 @@ package org.folio.services.storage;
 import org.folio.services.storage.impl.StorageServiceImpl;
 
 import io.vertx.codegen.annotations.ProxyGen;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
@@ -35,15 +34,13 @@ public interface StorageService {
    * @param emailEntityJson the object contains an {@link org.folio.rest.jaxrs.model.EmailEntity}
    *                        entity representation in a JSON format
    */
-  void saveEmailEntity(String tenantId, JsonObject emailEntityJson,
-                       Handler<AsyncResult<JsonObject>> resultHandler);
+  Future<JsonObject> saveEmailEntity(String tenantId, JsonObject emailEntityJson);
 
   /**
    * Find all EmailEntries by query
    * The query parameter may contain email status, expiration date or other parameters
    */
-  void findEmailEntries(String tenantId, int limit, int offset, String query,
-                        Handler<AsyncResult<JsonObject>> resultHandler);
+  Future<JsonObject> findEmailEntries(String tenantId, int limit, int offset, String query);
 
   /**
    * Delete EmailEntries by expiration date and email status
@@ -51,6 +48,5 @@ public interface StorageService {
    * @param expirationDate the expiration date of email in format: `yyyy-MM-dd`
    * @param emailStatus    the status of email {@link org.folio.rest.jaxrs.model.EmailEntity.Status}
    */
-  void deleteEmailEntriesByExpirationDateAndStatus(String tenantId, String expirationDate, String emailStatus,
-                                                   Handler<AsyncResult<JsonObject>> resultHandler);
+  Future<JsonObject> deleteEmailEntriesByExpirationDateAndStatus(String tenantId, String expirationDate, String emailStatus);
 }
