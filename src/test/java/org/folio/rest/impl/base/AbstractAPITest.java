@@ -53,8 +53,8 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
-import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.awaitility.Awaitility;
 
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
@@ -130,8 +130,8 @@ public abstract class AbstractAPITest {
     DeploymentOptions restDeploymentOptions = new DeploymentOptions()
       .setConfig(new JsonObject().put(HTTP_PORT, port));
 
-    vertx.deployVerticle(RestVerticle.class.getName(), restDeploymentOptions,
-      res -> {
+    vertx.deployVerticle(RestVerticle.class.getName(), restDeploymentOptions)
+      .onComplete(res -> {
         try {
           TenantAttributes t = new TenantAttributes().withModuleTo("mod-email-1.0.0");
           tenantClient.postTenant(t, res2 -> {
@@ -173,11 +173,12 @@ public abstract class AbstractAPITest {
   @AfterClass
   public static void tearDownClass(final TestContext context) {
     Async async = context.async();
-    vertx.close(context.asyncAssertSuccess(res -> {
-      PostgresClient.stopPostgresTester();
-      wiser.stop();
-      async.complete();
-    }));
+    vertx.close()
+      .onComplete(context.asyncAssertSuccess(res -> {
+        PostgresClient.stopPostgresTester();
+        wiser.stop();
+        async.complete();
+      }));
   }
 
   @Before

@@ -61,8 +61,8 @@ public class MailServiceImplTest {
     String tenantId = "test_tenant";
 
     var mailServiceImpl = new MailServiceImpl(Vertx.vertx());
-    mailServiceImpl.sendEmail(tenantId, mapFrom(smtpConfiguration), mapFrom(emailEntity),
-      context.asyncAssertFailure(x -> {
+    mailServiceImpl.sendEmail(tenantId, mapFrom(smtpConfiguration), mapFrom(emailEntity))
+      .onComplete(context.asyncAssertFailure(x -> {
         assertThat(mailServiceImpl.getMailConfig(tenantId).getAuthMethods(), is(AUTH_METHODS));
       }));
   }
