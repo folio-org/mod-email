@@ -126,7 +126,7 @@ public abstract class AbstractEmail {
       .map(this::handleSuccess)
       .otherwise(t -> handleFailure(email, t))
       .compose(this::saveEmail)
-      .otherwiseEmpty()
+      .onFailure(t -> log.error("Failed to save email", t))
       .onSuccess(result -> log.debug("processEmail:: result: {}", () -> emailAsJson(email)));
   }
 

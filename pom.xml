@@ -29,7 +29,6 @@
 
     <!-- Test dependencies -->
     <rest-assured.version>6.0.0</rest-assured.version>
-    <junit-bom.version>5.11.4</junit-bom.version>
     <mockito.version>5.21.0</mockito.version>
     <awaitility.version>4.3.0</awaitility.version>
     <subethasmtp.version>3.1.7</subethasmtp.version>
@@ -74,6 +73,12 @@
       <artifactId>vertx-unit</artifactId>
       <version>${vertx.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.rest-assured</groupId>
@@ -165,7 +170,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${maven-compiler-plugin.version}</version>
         <configuration>
-          <release>21</release>
+          <release>${java.version}</release>
           <encoding>UTF-8</encoding>
           <useIncrementalCompilation>false</useIncrementalCompilation>
           <annotationProcessors>
@@ -238,7 +243,7 @@
         <version>${aspectj-maven-plugin.version}</version>
         <configuration>
           <verbose>true</verbose>
-          <release>21</release>
+          <release>${java.version}</release>
           <includes>
             <include>**/impl/*.java</include>
             <include>**/*.aj</include>
