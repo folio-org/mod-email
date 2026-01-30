@@ -1,39 +1,48 @@
 package org.folio.services.storage.impl;
 
-import static org.junit.Assert.assertTrue;
-
 import org.folio.services.storage.StorageService;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import io.vertx.core.Vertx;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 
+@RunWith(VertxUnitRunner.class)
 public class StorageServiceImplTest {
-  private StorageService storageService = new StorageServiceImpl(Vertx.vertx());
+  
+  private Vertx vertx;
+  private StorageService storageService;
 
-  @Test
-  public void saveEmailEntityShouldFail() {
-    var future = storageService.saveEmailEntity(null, null);
-    assertTrue(future.failed());
+  @Before
+  public void setUp() {
+    vertx = Vertx.vertx();
+    storageService = new StorageServiceImpl(vertx);
   }
 
   @Test
-  public void findEmailEntriesShouldFail() {
-    var future = storageService.findEmailEntries(null, 0, 0, null);
-    assertTrue(future.failed());
+  public void saveEmailEntityShouldFail(TestContext context) {
+    storageService.saveEmailEntity(null, null)
+      .onComplete(context.asyncAssertFailure());
   }
 
   @Test
-  public void deleteEmailEntriesByExpirationDateAndStatusEmailEntriesShouldFail() {
-    var future = new StorageServiceImpl(Vertx.vertx()).deleteEmailEntriesByExpirationDateAndStatus(
-      null, null, null);
-    assertTrue(future.failed());
+  public void findEmailEntriesShouldFail(TestContext context) {
+    storageService.findEmailEntries(null, 0, 0, null)
+      .onComplete(context.asyncAssertFailure());
   }
 
   @Test
-  public void deleteEmailEntriesShouldFailWithInvalidTenant() {
+  public void deleteEmailEntriesByExpirationDateAndStatusEmailEntriesShouldFail(TestContext context) {
+    storageService.deleteEmailEntriesByExpirationDateAndStatus(null, null, null)
+      .onComplete(context.asyncAssertFailure());
+  }
+
+  @Test
+  public void deleteEmailEntriesShouldFailWithInvalidTenant(TestContext context) {
     // setting the tenantId as public to simulate the error
-    var future = new StorageServiceImpl(Vertx.vertx()).deleteEmailEntriesByExpirationDateAndStatus(
-      "public", null, null);
-    assertTrue(future.failed());
+    storageService.deleteEmailEntriesByExpirationDateAndStatus("public", null, null)
+      .onComplete(context.asyncAssertFailure());
   }
 }

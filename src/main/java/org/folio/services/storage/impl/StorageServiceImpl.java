@@ -42,7 +42,6 @@ public class StorageServiceImpl implements StorageService {
 
   @Override
   public Future<JsonObject> saveEmailEntity(String tenantId, JsonObject emailJson) {
-
     logger.debug("saveEmailEntity:: parameters tenantId: {}, emailJson: {}",
       () -> tenantId, () -> asJson(emailJson));
     try {
@@ -62,7 +61,6 @@ public class StorageServiceImpl implements StorageService {
 
   @Override
   public Future<JsonObject> findEmailEntries(String tenantId, int limit, int offset, String query) {
-
     logger.debug("findEmailEntries:: parameters tenantId: {}, limit: {}, offset: {}, query: {}",
       tenantId, limit, offset, query);
     try {
@@ -84,7 +82,7 @@ public class StorageServiceImpl implements StorageService {
   }
 
   @Override
-  public Future<JsonObject> deleteEmailEntriesByExpirationDateAndStatus(String tenantId, String expirationDate, String status) {
+  public Future<Void> deleteEmailEntriesByExpirationDateAndStatus(String tenantId, String expirationDate, String status) {
     logger.debug("deleteEmailEntriesByExpirationDateAndStatus:: parameters expirationDate: {}, status: {}", expirationDate, status);
     try {
       return getExpirationHoursFromConfig(tenantId)
@@ -105,7 +103,7 @@ public class StorageServiceImpl implements StorageService {
         })
         .onSuccess(result -> logger.info("deleteEmailEntriesByExpirationDateAndStatus:: deleted {} entries", result.rowCount()))
         .onFailure(err -> logger.warn("deleteEmailEntriesByExpirationDateAndStatus:: Error while deleting entries", err))
-        .map(new JsonObject());
+        .mapEmpty();
     } catch (Exception ex) {
       logger.warn("deleteEmailEntriesByExpirationDateAndStatus:: Failed to delete email entries", ex);
       return Future.failedFuture(ex);

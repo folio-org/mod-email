@@ -48,5 +48,5 @@ public interface StorageService {
    * @param expirationDate the expiration date of email in format: `yyyy-MM-dd`
    * @param emailStatus    the status of email {@link org.folio.rest.jaxrs.model.EmailEntity.Status}
    */
-  Future<JsonObject> deleteEmailEntriesByExpirationDateAndStatus(String tenantId, String expirationDate, String emailStatus);
+  Future<Void> deleteEmailEntriesByExpirationDateAndStatus(String tenantId, String expirationDate, String emailStatus);
 }
