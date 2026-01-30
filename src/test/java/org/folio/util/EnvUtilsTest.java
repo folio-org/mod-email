@@ -1,9 +1,13 @@
 package org.folio.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import org.junit.After;
 import org.junit.Test;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 
 public class EnvUtilsTest {
 
@@ -47,5 +51,19 @@ public class EnvUtilsTest {
     var result = EnvUtils.getEnvOrDefault(PROPERTY_NAME, ENV_NAME, "default", String::valueOf);
 
     assertEquals("test-value", result);
+  }
+
+  @Test
+  public void constructor_throwsUnsupportedOperationException() throws Exception {
+    Constructor<EnvUtils> constructor = EnvUtils.class.getDeclaredConstructor();
+    constructor.setAccessible(true);
+
+    InvocationTargetException exception = assertThrows(
+      InvocationTargetException.class,
+      constructor::newInstance
+    );
+
+    assertEquals(UnsupportedOperationException.class, exception.getCause().getClass());
+    assertEquals("Utility class", exception.getCause().getMessage());
   }
 }
