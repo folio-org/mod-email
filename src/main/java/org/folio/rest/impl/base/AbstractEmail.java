@@ -6,7 +6,6 @@ import static io.vertx.core.json.JsonObject.mapFrom;
 import static java.lang.String.format;
 import static java.lang.String.join;
 import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static org.folio.rest.jaxrs.model.EmailEntity.Status.DELIVERED;
@@ -44,9 +43,7 @@ import org.folio.services.email.MailService;
 import org.folio.services.storage.StorageService;
 import org.folio.util.ClockUtil;
 
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
@@ -173,31 +170,27 @@ public abstract class AbstractEmail {
         emailIdsAsString(emails), throwable);
     }
 
-    return CompositeFuture.all(
+    return Future.all(
         emails.stream()
           .map(email -> handleFailure(email, throwable))
           .map(this::saveEmail)
-          .collect(toList()))
+          .toList())
       .compose(r -> failedFuture(throwable));
   }
 
   protected Future<EmailEntity> sendEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
     log.debug("sendEmail:: email: {}, smtpConfiguration: {}", () -> emailAsJson(email),
       () -> smtpConfigAsJson(smtpConfiguration));
-    Promise<JsonObject> promise = Promise.promise();
-    mailService.sendEmail(tenantId, mapFrom(smtpConfiguration), mapFrom(email), promise);
 
-    return promise.future()
+    return mailService.sendEmail(tenantId, mapFrom(smtpConfiguration), mapFrom(email))
       .map(email)
       .onSuccess(result -> log.debug("sendEmail:: result: {}", () -> emailAsJson(result)));
   }
 
   protected Future<EmailEntity> saveEmail(EmailEntity email) {
     log.debug("saveEmail:: parameters email: {}", () -> asJson(email));
-    Promise<JsonObject> promise = Promise.promise();
-    storageService.saveEmailEntity(tenantId, JsonObject.mapFrom(email), promise);
 
-    return promise.future()
+    return storageService.saveEmailEntity(tenantId, JsonObject.mapFrom(email))
       .map(email)
       .onSuccess(result -> log.debug("saveEmail:: result: {}", () -> emailAsJson(result)));
   }
@@ -205,10 +198,8 @@ public abstract class AbstractEmail {
   protected Future<EmailEntries> findEmailEntries(int limit, int offset, String query) {
     log.debug("findEmailEntries:: parameters limit: {}, offset: {}, query: {}", limit, offset,
       query);
-    Promise<JsonObject> promise = Promise.promise();
-    storageService.findEmailEntries(tenantId, limit, offset, query, promise);
 
-    return promise.future()
+    return storageService.findEmailEntries(tenantId, limit, offset, query)
       .map(json -> json.mapTo(EmailEntries.class))
       .onSuccess(result -> log.debug("findEmailEntries:: result: {}",
         () -> emailIdsAsString(result)));
@@ -216,43 +207,30 @@ public abstract class AbstractEmail {
 
   protected Future<Void> deleteEmailsByExpirationDate(String expirationDate, String emailStatus) {
     log.debug("deleteEmailsByExpirationDate:: parameters expirationDate: {}, emailStatus: {}", expirationDate, emailStatus);
-    Promise<Void> promise = Promise.promise();
-    storageService.deleteEmailEntriesByExpirationDateAndStatus(tenantId, expirationDate, emailStatus,
-      result -> {
-        if (result.failed()) {
-          log.warn("deleteEmailsByExpirationDate:: Failed to delete emails with expiration date {}",
-            expirationDate, result.cause());
-          promise.fail(result.cause());
-          return;
-        }
-        log.info("deleteEmailsByExpirationDate:: Successfully deleted emails with expiration date {}",
-          expirationDate);
-        promise.complete();
-      });
-    return promise.future();
+
+    return storageService.deleteEmailEntriesByExpirationDateAndStatus(tenantId, expirationDate, emailStatus)
+      .onSuccess(r -> log.info("deleteEmailsByExpirationDate:: Successfully deleted emails with expiration date {}", expirationDate))
+      .onFailure(t -> log.warn("deleteEmailsByExpirationDate:: Failed to delete emails with expiration date {}", expirationDate, t))
+      .mapEmpty();
   }
 
   protected Future<String> determinateEmailStatus(String emailStatus) {
     log.debug("determinateEmailStatus:: parameters emailStatus: {}", emailStatus);
-    Promise<String> promise = Promise.promise();
     String status = StringUtils.isBlank(emailStatus)
       ? DELIVERED.value()
       : findStatusByName(emailStatus);
-    promise.complete(status);
     log.info("determinateEmailStatus:: Successfully determinated email status {}", status);
-    return promise.future();
+    return succeededFuture(status);
   }
 
   protected Future<Void> checkExpirationDate(String expirationDate) {
     log.debug("checkExpirationDate:: parameters expirationDate: {}", expirationDate);
-    Promise<Void> promise = Promise.promise();
     if (StringUtils.isBlank(expirationDate) || isCorrectDateFormat(expirationDate)) {
-      promise.complete();
+      return Future.succeededFuture();
     } else {
       log.warn("checkExpirationDate:: Failed to check expiration date {}", expirationDate);
-      promise.fail(new IllegalArgumentException(ERROR_MESSAGE_INCORRECT_DATE_PARAMETER));
+      return Future.failedFuture(new IllegalArgumentException(ERROR_MESSAGE_INCORRECT_DATE_PARAMETER));
     }
-    return promise.future();
   }
 
   protected Response mapExceptionToResponse(Throwable t) {

@@ -5,10 +5,12 @@ import static org.folio.util.StubUtils.buildSmtpConfiguration;
 import static org.folio.util.StubUtils.createConfigurations;
 import static org.folio.util.StubUtils.initModConfigStub;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import javax.ws.rs.core.MediaType;
 
+import io.vertx.core.json.JsonObject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
@@ -30,6 +32,7 @@ public class MailServiceImplTest {
 
   private static final String ADDRESS_TEMPLATE = "%s@localhost";
   private static final String AUTH_METHODS = "CRAM-MD5 LOGIN PLAIN";
+  private static final String TENANT_ID = "test_tenant";
 
   @Rule
   public WireMockRule mockServer = new WireMockRule(
@@ -61,9 +64,25 @@ public class MailServiceImplTest {
     String tenantId = "test_tenant";
 
     var mailServiceImpl = new MailServiceImpl(Vertx.vertx());
-    mailServiceImpl.sendEmail(tenantId, mapFrom(smtpConfiguration), mapFrom(emailEntity),
-      context.asyncAssertFailure(x -> {
+    mailServiceImpl.sendEmail(tenantId, mapFrom(smtpConfiguration), mapFrom(emailEntity))
+      .onComplete(context.asyncAssertFailure(x -> {
         assertThat(mailServiceImpl.getMailConfig(tenantId).getAuthMethods(), is(AUTH_METHODS));
+      }));
+  }
+
+  @Test
+  public void sendEmail_shouldReturnFailedFuture_whenEmailJsonIsInvalid(TestContext context) {
+    SmtpConfiguration smtpConfiguration = buildSmtpConfiguration("user", "pws", "localhost",
+      2500, AUTH_METHODS);
+
+    JsonObject invalidEmailJson = new JsonObject()
+      .put("invalidField", "invalidValue");
+
+    var mailServiceImpl = new MailServiceImpl(Vertx.vertx());
+    mailServiceImpl.sendEmail(TENANT_ID, mapFrom(smtpConfiguration), invalidEmailJson)
+      .onComplete(context.asyncAssertFailure(error -> {
+        assertThat(error, is(notNullValue()));
+        context.assertTrue(error.getMessage() != null || error.getMessage().isEmpty());
       }));
   }
 }
