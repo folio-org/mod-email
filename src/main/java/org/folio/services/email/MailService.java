@@ -1,5 +1,6 @@
 package org.folio.services.email;
 
+import io.vertx.core.eventbus.DeliveryOptions;
 import org.folio.services.email.impl.MailServiceImpl;
 
 import io.vertx.codegen.annotations.ProxyGen;
@@ -7,11 +8,16 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
+import static org.folio.util.EnvUtils.getEnvOrDefault;
+
 /**
  * The service provides the ability to send email using the SMTP server
  */
 @ProxyGen
 public interface MailService {
+
+  String SEND_TIMEOUT_ENV_NAME = "MAIL_DELIVERY_SEND_TIMEOUT";
+  String SEND_TIMEOUT_PROPERTY_NAME = "mailDeliverySendTimeout";
 
   static MailService create(Vertx vertx) {
     return new MailServiceImpl(vertx);
@@ -25,7 +31,10 @@ public interface MailService {
    * @return ValidationEngineService instance
    */
   static MailService createProxy(Vertx vertx, String address) {
-    return new MailServiceVertxEBProxy(vertx, address);
+    var timeout = getEnvOrDefault(
+      SEND_TIMEOUT_PROPERTY_NAME, SEND_TIMEOUT_ENV_NAME, 30000L, Long::parseLong);
+    var sentTimeout = new DeliveryOptions().setSendTimeout(timeout);
+    return new MailServiceVertxEBProxy(vertx, address, sentTimeout);
   }
 
   /**

@@ -37,6 +37,8 @@ Order of settings retrieval (migration to `mod-email` own settings storage):
 | from                | EMAIL_FROM                  | false    | 'from' property of the email                                                                                              | noreply@folio.org              |
 | authMethods         | AUTH_METHODS                | false    | authentication methods                                                                                                    | 'CRAM-MD5 LOGIN PLAIN'         |
 | expirationHours     |                             | false    | Messages which are older than expiration hours are considered as expired and gets deleted. Default value will be 24 hours | 12                             |
+| idleTimeout         |                             | false    | Idle timeout for SMTP connection in seconds. Default value is 25 seconds                                                  | 5                              |
+| connectTimeout      |                             | false    | Connect timeout for SMTP connection in seconds. Default value is 25 seconds                                               | 5                              |
 
 
 ### Configuration using `email.settings` interface
@@ -68,6 +70,8 @@ SMTP configuration (`GET /email/settings/{id}`) example:
     "startTlsOptions": "OPTIONAL",
     "authMethods": "",
     "from": "noreply@folio.org",
+    "idleTimeout": 25,
+    "connectTimeout": 25,
     "_version": "1",
     "emailHeaders": [
       {
@@ -109,6 +113,8 @@ SMTP configuration (`GET /smtp-configuration/{id}`) example:
     "startTlsOptions": "OPTIONAL",
     "authMethods": "",
     "from": "noreply@folio.org",
+    "idleTimeout": 25,
+    "connectTimeout": 25,
     "emailHeaders": [
         {
             "name": "Reply-To",

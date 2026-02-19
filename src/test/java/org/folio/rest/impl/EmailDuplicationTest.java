@@ -15,7 +15,6 @@ import java.net.http.HttpResponse;
 import java.util.UUID;
 import javax.ws.rs.core.MediaType;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.rekawek.toxiproxy.Proxy;
 import eu.rekawek.toxiproxy.ToxiproxyClient;
@@ -71,10 +70,10 @@ public class EmailDuplicationTest extends AbstractAPITest {
   @Before
   public void setUp() throws IOException {
     mockServerPort = userMockServer.port();
-    ToxiproxyClient toxiproxyClient = new ToxiproxyClient(toxiproxy.getHost(), toxiproxy.getControlPort());
+    var toxiproxyClient = new ToxiproxyClient(toxiproxy.getHost(), toxiproxy.getControlPort());
 
     try {
-      Proxy oldProxy = toxiproxyClient.getProxy("smtp");
+      var oldProxy = toxiproxyClient.getProxy("smtp");
       if (oldProxy != null) {
         oldProxy.delete();
       }
@@ -84,7 +83,7 @@ public class EmailDuplicationTest extends AbstractAPITest {
 
     smtpProxy = toxiproxyClient.createProxy("smtp", "0.0.0.0:8666", "mailhog:1025");
 
-    int proxyPort = toxiproxy.getMappedPort(8666);
+    var proxyPort = toxiproxy.getMappedPort(8666);
 
     var configurations = createConfigurations("user", "password",
       toxiproxy.getHost(), String.valueOf(proxyPort), AUTH_METHODS);
@@ -130,10 +129,10 @@ public class EmailDuplicationTest extends AbstractAPITest {
       .extract()
       .response();
 
-    int statusCode = response.getStatusCode();
+    var statusCode = response.getStatusCode();
     assertEquals("Expected OK status", HttpStatus.SC_OK, statusCode);
 
-    int messageCount = getMailhogMessageCount();
+    var messageCount = getMailhogMessageCount();
     assertEquals("Expected exactly one message (no duplicate)", 1, messageCount);
   }
 
@@ -160,19 +159,19 @@ public class EmailDuplicationTest extends AbstractAPITest {
       .extract()
       .response();
 
-    String responseBody = response.getBody().asString();
+    var responseBody = response.getBody().asString();
     assertTrue("Expected timeout error",
       responseBody.contains("the module didn't send email") || responseBody.contains("socket was closed"));
 
-    int messageCount = getMailhogMessageCount();
+    var messageCount = getMailhogMessageCount();
     assertEquals("Expected no messages (timeout prevented sending)", 0, messageCount);
   }
 
   @Test
   public void shouldTimeoutOnSlowLargeEmail() throws Exception {
-    int messageSizeMB = 5;
-    int targetDurationSeconds = 27;
-    int bandwidthKBps = (messageSizeMB * 1024) / targetDurationSeconds;
+    var messageSizeMB = 5;
+    var targetDurationSeconds = 27;
+    var bandwidthKBps = (messageSizeMB * 1024) / targetDurationSeconds;
 
     smtpProxy.toxics()
       .bandwidth("slow_upload", ToxicDirection.UPSTREAM, bandwidthKBps);
@@ -195,24 +194,24 @@ public class EmailDuplicationTest extends AbstractAPITest {
       .extract()
       .response();
 
-    String responseBody = response.getBody().asString();
+    var responseBody = response.getBody().asString();
     assertTrue("Expected timeout error with slow large email transfer",
       responseBody.contains("the module didn't send email") || responseBody.contains("socket was closed"));
 
-    int messageCount = getMailhogMessageCount();
+    var messageCount = getMailhogMessageCount();
     assertEquals("Expected no messages (timeout prevented sending)", 0, messageCount);
   }
 
   private String generateLargeMessage(int sizeMB) {
-    int sizeBytes = sizeMB * 1024 * 1024;
-    StringBuilder sb = new StringBuilder(sizeBytes);
+    var sizeBytes = sizeMB * 1024 * 1024;
+    var sb = new StringBuilder(sizeBytes);
 
     sb.append("Large email test message\n");
     sb.append("Expected size: ").append(sizeMB).append("MB\n");
     sb.append("Generated at: ").append(System.currentTimeMillis()).append("\n");
     sb.append("=".repeat(100)).append("\n\n");
 
-    String chunk = secure().nextAlphanumeric(1000) + "\n";
+    var chunk = secure().nextAlphanumeric(1000) + "\n";
     int chunksNeeded = (sizeBytes - sb.length()) / chunk.length();
 
     sb.append(chunk.repeat(Math.max(0, chunksNeeded)));
@@ -221,8 +220,8 @@ public class EmailDuplicationTest extends AbstractAPITest {
 
   private void clearMailhogMessages() {
     try {
-      String url = "http://" + mailhog.getHost() + ":" + mailhog.getMappedPort(8025) + "/api/v1/messages";
-      HttpRequest request = HttpRequest.newBuilder()
+      var url = "http://" + mailhog.getHost() + ":" + mailhog.getMappedPort(8025) + "/api/v1/messages";
+      var request = HttpRequest.newBuilder()
         .uri(URI.create(url))
         .DELETE()
         .build();
@@ -235,14 +234,14 @@ public class EmailDuplicationTest extends AbstractAPITest {
 
   private int getMailhogMessageCount() {
     try {
-      String url = "http://" + mailhog.getHost() + ":" + mailhog.getMappedPort(8025) + "/api/v2/messages";
-      HttpRequest request = HttpRequest.newBuilder()
+      var url = "http://" + mailhog.getHost() + ":" + mailhog.getMappedPort(8025) + "/api/v2/messages";
+      var request = HttpRequest.newBuilder()
         .uri(URI.create(url))
         .GET()
         .build();
 
-      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-      JsonNode root = objectMapper.readTree(response.body());
+      var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      var root = objectMapper.readTree(response.body());
 
       return root.get("count").asInt();
     } catch (Exception e) {
