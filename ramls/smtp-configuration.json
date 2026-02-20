@@ -86,6 +86,14 @@
         ]
       }
     },
+    "idleTimeout": {
+      "description": "Idle timeout for SMTP connection in seconds",
+      "type": "integer"
+    },
+    "connectTimeout": {
+      "description": "Connect timeout for SMTP connection in seconds",
+      "type": "integer"
+    },
     "metadata": {
       "description": "Metadata about creation and changes to the SMTP configuration provided by the server",
       "type" : "object",
