@@ -47,7 +47,6 @@ public class EmailUtils {
   public static final String EMAIL_STATISTICS_TABLE_NAME = "email_statistics";
   private static final String EMAIL_HEADERS_CONFIG_NAME = "email.headers";
   private static final String ERROR_MIN_REQUIREMENT_MOD_CONFIG = "The 'mod-config' module doesn't have a minimum config for SMTP server, the min config is: %s";
-  private static final int DEFAULT_TIMEOUT_SECONDS = 25;
 
   private EmailUtils() {
     //not called
@@ -174,10 +173,8 @@ public class EmailUtils {
         .value());
 
     String authMethods = ofNullable(smtpConfiguration.getAuthMethods()).orElse(StringUtils.EMPTY);
-    var idleTimeout = ofNullable(smtpConfiguration.getIdleTimeout()).orElse(DEFAULT_TIMEOUT_SECONDS);
-    var connectTimeout = ofNullable(smtpConfiguration.getConnectTimeout()).orElse(DEFAULT_TIMEOUT_SECONDS);
 
-    return new MailConfig()
+    var mailConfig = new MailConfig()
       .setHostname(smtpConfiguration.getHost())
       .setPort(smtpConfiguration.getPort())
       .setUsername(smtpConfiguration.getUsername())
@@ -186,8 +183,11 @@ public class EmailUtils {
       .setTrustAll(trustAll)
       .setLogin(loginOption)
       .setStarttls(startTLSOptions)
-      .setAuthMethods(authMethods)
-      .setIdleTimeout(idleTimeout)
-      .setConnectTimeout(connectTimeout);
+      .setAuthMethods(authMethods);
+
+    ofNullable(smtpConfiguration.getIdleTimeout()).ifPresent(mailConfig::setIdleTimeout);
+    ofNullable(smtpConfiguration.getConnectTimeout()).ifPresent(mailConfig::setConnectTimeout);
+
+    return mailConfig;
   }
 }

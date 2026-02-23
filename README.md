@@ -37,8 +37,16 @@ Order of settings retrieval (migration to `mod-email` own settings storage):
 | from                | EMAIL_FROM                  | false    | 'from' property of the email                                                                                              | noreply@folio.org              |
 | authMethods         | AUTH_METHODS                | false    | authentication methods                                                                                                    | 'CRAM-MD5 LOGIN PLAIN'         |
 | expirationHours     |                             | false    | Messages which are older than expiration hours are considered as expired and gets deleted. Default value will be 24 hours | 12                             |
-| idleTimeout         |                             | false    | Idle timeout for SMTP connection in seconds. Default value is 25 seconds                                                  | 5                              |
-| connectTimeout      |                             | false    | Connect timeout for SMTP connection in seconds. Default value is 25 seconds                                               | 5                              |
+| idleTimeout         |                             | false    | Idle timeout for SMTP connection in seconds. Default value is 0                                                           | 25                             |
+| connectTimeout      |                             | false    | Connect timeout for SMTP connection in seconds. Default value is 0                                                        | 25                             |
+
+### Additional module environment variables
+
+The following variables are configured via JVM system property or environment variable (not stored in SMTP configuration):
+
+| JVM property              | Environment variable          | Description                                             | Default |
+|---------------------------|-------------------------------|---------------------------------------------------------|---------|
+| mailDeliverySendTimeout   | MAIL_DELIVERY_SEND_TIMEOUT    | EventBus send timeout in milliseconds for mail delivery | 30000   |
 
 
 ### Configuration using `email.settings` interface
@@ -70,8 +78,8 @@ SMTP configuration (`GET /email/settings/{id}`) example:
     "startTlsOptions": "OPTIONAL",
     "authMethods": "",
     "from": "noreply@folio.org",
-    "idleTimeout": 25,
-    "connectTimeout": 25,
+    "idleTimeout": 0,
+    "connectTimeout": 0,
     "_version": "1",
     "emailHeaders": [
       {
@@ -113,8 +121,8 @@ SMTP configuration (`GET /smtp-configuration/{id}`) example:
     "startTlsOptions": "OPTIONAL",
     "authMethods": "",
     "from": "noreply@folio.org",
-    "idleTimeout": 25,
-    "connectTimeout": 25,
+    "idleTimeout": 0,
+    "connectTimeout": 0,
     "emailHeaders": [
         {
             "name": "Reply-To",
