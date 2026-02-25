@@ -177,6 +177,28 @@ The example of request body with authentication methods configuration:
  }
  ```
 
+## Known Limitations
+
+### Duplicate email delivery on slow or unresponsive SMTP servers
+
+When the SMTP server is slow or temporarily unresponsive, `mod-email` may deliver the same email more than once.
+This is a known architectural limitation with no current fix.
+
+**How it happens:**
+
+1. `mod-email` sends an email via the Vert.x EventBus (`mail-service.queue`).
+2. The EventBus times out after `MAIL_DELIVERY_SEND_TIMEOUT` milliseconds (default: 30 000 ms), marks the email as
+   `FAILURE` with `shouldRetry: true`, and schedules a retry.
+3. However, the underlying Vert.x SMTP client operation is **not cancelled** — it continues running in the background.
+4. Eventually the SMTP server responds and the first send succeeds (potentially minutes later).
+5. Meanwhile, the retry attempt also succeeds, resulting in the recipient receiving the same email twice.
+
+There is currently **no configuration option** that enforces a hard timeout on an in-progress SMTP send operation, 
+and the EventBus-based architecture does **not guarantee at-most-once delivery**.
+
+**Note:** `idleTimeout`, `connectTimeout`, and `MAIL_DELIVERY_SEND_TIMEOUT` do **not** guarantee that this problem
+will be resolved.
+
 ## API
 
 Module provides next API:
