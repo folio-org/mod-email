@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.rekawek.toxiproxy.Proxy;
 import eu.rekawek.toxiproxy.ToxiproxyClient;
 import eu.rekawek.toxiproxy.model.ToxicDirection;
+import io.vertx.core.json.JsonObject;
 import org.apache.http.HttpStatus;
 import org.folio.rest.impl.base.AbstractAPITest;
 import org.folio.rest.jaxrs.model.EmailEntity;
@@ -170,11 +171,15 @@ public class EmailDuplicationTest extends AbstractAPITest {
   @Test
   public void shouldTimeoutOnSlowLargeEmail() throws Exception {
     var messageSizeMB = 5;
-    var targetDurationSeconds = 27;
+    var targetDurationSeconds = 15;
     var bandwidthKBps = (messageSizeMB * 1024) / targetDurationSeconds;
 
     smtpProxy.toxics()
       .bandwidth("slow_upload", ToxicDirection.UPSTREAM, bandwidthKBps);
+
+    var proxyPort = toxiproxy.getMappedPort(8666);
+    var settings = getSettings(proxyPort);
+    post(REST_PATH_MAIL_SETTINGS, settings.encodePrettily());
 
     var sender = format(ADDRESS_TEMPLATE, secure().nextAlphabetic(7));
     var recipient = format(ADDRESS_TEMPLATE, secure().nextAlphabetic(5));
@@ -200,6 +205,25 @@ public class EmailDuplicationTest extends AbstractAPITest {
 
     var messageCount = getMailhogMessageCount();
     assertEquals("Expected no messages (timeout prevented sending)", 0, messageCount);
+  }
+
+  private static JsonObject getSettings(Integer proxyPort) {
+    return new JsonObject()
+      .put("id", UUID.randomUUID().toString())
+      .put("key", "smtp-configuration")
+      .put("scope", "mod-email")
+      .put("_version", 1)
+      .put("value", new JsonObject()
+        .put("host", toxiproxy.getHost())
+        .put("port", proxyPort)
+        .put("username", "user")
+        .put("password", "password")
+        .put("ssl", false)
+        .put("loginOption", "NONE")
+        .put("startTlsOptions", "OPTIONAL")
+        .put("authMethods", AUTH_METHODS)
+        .put("from", "")
+        .put("idleTimeout", 10));
   }
 
   private String generateLargeMessage(int sizeMB) {
