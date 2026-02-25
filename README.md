@@ -37,6 +37,16 @@ Order of settings retrieval (migration to `mod-email` own settings storage):
 | from                | EMAIL_FROM                  | false    | 'from' property of the email                                                                                              | noreply@folio.org              |
 | authMethods         | AUTH_METHODS                | false    | authentication methods                                                                                                    | 'CRAM-MD5 LOGIN PLAIN'         |
 | expirationHours     |                             | false    | Messages which are older than expiration hours are considered as expired and gets deleted. Default value will be 24 hours | 12                             |
+| idleTimeout         |                             | false    | Idle timeout for SMTP connection in seconds. Default value is 0                                                           | 25                             |
+| connectTimeout      |                             | false    | Connect timeout for SMTP connection in seconds. Default value is 0                                                        | 25                             |
+
+### Additional module environment variables
+
+The following variables are configured via JVM system property or environment variable (not stored in SMTP configuration):
+
+| JVM property              | Environment variable          | Description                                             | Default |
+|---------------------------|-------------------------------|---------------------------------------------------------|---------|
+| mailDeliverySendTimeout   | MAIL_DELIVERY_SEND_TIMEOUT    | EventBus send timeout in milliseconds for mail delivery | 30000   |
 
 
 ### Configuration using `email.settings` interface
@@ -68,6 +78,8 @@ SMTP configuration (`GET /email/settings/{id}`) example:
     "startTlsOptions": "OPTIONAL",
     "authMethods": "",
     "from": "noreply@folio.org",
+    "idleTimeout": 0,
+    "connectTimeout": 0,
     "_version": "1",
     "emailHeaders": [
       {
@@ -109,6 +121,8 @@ SMTP configuration (`GET /smtp-configuration/{id}`) example:
     "startTlsOptions": "OPTIONAL",
     "authMethods": "",
     "from": "noreply@folio.org",
+    "idleTimeout": 0,
+    "connectTimeout": 0,
     "emailHeaders": [
         {
             "name": "Reply-To",
@@ -162,6 +176,28 @@ The example of request body with authentication methods configuration:
      "value": "CRAM-MD5 LOGIN PLAIN"
  }
  ```
+
+## Known Limitations
+
+### Duplicate email delivery on slow or unresponsive SMTP servers
+
+When the SMTP server is slow or temporarily unresponsive, `mod-email` may deliver the same email more than once.
+This is a known architectural limitation with no current fix.
+
+**How it happens:**
+
+1. `mod-email` sends an email via the Vert.x EventBus (`mail-service.queue`).
+2. The EventBus times out after `MAIL_DELIVERY_SEND_TIMEOUT` milliseconds (default: 30 000 ms), marks the email as
+   `FAILURE` with `shouldRetry: true`, and schedules a retry.
+3. However, the underlying Vert.x SMTP client operation is **not cancelled** — it continues running in the background.
+4. Eventually the SMTP server responds and the first send succeeds (potentially minutes later).
+5. Meanwhile, the retry attempt also succeeds, resulting in the recipient receiving the same email twice.
+
+There is currently **no configuration option** that enforces a hard timeout on an in-progress SMTP send operation, 
+and the EventBus-based architecture does **not guarantee at-most-once delivery**.
+
+**Note:** `idleTimeout`, `connectTimeout`, and `MAIL_DELIVERY_SEND_TIMEOUT` do **not** guarantee that this problem
+will be resolved.
 
 ## API
 

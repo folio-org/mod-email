@@ -174,7 +174,7 @@ public class EmailUtils {
 
     String authMethods = ofNullable(smtpConfiguration.getAuthMethods()).orElse(StringUtils.EMPTY);
 
-    return new MailConfig()
+    var mailConfig = new MailConfig()
       .setHostname(smtpConfiguration.getHost())
       .setPort(smtpConfiguration.getPort())
       .setUsername(smtpConfiguration.getUsername())
@@ -184,5 +184,10 @@ public class EmailUtils {
       .setLogin(loginOption)
       .setStarttls(startTLSOptions)
       .setAuthMethods(authMethods);
+
+    ofNullable(smtpConfiguration.getIdleTimeout()).ifPresent(mailConfig::setIdleTimeout);
+    ofNullable(smtpConfiguration.getConnectTimeout()).ifPresent(mailConfig::setConnectTimeout);
+
+    return mailConfig;
   }
 }
