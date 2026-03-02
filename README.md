@@ -42,11 +42,9 @@ Order of settings retrieval (migration to `mod-email` own settings storage):
 
 ### Additional module environment variables
 
-The following variables are configured via JVM system property or environment variable (not stored in SMTP configuration):
-
-| JVM property              | Environment variable          | Description                                             | Default |
-|---------------------------|-------------------------------|---------------------------------------------------------|---------|
-| mailDeliverySendTimeout   | MAIL_DELIVERY_SEND_TIMEOUT    | EventBus send timeout in milliseconds for mail delivery | 30000   |
+| Name                       |   Default value   | Description                                             |
+|:---------------------------|:-----------------:|:--------------------------------------------------------|
+| MAIL_DELIVERY_SEND_TIMEOUT |       30000       | EventBus send timeout in milliseconds for mail delivery |
 
 
 ### Configuration using `email.settings` interface

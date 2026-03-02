@@ -18,6 +18,7 @@ public interface MailService {
 
   String SEND_TIMEOUT_ENV_NAME = "MAIL_DELIVERY_SEND_TIMEOUT";
   String SEND_TIMEOUT_PROPERTY_NAME = "mailDeliverySendTimeout";
+  long SEND_TIMEOUT_DEFAULT = 30000L;
 
   static MailService create(Vertx vertx) {
     return new MailServiceImpl(vertx);
@@ -32,7 +33,7 @@ public interface MailService {
    */
   static MailService createProxy(Vertx vertx, String address) {
     var timeout = getEnvOrDefault(
-      SEND_TIMEOUT_PROPERTY_NAME, SEND_TIMEOUT_ENV_NAME, 30000L, Long::parseLong);
+      SEND_TIMEOUT_PROPERTY_NAME, SEND_TIMEOUT_ENV_NAME, SEND_TIMEOUT_DEFAULT, Long::parseLong);
     var sentTimeout = new DeliveryOptions().setSendTimeout(timeout);
     return new MailServiceVertxEBProxy(vertx, address, sentTimeout);
   }
