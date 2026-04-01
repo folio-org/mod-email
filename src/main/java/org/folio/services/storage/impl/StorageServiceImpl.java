@@ -3,8 +3,6 @@ package org.folio.services.storage.impl;
 import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 import static org.folio.rest.persist.PostgresClient.convertToPsqlStandard;
 import static org.folio.util.EmailUtils.EMAIL_STATISTICS_TABLE_NAME;
-import static org.folio.util.LogUtil.asJson;
-
 import io.vertx.sqlclient.Tuple;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -42,16 +40,14 @@ public class StorageServiceImpl implements StorageService {
 
   @Override
   public Future<JsonObject> saveEmailEntity(String tenantId, JsonObject emailJson) {
-    logger.debug("saveEmailEntity:: parameters tenantId: {}, emailJson: {}",
-      () -> tenantId, () -> asJson(emailJson));
     try {
       EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
-      logger.debug("saveEmailEntity:: parameters emailEntity: {}", () -> asJson(emailEntity));
+      logger.debug("saveEmailEntity:: parameters tenantId: {}", () -> tenantId);
       String emailId = emailEntity.getId();
       return PostgresClient.getInstance(vertx, tenantId)
         .save(EMAIL_STATISTICS_TABLE_NAME, emailId, emailEntity, true, true)
-        .onSuccess(id -> logger.info("Email {} saved", emailId))
-        .onFailure(t -> logger.error("Failed to save email {}: {}", emailId, t.getMessage()))
+        .onSuccess(id -> logger.info("Email saved"))
+        .onFailure(t -> logger.error("Failed to save email: {}", t.getMessage()))
         .map(emailJson);
     } catch (Exception ex) {
       logger.warn("saveEmailEntity:: Failed to save email", ex);

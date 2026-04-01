@@ -14,11 +14,7 @@ import static org.folio.util.AsyncUtil.mapInOrder;
 import static org.folio.util.EmailUtils.MAIL_SERVICE_ADDRESS;
 import static org.folio.util.EmailUtils.STORAGE_SERVICE_ADDRESS;
 import static org.folio.util.EmailUtils.findStatusByName;
-import static org.folio.util.LogUtil.asJson;
-import static org.folio.util.LogUtil.emailAsJson;
-import static org.folio.util.LogUtil.emailIdsAsString;
 import static org.folio.util.LogUtil.headersAsString;
-import static org.folio.util.LogUtil.smtpConfigAsJson;
 
 import java.util.Collection;
 import java.util.Date;
@@ -87,19 +83,19 @@ public abstract class AbstractEmail {
   protected Future<EmailEntity> processEmail(EmailEntity email,
     Map<String, String> okapiHeaders) {
 
-    log.debug("processEmail:: parameters email: {}, requestHeaders={}", () -> emailAsJson(email),
+    log.debug("processEmail:: parameters requestHeaders={}",
       () -> headersAsString(okapiHeaders));
 
     return processEmails(singletonList(email), okapiHeaders)
       .map(emails -> emails.stream().findFirst().orElseThrow())
-      .onSuccess(result -> log.debug("processEmail:: result: {}", () -> emailAsJson(result)));
+      .onSuccess(result -> log.debug("processEmail:: result"));
   }
 
   protected Future<Collection<EmailEntity>> processEmails(Collection<EmailEntity> emails,
     Map<String, String> okapiHeaders) {
 
-    log.debug("processEmails:: emails: Collection<EmailEntity>(ids={}), okapiHeaders: {}",
-      () -> emailIdsAsString(emails), () -> headersAsString(okapiHeaders));
+    log.debug("processEmails:: emailsCount: {}, okapiHeaders: {}", emails::size,
+      () -> headersAsString(okapiHeaders));
 
     if (emails.isEmpty()) {
       log.info("processEmails:: emails is empty");
@@ -110,15 +106,13 @@ public abstract class AbstractEmail {
     return smtpConfigurationProvider.lookup(okapiHeaders)
       .compose(config -> mapInOrder(emails, email -> processEmail(email, config)))
       .recover(t -> handleFailure(emails, t))
-      .onSuccess(r -> log.debug("processEmails:: result: Collection<EmailEntity>(ids={})",
-        () -> emailIdsAsString(r)));
+      .onSuccess(r -> log.debug("processEmails:: result count: {}", r::size));
   }
 
   protected Future<EmailEntity> processEmail(EmailEntity email,
     SmtpConfiguration smtpConfiguration) {
 
-    log.debug("processEmail:: email: {}, smtpConfiguration: {}", () -> emailAsJson(email),
-      () -> asJson(smtpConfiguration));
+    log.debug("processEmail:: smtpConfiguration present");
 
     applyConfiguration(email, smtpConfiguration);
 
@@ -127,30 +121,28 @@ public abstract class AbstractEmail {
       .otherwise(t -> handleFailure(email, t))
       .compose(this::saveEmail)
       .otherwiseEmpty()
-      .onSuccess(result -> log.debug("processEmail:: result: {}", () -> emailAsJson(email)));
+      .onSuccess(result -> log.debug("processEmail:: result"));
   }
 
   protected EmailEntity handleSuccess(EmailEntity email) {
-    log.debug("handleSuccess:: parameters email: {}", () -> emailAsJson(email));
     String message = format(SUCCESS_SEND_EMAIL, join(",", email.getTo()));
     EmailEntity emailEntity = updateEmail(email, DELIVERED, message);
-    log.debug("handleSuccess:: result: {}", () -> emailAsJson(email));
+    log.debug("handleSuccess:: result status: {}", emailEntity::getStatus);
     return emailEntity;
   }
 
   protected EmailEntity handleFailure(EmailEntity email, Throwable throwable) {
     if (log.isDebugEnabled()) {
-      log.debug("handleFailure:: email: {}", emailAsJson(email), throwable);
+      log.debug("handleFailure::", throwable);
     }
     String errorMessage = format(ERROR_SENDING_EMAIL, throwable.getMessage());
     EmailEntity emailEntity = updateEmail(email, FAILURE, errorMessage);
-    log.warn("handleFailure:: result: {}", () -> emailAsJson(emailEntity));
+    log.warn("handleFailure:: result status: {}", emailEntity.getStatus());
     return emailEntity;
   }
 
   private static EmailEntity updateEmail(EmailEntity email, Status status, String message) {
-    log.debug("updateEmail:: parameters email: {}, status: {}, message: {}",
-      () -> emailAsJson(email), () -> status, () -> message);
+    log.debug("updateEmail:: parameters status: {}", () -> status);
     int newAttemptCount = email.getAttemptCount() + 1;
     EmailEntity result = email
       .withStatus(status)
@@ -158,7 +150,7 @@ public abstract class AbstractEmail {
       .withDate(Date.from(ClockUtil.getZonedDateTime().toInstant()))
       .withAttemptCount(newAttemptCount)
       .withShouldRetry(status == FAILURE && newAttemptCount < RETRY_MAX_ATTEMPTS);
-    log.debug("updateEmail:: result: {}", () -> emailAsJson(result));
+    log.debug("updateEmail:: result status: {}", result::getStatus);
     return result;
   }
 
@@ -166,8 +158,7 @@ public abstract class AbstractEmail {
     Throwable throwable) {
 
     if (log.isWarnEnabled()) {
-      log.warn("handleFailure:: Failed to process a batch of emails (ids={})",
-        emailIdsAsString(emails), throwable);
+      log.warn("handleFailure:: Failed to process a batch of {} emails", emails.size(), throwable);
     }
 
     return Future.all(
@@ -179,20 +170,19 @@ public abstract class AbstractEmail {
   }
 
   protected Future<EmailEntity> sendEmail(EmailEntity email, SmtpConfiguration smtpConfiguration) {
-    log.debug("sendEmail:: email: {}, smtpConfiguration: {}", () -> emailAsJson(email),
-      () -> smtpConfigAsJson(smtpConfiguration));
+    log.debug("sendEmail:: smtpConfiguration present");
 
     return mailService.sendEmail(tenantId, mapFrom(smtpConfiguration), mapFrom(email))
       .map(email)
-      .onSuccess(result -> log.debug("sendEmail:: result: {}", () -> emailAsJson(result)));
+      .onSuccess(result -> log.debug("sendEmail:: result"));
   }
 
   protected Future<EmailEntity> saveEmail(EmailEntity email) {
-    log.debug("saveEmail:: parameters email: {}", () -> asJson(email));
+    log.debug("saveEmail:: parameters");
 
     return storageService.saveEmailEntity(tenantId, JsonObject.mapFrom(email))
       .map(email)
-      .onSuccess(result -> log.debug("saveEmail:: result: {}", () -> emailAsJson(result)));
+      .onSuccess(result -> log.debug("saveEmail:: result"));
   }
 
   protected Future<EmailEntries> findEmailEntries(int limit, int offset, String query) {
@@ -201,8 +191,8 @@ public abstract class AbstractEmail {
 
     return storageService.findEmailEntries(tenantId, limit, offset, query)
       .map(json -> json.mapTo(EmailEntries.class))
-      .onSuccess(result -> log.debug("findEmailEntries:: result: {}",
-        () -> emailIdsAsString(result)));
+      .onSuccess(result -> log.debug("findEmailEntries:: result totalRecords: {}",
+        result::getTotalRecords));
   }
 
   protected Future<Void> deleteEmailsByExpirationDate(String expirationDate, String emailStatus) {
@@ -265,8 +255,7 @@ public abstract class AbstractEmail {
   }
 
   private static void applyConfiguration(EmailEntity email, SmtpConfiguration smtpConfiguration) {
-    log.debug("applyConfiguration:: email: {}, smtpConfiguration: {}", () -> emailAsJson(email),
-      () -> smtpConfigAsJson(smtpConfiguration));
+    log.debug("applyConfiguration:: smtpConfiguration present");
     if (StringUtils.isBlank(email.getFrom())) {
       log.debug("applyConfiguration:: 'from' field is blank, copying it from SMTP configuration");
       email.withFrom(smtpConfiguration.getFrom());

@@ -1,7 +1,6 @@
 package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
-import static org.folio.util.LogUtil.asJson;
 import static org.folio.util.LogUtil.headersAsString;
 import static org.folio.util.LogUtil.loggingResponseHandler;
 
@@ -28,8 +27,8 @@ public class EmailAPI extends AbstractEmail implements Email {
   public void postEmail(EmailEntity email, Map<String, String> requestHeaders,
     Handler<AsyncResult<Response>> resultHandler, Context vertxContext) {
 
-    log.debug("postEmail:: parameters emailId: {}, requestHeaders: {}",
-      () -> asJson(email.getId()), () -> headersAsString(requestHeaders));
+    log.debug("postEmail:: parameters requestHeaders: {}",
+      () -> headersAsString(requestHeaders));
 
     succeededFuture()
       .compose(v -> processEmail(email, requestHeaders))

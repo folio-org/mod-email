@@ -19,8 +19,6 @@ import org.folio.util.EmailUtils;
 
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
-import static org.folio.util.LogUtil.smtpConfigAsJson;
-
 public class MailSettingsService {
 
   private static final Logger log = LogManager.getLogger(MailSettingsService.class);
@@ -38,12 +36,12 @@ public class MailSettingsService {
       .map(Setting::getValue)
       .map(settingValue -> JsonObject.mapFrom(settingValue).mapTo(SmtpConfiguration.class))
       .compose(EmailUtils::validateSmtpConfiguration)
-      .onSuccess(config -> log.debug("getSmtpConfiguration:: found entity: {}", () -> smtpConfigAsJson(config)))
+      .onSuccess(config -> log.debug("getSmtpConfiguration:: found entity"))
       .onFailure(err -> log.debug("getSmtpConfiguration:: failed", err));
   }
 
   public Future<SmtpConfiguration> createSmtpConfigSetting(Conn conn, SmtpConfiguration config) {
-    log.debug("createSmtpConfigSetting:: {}", () -> smtpConfigAsJson(config));
+    log.debug("createSmtpConfigSetting:: creating setting");
     var id = ObjectUtils.defaultIfNull(config.getId(), UUID.randomUUID().toString());
     var settingValue = JsonObject.mapFrom(config).mapTo(Map.class);
     settingValue.remove("id");

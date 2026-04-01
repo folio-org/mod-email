@@ -7,7 +7,6 @@ import static org.folio.HttpStatus.HTTP_NO_CONTENT;
 import static org.folio.HttpStatus.HTTP_OK;
 import static org.folio.util.EnvUtils.getEnvOrDefault;
 import static org.folio.util.LogUtil.headersAsString;
-import static org.folio.util.LogUtil.smtpConfigAsJson;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -120,8 +119,7 @@ public class SmtpConfigurationProvider {
       .compose(smtpConfig -> mailSettingsService.createSmtpConfigSetting(conn, smtpConfig)
         .map(newSmtpConfig -> Pair.of(smtpConfig.getId(), newSmtpConfig)))
       .compose(smtpConfigPair -> deleteDeprecatedSmtpConfiguration(conn, smtpConfigPair, smtpConfigService))
-      .onSuccess(result -> log.debug("tryFindAndMigrateSettingsFromSmtpRepo:: result: {}",
-        () -> smtpConfigAsJson(result)));
+      .onSuccess(result -> log.debug("tryFindAndMigrateSettingsFromSmtpRepo:: result"));
   }
 
   private static Future<SmtpConfiguration> deleteDeprecatedSmtpConfiguration(Conn conn,
@@ -143,8 +141,7 @@ public class SmtpConfigurationProvider {
 
     return fetchConfigFromModConfig(okapiClient)
       .compose(configs -> copyConfigurationAndDeleteFromModConfig(conn, configs, okapiClient))
-      .onSuccess(result -> log.debug("tryFindAndMigrationSettingsFromConfigModule:: result: {}",
-        () -> smtpConfigAsJson(result)));
+      .onSuccess(result -> log.debug("tryFindAndMigrationSettingsFromConfigModule:: result"));
   }
 
   private Future<Configurations> fetchConfigFromModConfig(OkapiClient okapiClient) {

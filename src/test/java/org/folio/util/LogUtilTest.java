@@ -107,5 +107,4 @@ public class LogUtilTest {
   public void emailAsJsonShouldReturnNullIfEmailIsNull() {
     assertNull(LogUtil.emailAsJson(null));
   }
-
 }
