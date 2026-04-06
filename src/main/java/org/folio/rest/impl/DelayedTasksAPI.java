@@ -3,7 +3,6 @@ package org.folio.rest.impl;
 import static io.vertx.core.Future.succeededFuture;
 import static java.lang.System.currentTimeMillis;
 import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME;
-import static org.folio.util.LogUtil.emailIdsAsString;
 import static org.folio.util.LogUtil.headersAsString;
 import static org.folio.util.LogUtil.loggingResponseHandler;
 
@@ -86,8 +85,7 @@ public class DelayedTasksAPI extends AbstractEmail implements DelayedTask {
 
     return findEmailEntries(RETRY_BATCH_SIZE, 0, query)
       .map(EmailEntries::getEmailEntity)
-      .onSuccess(emails -> log.debug("findEmailsForRetry:: result: {}",
-        () -> emailIdsAsString(emails)));
+      .onSuccess(emails -> log.debug("findEmailsForRetry:: result count: {}", emails::size));
   }
 
   private static void logRetryResult(AsyncResult<Collection<EmailEntity>> result,

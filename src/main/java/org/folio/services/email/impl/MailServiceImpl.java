@@ -7,9 +7,6 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 import static org.folio.rest.impl.base.AbstractEmail.RETRY_MAX_ATTEMPTS;
 import static org.folio.util.EmailUtils.getMessageConfig;
-import static org.folio.util.LogUtil.asJson;
-import static org.folio.util.LogUtil.emailAsJson;
-import static org.folio.util.LogUtil.smtpConfigAsJson;
 
 import java.util.Base64;
 import java.util.List;
@@ -53,22 +50,20 @@ public class MailServiceImpl implements MailService {
   public Future<JsonObject> sendEmail(String tenantId, JsonObject configJson, JsonObject emailJson) {
     log.debug("sendEmail:: parameters smtpConfigurationJson: JsonObject, emailJson: JsonObject");
     var smtpConfiguration = configJson.mapTo(SmtpConfiguration.class);
-    log.debug("sendEmail:: converted SMTP configuration: {}",
-      () -> smtpConfigAsJson(smtpConfiguration));
+    log.debug("sendEmail:: converted SMTP configuration");
 
     try {
       EmailEntity emailEntity = emailJson.mapTo(EmailEntity.class);
       MailMessage mailMessage = getMailMessage(emailEntity, smtpConfiguration);
-      String emailId = emailEntity.getId();
       long start = currentTimeMillis();
 
-      log.info("sendEmail:: Sending email {}: attempt {}/{} for tenant {}",
-        emailId, emailEntity.getAttemptCount() + 1, RETRY_MAX_ATTEMPTS, tenantId);
+      log.info("sendEmail:: Sending email: attempt {}/{} for tenant {}",
+        emailEntity.getAttemptCount() + 1, RETRY_MAX_ATTEMPTS, tenantId);
 
       return mailClientProvider.get(tenantId, smtpConfiguration)
         .compose(mailClient -> mailClient.sendMail(mailMessage))
-        .onSuccess(r -> log.info("sendEmail:: Email {} sent in {} ms", emailId, currentTimeMillis() - start))
-        .onFailure(t -> log.warn("sendEmail:: Failed to send email {}: ", emailId, t))
+        .onSuccess(r -> log.info("sendEmail:: Email sent in {} ms", currentTimeMillis() - start))
+        .onFailure(t -> log.warn("sendEmail:: Failed to send email: ", t))
         .map(emailJson);
     } catch (Exception ex) {
       log.warn("sendEmail:: {}", format(ERROR_SENDING_EMAIL, ex), ex);
@@ -81,8 +76,7 @@ public class MailServiceImpl implements MailService {
   }
 
   private MailMessage getMailMessage(EmailEntity emailEntity, SmtpConfiguration smtpConfiguration) {
-    log.debug("getMailMessage:: email: {}, smtpConfiguration: {}", () -> emailAsJson(emailEntity),
-      () -> asJson(smtpConfiguration));
+    log.debug("getMailMessage:: smtpConfiguration present");
 
     MailMessage mailMessage = new MailMessage()
       .setFrom(getMessageConfig(emailEntity.getFrom()))
@@ -92,10 +86,10 @@ public class MailServiceImpl implements MailService {
 
     String outputFormat = emailEntity.getOutputFormat();
     if (StringUtils.isNoneBlank(outputFormat) && outputFormat.trim().equalsIgnoreCase(MediaType.TEXT_HTML)) {
-      log.info("getMailMessage:: Email {} is not text/html", emailEntity.getId());
+      log.info("getMailMessage:: Email is not text/html");
       mailMessage.setHtml(getMessageConfig(emailEntity.getBody()));
     } else {
-      log.info("getMailMessage:: Email {} is text/html", emailEntity.getId());
+      log.info("getMailMessage:: Email is text/html");
       mailMessage.setText(getMessageConfig(emailEntity.getBody()));
     }
 
@@ -141,7 +135,7 @@ public class MailServiceImpl implements MailService {
 
   public static void addHeadersFromConfiguration(MailMessage message, SmtpConfiguration smtpConfiguration) {
     log.debug("addHeadersFromConfiguration:: parameters message: MailMessage, " +
-        "smtpConfiguration: {}", () -> smtpConfigAsJson(smtpConfiguration));
+        "smtpConfiguration present");
     Map<String, String> headers = smtpConfiguration.getEmailHeaders().stream()
       .filter(header -> isNoneBlank(header.getName(), header.getValue()))
       .collect(toMap(EmailHeader::getName, EmailHeader::getValue));

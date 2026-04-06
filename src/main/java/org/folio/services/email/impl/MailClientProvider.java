@@ -1,7 +1,5 @@
 package org.folio.services.email.impl;
 
-import static org.folio.util.LogUtil.smtpConfigAsJson;
-
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.ext.mail.MailClient;
@@ -44,8 +42,8 @@ public class MailClientProvider {
    * @return a {@link Future} that completes with the {@link MailClient} instance or fails if creation fails
    */
   public Future<MailClient> get(String tenantId, SmtpConfiguration smtpConfiguration) {
-    log.debug("getOrCreateClient:: tenantId: {}, smtpConfiguration: {}",
-      () -> tenantId, () -> smtpConfigAsJson(smtpConfiguration));
+    log.debug("getOrCreateClient:: tenantId: {}, smtpConfiguration present",
+      () -> tenantId);
 
     var currentTenantClient = mailClientsCache.get(tenantId);
     if (shouldInitNewClient(currentTenantClient, smtpConfiguration)) {
@@ -129,8 +127,7 @@ public class MailClientProvider {
   }
 
   private static MailConfig getMailClientConfig(SmtpConfiguration smtpConfiguration) {
-    log.debug("getMailConfig:: parameters smtpConfiguration: {}",
-      () -> smtpConfigAsJson(smtpConfiguration));
+    log.debug("getMailConfig:: parameters smtpConfiguration present");
     return EmailUtils.getMailConfig(smtpConfiguration);
   }
 

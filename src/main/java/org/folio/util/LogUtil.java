@@ -112,14 +112,8 @@ public class LogUtil {
     try {
       return responseAsyncResult -> {
         Response response = responseAsyncResult.result();
-        Object entity = response.getEntity();
-        String template = "{}:: result: HTTP response (code: {}, body: {})";
-        if (entity instanceof String) {
-          logger.info(template, () -> methodName, response::getStatus, () -> crop((String) entity));
-        } else {
-          logger.info(template, () -> methodName, response::getStatus,
-            () -> asJson(response.getEntity()));
-        }
+        logger.info("{}:: result: HTTP response (code: {})", () -> methodName,
+          response::getStatus);
         asyncResultHandler.handle(responseAsyncResult);
       };
     } catch (Exception ex) {
@@ -195,4 +189,3 @@ public class LogUtil {
       .withMetadata(smtpConfiguration.getMetadata()));
   }
 }
-

@@ -278,7 +278,8 @@ public abstract class AbstractAPITest {
    */
   protected void checkResponseMessage(Response response, String recipient) {
     String responseMessage = response.getBody().asString();
-    assertEquals(String.format(SUCCESS_SEND_EMAIL, recipient), responseMessage);
+    assertEquals(String.format(SUCCESS_SEND_EMAIL, recipient),
+      responseMessage);
   }
 
   /**
