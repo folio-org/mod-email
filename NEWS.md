@@ -1,7 +1,33 @@
-## 2025-03-14 v1.20.0 - In progress
-* Implement local settings API [MODEMAIL-112](https://folio-org.atlassian.net/browse/MODEMAIL-112)
-* Upgrade module to Vert.x 5.0 [MODEMAIL-114](https://folio-org.atlassian.net/browse/MODEMAIL-114)
-* Configure SMTP and EventBus timeouts to prevent email duplication [MODEMAIL-107](https://folio-org.atlassian.net/browse/MODEMAIL-107)
+## v1.20.0 2026-04-16
+
+### Breaking changes
+* Upgrade module to Vert.x 5.0 ([MODEMAIL-114](https://folio-org.atlassian.net/browse/MODEMAIL-114))
+
+### New APIs versions
+* Provides `email.settings v1.0`
+
+### Features
+* Implement local settings API ([MODEMAIL-112](https://folio-org.atlassian.net/browse/MODEMAIL-112))
+* Add in-memory cache for tenant mail clients ([MODEMAIL-116](https://folio-org.atlassian.net/browse/MODEMAIL-116))
+
+### Bug fixes
+* Configure SMTP and EventBus timeouts to prevent email duplication ([MODEMAIL-107](https://folio-org.atlassian.net/browse/MODEMAIL-107))
+
+### Tech Debt
+* Remove sensitive data from logs ([MODEMAIL-108](https://folio-org.atlassian.net/browse/MODEMAIL-108))
+* Migrate to GA mvn-based workflow
+
+### Dependencies
+* Bump `vertx` from `4.5.13` to `5.0.6`
+* Bump `raml-module-builder` from `35.4.0` to `36.0.0`
+* Bump `lombok` from `1.18.36` to `1.18.42`
+* Bump `aspectj` from `1.9.22.1` to `1.9.25.1`
+* Bump `log4j-bom` from `2.24.3` to `2.25.3`
+* Bump `rest-assured` from `5.5.1` to `6.0.0`
+* Bump `wiremock` from `3.12.1` to `3.13.2`
+* Bump `maven-compiler-plugin` from `3.14.0` to `3.14.1`
+* Bump `maven-surefire-plugin` from `3.5.2` to `3.5.4`
+* Bump `maven-release-plugin` from `3.1.1` to `3.3.1`
 
 
 ## 2025-03-14 v1.19.0
