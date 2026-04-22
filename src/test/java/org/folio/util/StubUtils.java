@@ -178,6 +178,19 @@ public class StubUtils {
       .put("emailHeaders", List.of());
   }
 
+  public static JsonObject buildWiserSmtpConfigurationWithAliases(List<JsonObject> aliases) {
+    return buildWiserSmtpConfiguration().put("fromAliases", aliases);
+  }
+
+  public static JsonObject buildWiserEmailSettingsWithAliases(List<JsonObject> aliases) {
+    return new JsonObject()
+      .put("id", UUID.randomUUID().toString())
+      .put("key", "smtp-configuration")
+      .put("value", buildWiserSmtpConfigurationWithAliases(aliases))
+      .put("scope", "mod-email")
+      .put("_version", 1);
+  }
+
   public static JsonObject buildIncorrectWiserSmtpConfiguration() {
     return new JsonObject()
       .put("host", "localhost")

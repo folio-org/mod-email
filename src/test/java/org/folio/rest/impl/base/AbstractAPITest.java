@@ -299,6 +299,26 @@ public abstract class AbstractAPITest {
       .orElseThrow(() -> throwAssertionFailedError(sender));
   }
 
+  /**
+   * Find the sent email message on the SMTP server by the From address (without display name)
+   */
+  protected WiserMessage findMessageOnWiserServerByFromAddress(String fromAddress) {
+    return wiser.getMessages().stream()
+      .filter(msg -> {
+        try {
+          Address[] from = msg.getMimeMessage().getFrom();
+          return from != null && from.length > 0
+            && from[0] instanceof javax.mail.internet.InternetAddress
+            && fromAddress.equals(((javax.mail.internet.InternetAddress) from[0]).getAddress());
+        } catch (MessagingException ex) {
+          logger.debug(ex);
+          return false;
+        }
+      })
+      .findFirst()
+      .orElseThrow(() -> throwAssertionFailedError(fromAddress));
+  }
+
   private AssertionFailedError throwAssertionFailedError(String sender) {
     throw new AssertionFailedError(String.format(MESSAGE_NOT_FOUND, sender));
   }
