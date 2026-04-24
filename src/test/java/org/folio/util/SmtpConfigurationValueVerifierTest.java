@@ -10,6 +10,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.folio.exceptions.EmailSettingsException;
 import org.junit.Test;
 
@@ -86,6 +88,45 @@ public class SmtpConfigurationValueVerifierTest {
     assertTrue(exception.getError().getParameters().isEmpty());
   }
 
+
+  @Test
+  public void verify_positive_uniqueFromAliases() {
+    var value = new LinkedHashMap<String, Object>();
+    value.put("username", "test-username");
+    value.put("password", "test-password");
+    value.put("port", "557");
+    value.put("host", "test-mail.sample.org");
+    value.put("fromAliases", List.of(
+      Map.of("address", "library-notices@folio.org", "name", "Library Notices"),
+      Map.of("address", "circulation@folio.org")));
+
+    try {
+      SmtpConfigurationValueVerifier.verify(value);
+    } catch (EmailSettingsException e) {
+      fail("Expected no EmailSettingsException for unique aliases, but got: " + e.getMessage());
+    }
+  }
+
+  @Test
+  public void verify_negative_duplicateFromAliasAddress() {
+    var value = new LinkedHashMap<String, Object>();
+    value.put("username", "test-username");
+    value.put("password", "test-password");
+    value.put("port", "557");
+    value.put("host", "test-mail.sample.org");
+    value.put("fromAliases", List.of(
+      Map.of("address", "notices@folio.org", "name", "Notices"),
+      Map.of("address", "notices@folio.org", "name", "Other Notices")));
+
+    var exception = assertThrows(EmailSettingsException.class, () ->
+      SmtpConfigurationValueVerifier.verify(value));
+
+    assertEquals("Invalid value in setting", exception.getMessage());
+
+    var parameter = exception.getError().getParameters().getFirst();
+    assertEquals("value.fromAliases", parameter.getKey());
+    assertEquals("duplicate address: notices@folio.org", parameter.getValue());
+  }
 
   @Test
   public void constructor_isPrivateAndThrows() throws Exception {

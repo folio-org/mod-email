@@ -13,6 +13,7 @@ import static org.folio.util.StubUtils.URL_SINGLE_CONFIGURATION;
 import static org.folio.util.StubUtils.buildIncorrectWiserSmtpConfiguration;
 import static org.folio.util.StubUtils.buildInvalidSmtpConfiguration;
 import static org.folio.util.StubUtils.buildWiserEmailSettings;
+import static org.folio.util.StubUtils.buildWiserEmailSettingsWithAliases;
 import static org.folio.util.StubUtils.buildWiserSmtpConfiguration;
 import static org.folio.util.StubUtils.createConfigurationsWithCustomHeaders;
 import static org.folio.util.StubUtils.getIncorrectConfigurations;
@@ -30,7 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.mail.Address;
 import javax.mail.Header;
+import javax.mail.internet.InternetAddress;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
@@ -481,6 +484,81 @@ public class SendingEmailTest extends AbstractAPITest {
 
   private void createWiserSmtpConfigurationInDb() {
     post(REST_PATH_SMTP_CONFIGURATION, buildWiserSmtpConfiguration().encodePrettily());
+  }
+
+  @Test
+  public void shouldUseAliasWithNameWhenFromMatchesAlias() throws Exception {
+    String aliasAddress = "library-notices@folio.org";
+    String aliasName = "Library Notices";
+    post(REST_PATH_MAIL_SETTINGS, buildWiserEmailSettingsWithAliases(List.of(
+      new JsonObject().put("address", aliasAddress).put("name", aliasName),
+      new JsonObject().put("address", "circulation@folio.org"))).encodePrettily());
+
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    EmailEntity emailEntity = new EmailEntity()
+      .withNotificationId("1")
+      .withTo(recipient)
+      .withFrom(aliasAddress)
+      .withHeader("Reset password")
+      .withBody("Test body")
+      .withOutputFormat(MediaType.TEXT_PLAIN);
+
+    sendEmail(emailEntity).then().statusCode(HttpStatus.SC_OK);
+
+    WiserMessage wiserMessage = findMessageOnWiserServerByFromAddress(aliasAddress);
+    Address[] from = wiserMessage.getMimeMessage().getFrom();
+    assertEquals(1, from.length);
+    InternetAddress internetAddress = (InternetAddress) from[0];
+    assertEquals(aliasAddress, internetAddress.getAddress());
+    assertEquals(aliasName, internetAddress.getPersonal());
+  }
+
+  @Test
+  public void shouldUseAliasAddressOnlyWhenAliasHasNoName() throws Exception {
+    String aliasAddress = "circulation@folio.org";
+    post(REST_PATH_MAIL_SETTINGS, buildWiserEmailSettingsWithAliases(List.of(
+      new JsonObject().put("address", "library-notices@folio.org").put("name", "Library Notices"),
+      new JsonObject().put("address", aliasAddress))).encodePrettily());
+
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    EmailEntity emailEntity = new EmailEntity()
+      .withNotificationId("1")
+      .withTo(recipient)
+      .withFrom(aliasAddress)
+      .withHeader("Reset password")
+      .withBody("Test body")
+      .withOutputFormat(MediaType.TEXT_PLAIN);
+
+    sendEmail(emailEntity).then().statusCode(HttpStatus.SC_OK);
+
+    WiserMessage wiserMessage = findMessageOnWiserServerByFromAddress(aliasAddress);
+    Address[] from = wiserMessage.getMimeMessage().getFrom();
+    assertEquals(1, from.length);
+    InternetAddress internetAddress = (InternetAddress) from[0];
+    assertEquals(aliasAddress, internetAddress.getAddress());
+    assertEquals(null, internetAddress.getPersonal());
+  }
+
+  @Test
+  public void shouldUseFromAsIsWhenNoAliasMatches() throws Exception {
+    post(REST_PATH_MAIL_SETTINGS, buildWiserEmailSettingsWithAliases(List.of(
+      new JsonObject().put("address", "library-notices@folio.org").put("name", "Library Notices")))
+      .encodePrettily());
+
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    EmailEntity emailEntity = new EmailEntity()
+      .withNotificationId("1")
+      .withTo(recipient)
+      .withFrom(sender)
+      .withHeader("Reset password")
+      .withBody("Test body")
+      .withOutputFormat(MediaType.TEXT_PLAIN);
+
+    sendEmail(emailEntity).then().statusCode(HttpStatus.SC_OK);
+
+    WiserMessage wiserMessage = findMessageOnWiserServer(sender);
+    checkMessagesOnWiserServer(wiserMessage, emailEntity);
   }
 
   private void createIncorrectWiserSmtpConfigurationInDb() {

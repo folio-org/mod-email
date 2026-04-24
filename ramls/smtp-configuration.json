@@ -60,8 +60,30 @@
       "type": "string"
     },
     "from": {
-      "description": "Email address to send emails from",
+      "description": "Default email address to send emails from when no matching alias is found",
       "type": "string"
+    },
+    "fromAliases": {
+      "description": "Sender address aliases. When EmailEntity.from matches an alias address, the alias is used (with optional display name) as the From header. Addresses must be unique.",
+      "type": "array",
+      "id": "fromAliases",
+      "items": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "description": "Alias email address",
+            "type": "string"
+          },
+          "name": {
+            "description": "Optional display name used in the From header (RFC 5322)",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "address"
+        ]
+      }
     },
     "emailHeaders": {
       "description": "Custom email headers",
