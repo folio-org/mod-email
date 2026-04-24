@@ -157,6 +157,7 @@ public class StubUtils {
       .put("startTlsOptions", "DISABLED")
       .put("authMethods", "CRAM-MD5 LOGIN PLAIN")
       .put("from", "noreply@folio.org")
+      .put("fromAliases", List.of())
       .put("emailHeaders", List.of(new JsonObject()
         .put("name", "Reply-To")
         .put("value", "noreply@folio.org")
@@ -175,6 +176,7 @@ public class StubUtils {
       .put("startTlsOptions", "OPTIONAL")
       .put("authMethods", "")
       .put("from", "")
+      .put("fromAliases", List.of())
       .put("emailHeaders", List.of());
   }
 
