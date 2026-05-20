@@ -60,18 +60,18 @@
       "type": "string"
     },
     "from": {
-      "description": "Default email address to send emails from when no matching alias is found",
+      "description": "Default email address to send emails from when no matching identity is found",
       "type": "string"
     },
-    "fromAliases": {
-      "description": "Sender address aliases. When EmailEntity.from matches an alias address, the alias is used (with optional display name) as the From header. Addresses must be unique.",
+    "identities": {
+      "description": "Sender identities. When EmailEntity.from matches an identity's address, that identity is used (with optional display name) as the From header. Addresses must be unique.",
       "type": "array",
-      "id": "fromAliases",
+      "id": "identities",
       "items": {
         "type": "object",
         "properties": {
           "address": {
-            "description": "Alias email address",
+            "description": "Email address",
             "type": "string"
           },
           "name": {

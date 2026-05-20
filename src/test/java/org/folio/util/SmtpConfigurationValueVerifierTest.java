@@ -90,31 +90,31 @@ public class SmtpConfigurationValueVerifierTest {
 
 
   @Test
-  public void verify_positive_uniqueFromAliases() {
+  public void verify_positive_uniqueIdentities() {
     var value = new LinkedHashMap<String, Object>();
     value.put("username", "test-username");
     value.put("password", "test-password");
     value.put("port", "557");
     value.put("host", "test-mail.sample.org");
-    value.put("fromAliases", List.of(
+    value.put("identities", List.of(
       Map.of("address", "library-notices@folio.org", "name", "Library Notices"),
       Map.of("address", "circulation@folio.org")));
 
     try {
       SmtpConfigurationValueVerifier.verify(value);
     } catch (EmailSettingsException e) {
-      fail("Expected no EmailSettingsException for unique aliases, but got: " + e.getMessage());
+      fail("Expected no EmailSettingsException for unique identities, but got: " + e.getMessage());
     }
   }
 
   @Test
-  public void verify_negative_duplicateFromAliasAddress() {
+  public void verify_negative_duplicateIdentityAddress() {
     var value = new LinkedHashMap<String, Object>();
     value.put("username", "test-username");
     value.put("password", "test-password");
     value.put("port", "557");
     value.put("host", "test-mail.sample.org");
-    value.put("fromAliases", List.of(
+    value.put("identities", List.of(
       Map.of("address", "notices@folio.org", "name", "Notices"),
       Map.of("address", "notices@folio.org", "name", "Other Notices")));
 
@@ -124,7 +124,7 @@ public class SmtpConfigurationValueVerifierTest {
     assertEquals("Invalid value in setting", exception.getMessage());
 
     var parameter = exception.getError().getParameters().getFirst();
-    assertEquals("value.fromAliases", parameter.getKey());
+    assertEquals("value.identities", parameter.getKey());
     assertEquals("duplicate address: notices@folio.org", parameter.getValue());
   }
 

@@ -16,7 +16,7 @@ import io.vertx.core.json.JsonObject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
-import org.folio.rest.jaxrs.model.FromAlias;
+import org.folio.rest.jaxrs.model.Identity;
 import org.folio.rest.jaxrs.model.SmtpConfiguration;
 import org.junit.Rule;
 import org.junit.Test;
@@ -74,43 +74,43 @@ public class MailServiceImplTest {
   }
 
   @Test
-  public void resolveFrom_usesAliasWithNameFormattedAsRfc5322() {
-    var smtpConfiguration = new SmtpConfiguration().withFromAliases(List.of(
-      new FromAlias().withAddress("library-notices@folio.org").withName("Library Notices"),
-      new FromAlias().withAddress("circulation@folio.org")));
+  public void resolveFrom_usesIdentityWithNameFormattedAsRfc5322() {
+    var smtpConfiguration = new SmtpConfiguration().withIdentities(List.of(
+      new Identity().withAddress("library-notices@folio.org").withName("Library Notices"),
+      new Identity().withAddress("circulation@folio.org")));
 
     assertEquals("\"Library Notices\" <library-notices@folio.org>",
       MailServiceImpl.resolveFrom("library-notices@folio.org", smtpConfiguration));
   }
 
   @Test
-  public void resolveFrom_usesAliasAddressOnlyWhenAliasHasNoName() {
-    var smtpConfiguration = new SmtpConfiguration().withFromAliases(List.of(
-      new FromAlias().withAddress("circulation@folio.org")));
+  public void resolveFrom_usesAddressOnlyWhenIdentityHasNoName() {
+    var smtpConfiguration = new SmtpConfiguration().withIdentities(List.of(
+      new Identity().withAddress("circulation@folio.org")));
 
     assertEquals("circulation@folio.org",
       MailServiceImpl.resolveFrom("circulation@folio.org", smtpConfiguration));
   }
 
   @Test
-  public void resolveFrom_returnsOriginalFromWhenNoAliasMatches() {
-    var smtpConfiguration = new SmtpConfiguration().withFromAliases(List.of(
-      new FromAlias().withAddress("library-notices@folio.org").withName("Library Notices")));
+  public void resolveFrom_returnsOriginalFromWhenNoIdentityMatches() {
+    var smtpConfiguration = new SmtpConfiguration().withIdentities(List.of(
+      new Identity().withAddress("library-notices@folio.org").withName("Library Notices")));
 
     assertEquals("other@folio.org",
       MailServiceImpl.resolveFrom("other@folio.org", smtpConfiguration));
   }
 
   @Test
-  public void resolveFrom_returnsOriginalFromWhenAliasesAreEmpty() {
+  public void resolveFrom_returnsOriginalFromWhenIdentitiesAreEmpty() {
     assertEquals("sender@folio.org",
       MailServiceImpl.resolveFrom("sender@folio.org", new SmtpConfiguration()));
   }
 
   @Test
   public void resolveFrom_returnsEmptyStringWhenFromIsBlank() {
-    var smtpConfiguration = new SmtpConfiguration().withFromAliases(List.of(
-      new FromAlias().withAddress("library-notices@folio.org").withName("Library Notices")));
+    var smtpConfiguration = new SmtpConfiguration().withIdentities(List.of(
+      new Identity().withAddress("library-notices@folio.org").withName("Library Notices")));
 
     assertEquals("", MailServiceImpl.resolveFrom("", smtpConfiguration));
     assertEquals("", MailServiceImpl.resolveFrom(null, smtpConfiguration));

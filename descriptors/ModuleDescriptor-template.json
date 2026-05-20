@@ -1,3 +1,4 @@
+
 {
   "id": "${artifactId}-${version}",
   "name": "email",

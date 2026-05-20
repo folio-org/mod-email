@@ -23,7 +23,7 @@ import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.Attachment;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailHeader;
-import org.folio.rest.jaxrs.model.FromAlias;
+import org.folio.rest.jaxrs.model.Identity;
 import org.folio.rest.jaxrs.model.SmtpConfiguration;
 import org.folio.services.email.MailService;
 
@@ -136,22 +136,22 @@ public class MailServiceImpl implements MailService {
 
   static String resolveFrom(String emailFrom, SmtpConfiguration smtpConfiguration) {
     String defaultFrom = getMessageConfig(emailFrom);
-    List<FromAlias> aliases = smtpConfiguration.getFromAliases();
-    if (StringUtils.isBlank(emailFrom) || aliases == null || aliases.isEmpty()) {
+    List<Identity> identities = smtpConfiguration.getIdentities();
+    if (StringUtils.isBlank(emailFrom) || identities == null || identities.isEmpty()) {
       return defaultFrom;
     }
-    return aliases.stream()
-      .filter(alias -> emailFrom.equals(alias.getAddress()))
+    return identities.stream()
+      .filter(identity -> emailFrom.equals(identity.getAddress()))
       .findFirst()
-      .map(MailServiceImpl::formatAlias)
+      .map(MailServiceImpl::formatIdentity)
       .orElse(defaultFrom);
   }
 
-  private static String formatAlias(FromAlias alias) {
-    if (StringUtils.isBlank(alias.getName())) {
-      return alias.getAddress();
+  private static String formatIdentity(Identity identity) {
+    if (StringUtils.isBlank(identity.getName())) {
+      return identity.getAddress();
     }
-    return String.format("\"%s\" <%s>", alias.getName(), alias.getAddress());
+    return String.format("\"%s\" <%s>", identity.getName(), identity.getAddress());
   }
 
   public static void addHeadersFromConfiguration(MailMessage message, SmtpConfiguration smtpConfiguration) {

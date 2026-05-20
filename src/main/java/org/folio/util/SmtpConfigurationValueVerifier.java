@@ -16,7 +16,7 @@ import java.util.Set;
 import org.apache.commons.collections4.CollectionUtils;
 import org.folio.exceptions.EmailSettingsException;
 import org.folio.rest.jaxrs.model.Error;
-import org.folio.rest.jaxrs.model.FromAlias;
+import org.folio.rest.jaxrs.model.Identity;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.SmtpConfiguration;
 
@@ -43,7 +43,7 @@ public class SmtpConfigurationValueVerifier {
       var smtpConfiguration = JsonObject.mapFrom(value).mapTo(SmtpConfiguration.class);
       var parameters = new ArrayList<Parameter>(
         collectViolationsAsParameters(validator.getValidator().validate(smtpConfiguration)));
-      parameters.addAll(collectDuplicateAliasAddresses(smtpConfiguration));
+      parameters.addAll(collectDuplicateIdentityAddresses(smtpConfiguration));
       if (!parameters.isEmpty()) {
         throw new EmailSettingsException(getValidationError(parameters), UNPROCESSABLE_ENTITY.code());
       }
@@ -53,22 +53,22 @@ public class SmtpConfigurationValueVerifier {
     }
   }
 
-  private static List<Parameter> collectDuplicateAliasAddresses(SmtpConfiguration smtpConfiguration) {
-    List<FromAlias> aliases = smtpConfiguration.getFromAliases();
-    if (CollectionUtils.isEmpty(aliases)) {
+  private static List<Parameter> collectDuplicateIdentityAddresses(SmtpConfiguration smtpConfiguration) {
+    List<Identity> identities = smtpConfiguration.getIdentities();
+    if (CollectionUtils.isEmpty(identities)) {
       return emptyList();
     }
     Set<String> seen = new HashSet<>();
     Set<String> duplicates = new LinkedHashSet<>();
-    for (FromAlias alias : aliases) {
-      String address = alias.getAddress();
+    for (Identity identity : identities) {
+      String address = identity.getAddress();
       if (address != null && !seen.add(address)) {
         duplicates.add(address);
       }
     }
     return duplicates.stream()
       .map(address -> new Parameter()
-        .withKey("value.fromAliases")
+        .withKey("value.identities")
         .withValue("duplicate address: " + address))
       .toList();
   }

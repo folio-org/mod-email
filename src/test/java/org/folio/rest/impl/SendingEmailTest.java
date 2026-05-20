@@ -13,7 +13,7 @@ import static org.folio.util.StubUtils.URL_SINGLE_CONFIGURATION;
 import static org.folio.util.StubUtils.buildIncorrectWiserSmtpConfiguration;
 import static org.folio.util.StubUtils.buildInvalidSmtpConfiguration;
 import static org.folio.util.StubUtils.buildWiserEmailSettings;
-import static org.folio.util.StubUtils.buildWiserEmailSettingsWithAliases;
+import static org.folio.util.StubUtils.buildWiserEmailSettingsWithIdentities;
 import static org.folio.util.StubUtils.buildWiserSmtpConfiguration;
 import static org.folio.util.StubUtils.createConfigurationsWithCustomHeaders;
 import static org.folio.util.StubUtils.getIncorrectConfigurations;
@@ -487,61 +487,61 @@ public class SendingEmailTest extends AbstractAPITest {
   }
 
   @Test
-  public void shouldUseAliasWithNameWhenFromMatchesAlias() throws Exception {
-    String aliasAddress = "library-notices@folio.org";
-    String aliasName = "Library Notices";
-    post(REST_PATH_MAIL_SETTINGS, buildWiserEmailSettingsWithAliases(List.of(
-      new JsonObject().put("address", aliasAddress).put("name", aliasName),
+  public void shouldUseIdentityWithNameWhenFromMatchesIdentity() throws Exception {
+    String identityAddress = "library-notices@folio.org";
+    String identityName = "Library Notices";
+    post(REST_PATH_MAIL_SETTINGS, buildWiserEmailSettingsWithIdentities(List.of(
+      new JsonObject().put("address", identityAddress).put("name", identityName),
       new JsonObject().put("address", "circulation@folio.org"))).encodePrettily());
 
     String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
       .withTo(recipient)
-      .withFrom(aliasAddress)
+      .withFrom(identityAddress)
       .withHeader("Reset password")
       .withBody("Test body")
       .withOutputFormat(MediaType.TEXT_PLAIN);
 
     sendEmail(emailEntity).then().statusCode(HttpStatus.SC_OK);
 
-    WiserMessage wiserMessage = findMessageOnWiserServerByFromAddress(aliasAddress);
+    WiserMessage wiserMessage = findMessageOnWiserServerByFromAddress(identityAddress);
     Address[] from = wiserMessage.getMimeMessage().getFrom();
     assertEquals(1, from.length);
     InternetAddress internetAddress = (InternetAddress) from[0];
-    assertEquals(aliasAddress, internetAddress.getAddress());
-    assertEquals(aliasName, internetAddress.getPersonal());
+    assertEquals(identityAddress, internetAddress.getAddress());
+    assertEquals(identityName, internetAddress.getPersonal());
   }
 
   @Test
-  public void shouldUseAliasAddressOnlyWhenAliasHasNoName() throws Exception {
-    String aliasAddress = "circulation@folio.org";
-    post(REST_PATH_MAIL_SETTINGS, buildWiserEmailSettingsWithAliases(List.of(
+  public void shouldUseIdentityAddressOnlyWhenIdentityHasNoName() throws Exception {
+    String identityAddress = "circulation@folio.org";
+    post(REST_PATH_MAIL_SETTINGS, buildWiserEmailSettingsWithIdentities(List.of(
       new JsonObject().put("address", "library-notices@folio.org").put("name", "Library Notices"),
-      new JsonObject().put("address", aliasAddress))).encodePrettily());
+      new JsonObject().put("address", identityAddress))).encodePrettily());
 
     String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
       .withTo(recipient)
-      .withFrom(aliasAddress)
+      .withFrom(identityAddress)
       .withHeader("Reset password")
       .withBody("Test body")
       .withOutputFormat(MediaType.TEXT_PLAIN);
 
     sendEmail(emailEntity).then().statusCode(HttpStatus.SC_OK);
 
-    WiserMessage wiserMessage = findMessageOnWiserServerByFromAddress(aliasAddress);
+    WiserMessage wiserMessage = findMessageOnWiserServerByFromAddress(identityAddress);
     Address[] from = wiserMessage.getMimeMessage().getFrom();
     assertEquals(1, from.length);
     InternetAddress internetAddress = (InternetAddress) from[0];
-    assertEquals(aliasAddress, internetAddress.getAddress());
+    assertEquals(identityAddress, internetAddress.getAddress());
     assertEquals(null, internetAddress.getPersonal());
   }
 
   @Test
-  public void shouldUseFromAsIsWhenNoAliasMatches() throws Exception {
-    post(REST_PATH_MAIL_SETTINGS, buildWiserEmailSettingsWithAliases(List.of(
+  public void shouldUseFromAsIsWhenNoIdentityMatches() throws Exception {
+    post(REST_PATH_MAIL_SETTINGS, buildWiserEmailSettingsWithIdentities(List.of(
       new JsonObject().put("address", "library-notices@folio.org").put("name", "Library Notices")))
       .encodePrettily());
 
