@@ -60,11 +60,11 @@
       "type": "string"
     },
     "from": {
-      "description": "Default email address to send emails from when no matching identity is found",
+      "description": "Default sender address used when the email request has no 'from' field. Not matched against identities.",
       "type": "string"
     },
     "identities": {
-      "description": "Sender identities. When EmailEntity.from matches an identity's address, that identity is used (with optional display name) as the From header. Addresses must be unique.",
+      "description": "When the value of EmailEntity.from matches the email address of a configured identity, that identity is applied to the From header, including its display name if provided. All email addresses must be unique.",
       "type": "array",
       "id": "identities",
       "items": {
