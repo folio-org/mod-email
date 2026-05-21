@@ -319,6 +319,12 @@ public abstract class AbstractAPITest {
       .orElseThrow(() -> throwAssertionFailedError(fromAddress));
   }
 
+  protected List<String> getEnvelopeReceiversOnWiserServer() {
+    return wiser.getMessages().stream()
+      .map(WiserMessage::getEnvelopeReceiver)
+      .toList();
+  }
+
   private AssertionFailedError throwAssertionFailedError(String sender) {
     throw new AssertionFailedError(String.format(MESSAGE_NOT_FOUND, sender));
   }

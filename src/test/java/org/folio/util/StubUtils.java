@@ -50,6 +50,21 @@ public class StubUtils {
       .toString();
   }
 
+  public static String getEmailEntityWithBcc(String to, String from, String bcc, String outputFormat) {
+    JsonObject entries = new JsonObject();
+    if (StringUtils.isNoneBlank(outputFormat)) {
+      entries.put("outputFormat", outputFormat);
+    }
+    return entries
+      .put("notificationId", 1)
+      .put("to", to)
+      .put("from", from)
+      .put("bcc", bcc)
+      .put("header", "Reset password")
+      .put("body", "Test message")
+      .toString();
+  }
+
   public static void initModConfigStub(int port, Configurations configurations) {
     stubFor(createMappingBuilder()
       .willReturn(aResponse()
