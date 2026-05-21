@@ -52,9 +52,9 @@ public class MailServiceImplTest {
     SmtpConfiguration smtpConfiguration = buildSmtpConfiguration("user", "pws", "localhost",
       2500, AUTH_METHODS);
 
-    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
-    String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
+    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
+    String msg = "Test text for the message. Random text: " + RandomStringUtils.insecure().nextAlphabetic(20);
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")

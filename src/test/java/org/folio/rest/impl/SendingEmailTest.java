@@ -61,9 +61,9 @@ public class SendingEmailTest extends AbstractAPITest {
   @Test
   public void sendTextEmail() throws Exception {
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
-    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
-    String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
+    String msg = "Test text for the message. Random text: " + RandomStringUtils.insecure().nextAlphabetic(20);
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -91,8 +91,8 @@ public class SendingEmailTest extends AbstractAPITest {
   @Test
   public void sendHtmlEmail() throws Exception {
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
-    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -120,8 +120,8 @@ public class SendingEmailTest extends AbstractAPITest {
   @Test
   public void sendHtmlEmailAttachments() throws Exception {
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
-    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -165,8 +165,8 @@ public class SendingEmailTest extends AbstractAPITest {
   @Test
   public void sendHtmlEmailAttachmentsWithoutData() throws Exception {
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
-    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -203,8 +203,8 @@ public class SendingEmailTest extends AbstractAPITest {
   public void checkSendingEmailWithDifferentConfigs() throws Exception {
     // init incorrect SMTP mock configuration
     initModConfigStub(mockServerPort, getIncorrectWiserMockConfigurations());
-    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -266,9 +266,9 @@ public class SendingEmailTest extends AbstractAPITest {
     );
 
     initModConfigStub(mockServerPort, createConfigurationsWithCustomHeaders(customHeaders));
-    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
-    String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
+    String msg = "Test text for the message. Random text: " + RandomStringUtils.insecure().nextAlphabetic(20);
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -427,9 +427,9 @@ public class SendingEmailTest extends AbstractAPITest {
   }
 
   private void sendEmailAndAssertDelivered() throws Exception {
-    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
-    String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
+    String msg = "Test text for the message. Random text: " + RandomStringUtils.insecure().nextAlphabetic(20);
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -455,9 +455,9 @@ public class SendingEmailTest extends AbstractAPITest {
   }
 
   private void sendEmailAndAssertFailure(int expectedEmailSendingStatus) {
-    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
-    String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
+    String msg = "Test text for the message. Random text: " + RandomStringUtils.insecure().nextAlphabetic(20);
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -494,7 +494,7 @@ public class SendingEmailTest extends AbstractAPITest {
       new JsonObject().put("address", identityAddress).put("name", identityName),
       new JsonObject().put("address", "circulation@folio.org"))).encodePrettily());
 
-    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
       .withTo(recipient)
@@ -520,7 +520,7 @@ public class SendingEmailTest extends AbstractAPITest {
       new JsonObject().put("address", "library-notices@folio.org").put("name", "Library Notices"),
       new JsonObject().put("address", identityAddress))).encodePrettily());
 
-    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
       .withTo(recipient)
@@ -545,8 +545,8 @@ public class SendingEmailTest extends AbstractAPITest {
       new JsonObject().put("address", "library-notices@folio.org").put("name", "Library Notices")))
       .encodePrettily());
 
-    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
       .withTo(recipient)

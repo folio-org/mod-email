@@ -110,7 +110,7 @@ SMTP configuration (`GET /email/settings/{id}`) example:
 > the From header is rendered as `"<name>" <address>` (e.g. `"FOLIO Notifications" <noreply@folio.org>`).
 > If no identity matches, the request's `from` value is used as-is; if the request omits `from`, the
 > configuration's top-level `from` is used.
-> 
+
 ### Configuration using `mod-email`'s API (Deprecated)
 
 This method of configuration is deprecated.

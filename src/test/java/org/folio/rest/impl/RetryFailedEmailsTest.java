@@ -191,8 +191,8 @@ public class RetryFailedEmailsTest extends AbstractAPITest {
     return new EmailEntity()
       .withId(UUID.randomUUID().toString())
       .withNotificationId(notificationId)
-      .withTo(String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5)))
-      .withFrom(String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7)))
+      .withTo(String.format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5)))
+      .withFrom(String.format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7)))
       .withHeader("Reset password")
       .withBody("Test text for the message.")
       .withOutputFormat(MediaType.TEXT_PLAIN);
