@@ -34,7 +34,8 @@ Order of settings retrieval (migration to `mod-email` own settings storage):
 | startTlsOptions     | EMAIL_START_TLS_OPTIONS     | false    | TLS security mode for the connection                                                                                      | DISABLED, OPTIONAL or REQUIRED |
 | username            | EMAIL_USERNAME              | true     | the username for the login                                                                                                | 'login'                        |
 | password            | EMAIL_PASSWORD              | true     | the password for the login                                                                                                | 'password'                     |
-| from                | EMAIL_FROM                  | false    | 'from' property of the email                                                                                              | noreply@folio.org              |
+| from                | EMAIL_FROM                  | false    | Default sender address used when the email request has no 'from' field. | noreply@folio.org              |
+| identities          |                             | false    | Sender identities. When `EmailEntity.from` matches an identity's `address`, that identity is applied to the From header (including its optional display name). Addresses must be unique. | [see configuration example](#configuration-using-emailsettings-interface) |
 | authMethods         | AUTH_METHODS                | false    | authentication methods                                                                                                    | 'CRAM-MD5 LOGIN PLAIN'         |
 | expirationHours     |                             | false    | Messages which are older than expiration hours are considered as expired and gets deleted. Default value will be 24 hours | 12                             |
 | idleTimeout         |                             | false    | Idle timeout for SMTP connection in seconds. Default value is 0                                                           | 25                             |
@@ -79,6 +80,16 @@ SMTP configuration (`GET /email/settings/{id}`) example:
     "idleTimeout": 0,
     "connectTimeout": 0,
     "_version": "1",
+    "identities": [
+      {
+        "address": "noreply@folio.org",
+        "name": "FOLIO Notifications"
+      },
+      {
+        "address": "circulation@folio.org",
+        "name": "Library Circulation"
+      }
+    ],
     "emailHeaders": [
       {
         "name": "Reply-To",
@@ -94,7 +105,12 @@ SMTP configuration (`GET /email/settings/{id}`) example:
 > validation errors.
 > </br></br>
 > Settings are versioned, so performing an update requires providing the next `_version` field value (optimistic locking).
-
+> </br></br>
+> When `EmailEntity.from` (the `from` field on a `POST /email` request) matches an identity's `address`,
+> the From header is rendered as `"<name>" <address>` (e.g. `"FOLIO Notifications" <noreply@folio.org>`).
+> If no identity matches, the request's `from` value is used as-is; if the request omits `from`, the
+> configuration's top-level `from` is used.
+> 
 ### Configuration using `mod-email`'s API (Deprecated)
 
 This method of configuration is deprecated.
