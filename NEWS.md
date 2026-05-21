@@ -1,3 +1,9 @@
+## In progress
+
+### Features
+* Add optional `bcc` field to `POST /email`, with identity-based address resolution ([MODEMAIL-129](https://folio-org.atlassian.net/browse/MODEMAIL-129))
+
+
 ## v1.20.0 2026-04-16
 
 ### Breaking changes
