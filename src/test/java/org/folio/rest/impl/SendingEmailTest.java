@@ -542,9 +542,9 @@ public class SendingEmailTest extends AbstractAPITest {
   @Test
   public void sendEmailWithBcc() throws Exception {
     initModConfigStub(mockServerPort, getWiserMockConfigurations());
-    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
-    String bcc = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(6));
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
+    String bcc = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(6));
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -575,15 +575,15 @@ public class SendingEmailTest extends AbstractAPITest {
   }
 
   @Test
-  public void sendEmailWithBccResolvesAddressFromIdentity() throws Exception {
+  public void sendEmailWithBccResolvesAddressFromIdentity() {
     String bccIdentityAddress = "library-bcc@folio.org";
     String bccIdentityName = "Library BCC";
     post(REST_PATH_MAIL_SETTINGS, buildWiserEmailSettingsWithIdentities(List.of(
       new JsonObject().put("address", bccIdentityAddress).put("name", bccIdentityName)))
       .encodePrettily());
 
-    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
