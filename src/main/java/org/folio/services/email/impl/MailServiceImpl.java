@@ -83,9 +83,13 @@ public class MailServiceImpl implements MailService {
     MailMessage mailMessage = new MailMessage()
       .setFrom(resolveFrom(emailEntity.getFrom(), smtpConfiguration))
       .setTo(getMessageConfig(emailEntity.getTo()))
-      .setBcc(resolveBcc(emailEntity.getBcc(), smtpConfiguration))
       .setSubject(getMessageConfig(emailEntity.getHeader()))
       .setAttachment(getMailAttachments(emailEntity.getAttachments()));
+
+    String bcc = resolveBcc(emailEntity.getBcc(), smtpConfiguration);
+    if (StringUtils.isNotBlank(bcc)) {
+      mailMessage.setBcc(bcc);
+    }
 
     String outputFormat = emailEntity.getOutputFormat();
     if (StringUtils.isNoneBlank(outputFormat) && outputFormat.trim().equalsIgnoreCase(MediaType.TEXT_HTML)) {
