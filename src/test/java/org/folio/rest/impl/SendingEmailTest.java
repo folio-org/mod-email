@@ -540,6 +540,68 @@ public class SendingEmailTest extends AbstractAPITest {
   }
 
   @Test
+  public void sendEmailWithBcc() throws Exception {
+    initModConfigStub(mockServerPort, getWiserMockConfigurations());
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
+    String bcc = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(6));
+
+    EmailEntity emailEntity = new EmailEntity()
+      .withNotificationId("1")
+      .withTo(recipient)
+      .withFrom(sender)
+      .withBcc(bcc)
+      .withHeader("Reset password")
+      .withBody("Test body")
+      .withOutputFormat(MediaType.TEXT_PLAIN);
+
+    sendEmail(emailEntity).then().statusCode(HttpStatus.SC_OK);
+
+    WiserMessage wiserMessage = findMessageOnWiserServer(sender);
+
+    List<String> envelopeReceivers = getEnvelopeReceiversOnWiserServer();
+    assertTrue("envelope must contain TO recipient " + recipient,
+      envelopeReceivers.contains(recipient));
+    assertTrue("envelope must contain BCC recipient " + bcc,
+      envelopeReceivers.contains(bcc));
+
+    // BCC must not leak into the rendered MimeMessage headers (privacy contract)
+    Address[] allRecipients = wiserMessage.getMimeMessage().getAllRecipients();
+    List<String> headerRecipients = List.of(allRecipients).stream()
+      .map(a -> ((InternetAddress) a).getAddress())
+      .toList();
+    assertTrue("MimeMessage must not contain BCC " + bcc + " in headers",
+      !headerRecipients.contains(bcc));
+  }
+
+  @Test
+  public void sendEmailWithBccResolvesAddressFromIdentity() {
+    String bccIdentityAddress = "library-bcc@folio.org";
+    String bccIdentityName = "Library BCC";
+    post(REST_PATH_MAIL_SETTINGS, buildWiserEmailSettingsWithIdentities(List.of(
+      new JsonObject().put("address", bccIdentityAddress).put("name", bccIdentityName)))
+      .encodePrettily());
+
+    String sender = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
+
+    EmailEntity emailEntity = new EmailEntity()
+      .withNotificationId("1")
+      .withTo(recipient)
+      .withFrom(sender)
+      .withBcc(bccIdentityAddress)
+      .withHeader("Reset password")
+      .withBody("Test body")
+      .withOutputFormat(MediaType.TEXT_PLAIN);
+
+    sendEmail(emailEntity).then().statusCode(HttpStatus.SC_OK);
+
+    List<String> envelopeReceivers = getEnvelopeReceiversOnWiserServer();
+    assertTrue("envelope must contain BCC identity address " + bccIdentityAddress,
+      envelopeReceivers.contains(bccIdentityAddress));
+  }
+
+  @Test
   public void shouldUseFromAsIsWhenNoIdentityMatches() throws Exception {
     post(REST_PATH_MAIL_SETTINGS, buildWiserEmailSettingsWithIdentities(List.of(
       new JsonObject().put("address", "library-notices@folio.org").put("name", "Library Notices")))

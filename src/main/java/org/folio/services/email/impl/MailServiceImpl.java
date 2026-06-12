@@ -8,6 +8,7 @@ import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 import static org.folio.rest.impl.base.AbstractEmail.RETRY_MAX_ATTEMPTS;
 import static org.folio.util.EmailUtils.getMessageConfig;
 
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +86,11 @@ public class MailServiceImpl implements MailService {
       .setSubject(getMessageConfig(emailEntity.getHeader()))
       .setAttachment(getMailAttachments(emailEntity.getAttachments()));
 
+    String bcc = resolveBcc(emailEntity.getBcc(), smtpConfiguration);
+    if (StringUtils.isNotBlank(bcc)) {
+      mailMessage.setBcc(bcc);
+    }
+
     String outputFormat = emailEntity.getOutputFormat();
     if (StringUtils.isNoneBlank(outputFormat) && outputFormat.trim().equalsIgnoreCase(MediaType.TEXT_HTML)) {
       log.info("getMailMessage:: Email is not text/html");
@@ -140,11 +146,28 @@ public class MailServiceImpl implements MailService {
     if (StringUtils.isBlank(emailFrom) || identities == null || identities.isEmpty()) {
       return defaultFrom;
     }
+    return resolveAddress(emailFrom, identities);
+  }
+
+  static String resolveBcc(String emailBcc, SmtpConfiguration smtpConfiguration) {
+    String defaultBcc = getMessageConfig(emailBcc);
+    List<Identity> identities = smtpConfiguration.getIdentities();
+    if (StringUtils.isBlank(emailBcc) || identities == null || identities.isEmpty()) {
+      return defaultBcc;
+    }
+    return Arrays.stream(emailBcc.split(","))
+      .map(String::trim)
+      .filter(StringUtils::isNotBlank)
+      .map(address -> resolveAddress(address, identities))
+      .collect(Collectors.joining(", "));
+  }
+
+  private static String resolveAddress(String address, List<Identity> identities) {
     return identities.stream()
-      .filter(identity -> emailFrom.equals(identity.getAddress()))
+      .filter(identity -> address.equals(identity.getAddress()))
       .findFirst()
       .map(MailServiceImpl::formatIdentity)
-      .orElse(defaultFrom);
+      .orElse(address);
   }
 
   private static String formatIdentity(Identity identity) {
