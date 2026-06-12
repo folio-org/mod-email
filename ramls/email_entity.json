@@ -20,6 +20,10 @@
       "description":"address of the recipient",
       "type": "string"
     },
+    "bcc": {
+      "description":"blind carbon copy address(es); comma-separated for multiple",
+      "type": "string"
+    },
     "header": {
       "description":"subject of email",
       "type": "string"

@@ -157,6 +157,7 @@ public class StubUtils {
       .put("startTlsOptions", "DISABLED")
       .put("authMethods", "CRAM-MD5 LOGIN PLAIN")
       .put("from", "noreply@folio.org")
+      .put("identities", List.of())
       .put("emailHeaders", List.of(new JsonObject()
         .put("name", "Reply-To")
         .put("value", "noreply@folio.org")
@@ -175,7 +176,21 @@ public class StubUtils {
       .put("startTlsOptions", "OPTIONAL")
       .put("authMethods", "")
       .put("from", "")
+      .put("identities", List.of())
       .put("emailHeaders", List.of());
+  }
+
+  public static JsonObject buildWiserSmtpConfigurationWithIdentities(List<JsonObject> identities) {
+    return buildWiserSmtpConfiguration().put("identities", identities);
+  }
+
+  public static JsonObject buildWiserEmailSettingsWithIdentities(List<JsonObject> identities) {
+    return new JsonObject()
+      .put("id", UUID.randomUUID().toString())
+      .put("key", "smtp-configuration")
+      .put("value", buildWiserSmtpConfigurationWithIdentities(identities))
+      .put("scope", "mod-email")
+      .put("_version", 1);
   }
 
   public static JsonObject buildIncorrectWiserSmtpConfiguration() {

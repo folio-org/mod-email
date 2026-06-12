@@ -7,13 +7,16 @@ import static org.folio.util.StubUtils.initModConfigStub;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 
+import java.util.List;
 import javax.ws.rs.core.MediaType;
 
 import io.vertx.core.json.JsonObject;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.folio.rest.jaxrs.model.Configurations;
 import org.folio.rest.jaxrs.model.EmailEntity;
+import org.folio.rest.jaxrs.model.Identity;
 import org.folio.rest.jaxrs.model.SmtpConfiguration;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,9 +52,9 @@ public class MailServiceImplTest {
     SmtpConfiguration smtpConfiguration = buildSmtpConfiguration("user", "pws", "localhost",
       2500, AUTH_METHODS);
 
-    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(7));
-    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.randomAlphabetic(5));
-    String msg = "Test text for the message. Random text: " + RandomStringUtils.randomAlphabetic(20);
+    String sender = String.format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(7));
+    String recipient = String.format(ADDRESS_TEMPLATE, RandomStringUtils.insecure().nextAlphabetic(5));
+    String msg = "Test text for the message. Random text: " + RandomStringUtils.insecure().nextAlphabetic(20);
 
     EmailEntity emailEntity = new EmailEntity()
       .withNotificationId("1")
@@ -68,6 +71,104 @@ public class MailServiceImplTest {
       .onComplete(context.asyncAssertFailure(x -> {
         assertThat(mailServiceImpl.getMailConfig(tenantId).getAuthMethods(), is(AUTH_METHODS));
       }));
+  }
+
+  @Test
+  public void resolveFrom_usesIdentityWithNameFormattedAsRfc5322() {
+    var smtpConfiguration = new SmtpConfiguration().withIdentities(List.of(
+      new Identity().withAddress("library-notices@folio.org").withName("Library Notices"),
+      new Identity().withAddress("circulation@folio.org")));
+
+    assertEquals("\"Library Notices\" <library-notices@folio.org>",
+      MailServiceImpl.resolveFrom("library-notices@folio.org", smtpConfiguration));
+  }
+
+  @Test
+  public void resolveFrom_usesAddressOnlyWhenIdentityHasNoName() {
+    var smtpConfiguration = new SmtpConfiguration().withIdentities(List.of(
+      new Identity().withAddress("circulation@folio.org")));
+
+    assertEquals("circulation@folio.org",
+      MailServiceImpl.resolveFrom("circulation@folio.org", smtpConfiguration));
+  }
+
+  @Test
+  public void resolveFrom_returnsOriginalFromWhenNoIdentityMatches() {
+    var smtpConfiguration = new SmtpConfiguration().withIdentities(List.of(
+      new Identity().withAddress("library-notices@folio.org").withName("Library Notices")));
+
+    assertEquals("other@folio.org",
+      MailServiceImpl.resolveFrom("other@folio.org", smtpConfiguration));
+  }
+
+  @Test
+  public void resolveFrom_returnsOriginalFromWhenIdentitiesAreEmpty() {
+    assertEquals("sender@folio.org",
+      MailServiceImpl.resolveFrom("sender@folio.org", new SmtpConfiguration()));
+  }
+
+  @Test
+  public void resolveFrom_returnsEmptyStringWhenFromIsBlank() {
+    var smtpConfiguration = new SmtpConfiguration().withIdentities(List.of(
+      new Identity().withAddress("library-notices@folio.org").withName("Library Notices")));
+
+    assertEquals("", MailServiceImpl.resolveFrom("", smtpConfiguration));
+    assertEquals("", MailServiceImpl.resolveFrom(null, smtpConfiguration));
+  }
+
+  @Test
+  public void resolveBcc_usesIdentityWithNameFormattedAsRfc5322() {
+    var smtpConfiguration = new SmtpConfiguration().withIdentities(List.of(
+      new Identity().withAddress("library-notices@folio.org").withName("Library Notices")));
+
+    assertEquals("\"Library Notices\" <library-notices@folio.org>",
+      MailServiceImpl.resolveBcc("library-notices@folio.org", smtpConfiguration));
+  }
+
+  @Test
+  public void resolveBcc_usesAddressOnlyWhenIdentityHasNoName() {
+    var smtpConfiguration = new SmtpConfiguration().withIdentities(List.of(
+      new Identity().withAddress("circulation@folio.org")));
+
+    assertEquals("circulation@folio.org",
+      MailServiceImpl.resolveBcc("circulation@folio.org", smtpConfiguration));
+  }
+
+  @Test
+  public void resolveBcc_resolvesEachAddressInCommaSeparatedList() {
+    var smtpConfiguration = new SmtpConfiguration().withIdentities(List.of(
+      new Identity().withAddress("library-notices@folio.org").withName("Library Notices"),
+      new Identity().withAddress("circulation@folio.org")));
+
+    assertEquals(
+      "\"Library Notices\" <library-notices@folio.org>, circulation@folio.org, other@folio.org",
+      MailServiceImpl.resolveBcc(
+        "library-notices@folio.org, circulation@folio.org, other@folio.org",
+        smtpConfiguration));
+  }
+
+  @Test
+  public void resolveBcc_returnsOriginalBccWhenNoIdentityMatches() {
+    var smtpConfiguration = new SmtpConfiguration().withIdentities(List.of(
+      new Identity().withAddress("library-notices@folio.org").withName("Library Notices")));
+
+    assertEquals("other@folio.org, another@folio.org",
+      MailServiceImpl.resolveBcc("other@folio.org, another@folio.org", smtpConfiguration));
+  }
+
+  @Test
+  public void resolveBcc_returnsOriginalBccWhenIdentitiesAreEmpty() {
+    assertEquals("bcc@folio.org",
+      MailServiceImpl.resolveBcc("bcc@folio.org", new SmtpConfiguration()));
+  }
+
+  @Test
+  public void resolveBcc_returnsEmptyStringWhenBccIsBlank() {
+    var smtpConfiguration = new SmtpConfiguration().withIdentities(List.of(
+      new Identity().withAddress("library-notices@folio.org").withName("Library Notices")));
+
+    assertEquals("", MailServiceImpl.resolveBcc("", smtpConfiguration));
+    assertEquals("", MailServiceImpl.resolveBcc(null, smtpConfiguration));
   }
 
   @Test

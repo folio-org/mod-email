@@ -8,6 +8,7 @@ import static org.apache.commons.lang3.StringUtils.isNoneBlank;
 import static org.folio.rest.impl.base.AbstractEmail.RETRY_MAX_ATTEMPTS;
 import static org.folio.util.EmailUtils.getMessageConfig;
 
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,7 @@ import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.Attachment;
 import org.folio.rest.jaxrs.model.EmailEntity;
 import org.folio.rest.jaxrs.model.EmailHeader;
+import org.folio.rest.jaxrs.model.Identity;
 import org.folio.rest.jaxrs.model.SmtpConfiguration;
 import org.folio.services.email.MailService;
 
@@ -79,10 +81,15 @@ public class MailServiceImpl implements MailService {
     log.debug("getMailMessage:: smtpConfiguration present");
 
     MailMessage mailMessage = new MailMessage()
-      .setFrom(getMessageConfig(emailEntity.getFrom()))
+      .setFrom(resolveFrom(emailEntity.getFrom(), smtpConfiguration))
       .setTo(getMessageConfig(emailEntity.getTo()))
       .setSubject(getMessageConfig(emailEntity.getHeader()))
       .setAttachment(getMailAttachments(emailEntity.getAttachments()));
+
+    String bcc = resolveBcc(emailEntity.getBcc(), smtpConfiguration);
+    if (StringUtils.isNotBlank(bcc)) {
+      mailMessage.setBcc(bcc);
+    }
 
     String outputFormat = emailEntity.getOutputFormat();
     if (StringUtils.isNoneBlank(outputFormat) && outputFormat.trim().equalsIgnoreCase(MediaType.TEXT_HTML)) {
@@ -131,6 +138,43 @@ public class MailServiceImpl implements MailService {
     // Decode incoming data from JSON
     byte[] decode = Base64.getDecoder().decode(file);
     return Buffer.buffer(decode);
+  }
+
+  static String resolveFrom(String emailFrom, SmtpConfiguration smtpConfiguration) {
+    String defaultFrom = getMessageConfig(emailFrom);
+    List<Identity> identities = smtpConfiguration.getIdentities();
+    if (StringUtils.isBlank(emailFrom) || identities == null || identities.isEmpty()) {
+      return defaultFrom;
+    }
+    return resolveAddress(emailFrom, identities);
+  }
+
+  static String resolveBcc(String emailBcc, SmtpConfiguration smtpConfiguration) {
+    String defaultBcc = getMessageConfig(emailBcc);
+    List<Identity> identities = smtpConfiguration.getIdentities();
+    if (StringUtils.isBlank(emailBcc) || identities == null || identities.isEmpty()) {
+      return defaultBcc;
+    }
+    return Arrays.stream(emailBcc.split(","))
+      .map(String::trim)
+      .filter(StringUtils::isNotBlank)
+      .map(address -> resolveAddress(address, identities))
+      .collect(Collectors.joining(", "));
+  }
+
+  private static String resolveAddress(String address, List<Identity> identities) {
+    return identities.stream()
+      .filter(identity -> address.equals(identity.getAddress()))
+      .findFirst()
+      .map(MailServiceImpl::formatIdentity)
+      .orElse(address);
+  }
+
+  private static String formatIdentity(Identity identity) {
+    if (StringUtils.isBlank(identity.getName())) {
+      return identity.getAddress();
+    }
+    return String.format("\"%s\" <%s>", identity.getName(), identity.getAddress());
   }
 
   public static void addHeadersFromConfiguration(MailMessage message, SmtpConfiguration smtpConfiguration) {

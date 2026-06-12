@@ -60,8 +60,30 @@
       "type": "string"
     },
     "from": {
-      "description": "Email address to send emails from",
+      "description": "Default sender address used when the email request has no 'from' field. Not matched against identities.",
       "type": "string"
+    },
+    "identities": {
+      "description": "When the value of EmailEntity.from matches the email address of a configured identity, that identity is applied to the From header, including its display name if provided. All email addresses must be unique.",
+      "type": "array",
+      "id": "identities",
+      "items": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "description": "Email address",
+            "type": "string"
+          },
+          "name": {
+            "description": "Optional display name used in the From header (RFC 5322)",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "address"
+        ]
+      }
     },
     "emailHeaders": {
       "description": "Custom email headers",
